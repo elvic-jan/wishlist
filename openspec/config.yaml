@@ -9,6 +9,12 @@ schema: spec-driven
 #     We use conventional commits
 #     Domain: e-commerce platform
 
+context: |
+  clean architecture
+  tech stack: TypeScript, React, C#
+  use BFF pattern for frontend-backend communication
+  follow solid principles
+
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
 # Example:
