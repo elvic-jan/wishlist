@@ -6,10 +6,10 @@ public class WishlistItem
     public Guid OwnerId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public string? Url { get; set; }
-    public decimal? Price { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+
+    public IList<WishlistItemUrl> Urls { get; set; } = new List<WishlistItemUrl>();
 
     public GiftClaim? GiftClaim { get; set; }
 

@@ -14,9 +14,17 @@ interface WishlistItem {
   ownerId: string;
   title: string;
   description?: string;
-  url?: string;
-  price?: number;
+  urls: string[];
   claim: GiftClaim | null;
+}
+
+function hostFor(rawUrl: string): string {
+  try {
+    const parsed = new URL(rawUrl);
+    return parsed.host.replace(/^www\./, '');
+  } catch {
+    return rawUrl;
+  }
 }
 
 export function MemberWishlistPage() {
@@ -35,8 +43,9 @@ export function MemberWishlistPage() {
     try {
       await client.post(`/wishlists/${userId}/items/${itemId}/claim`);
       load();
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Failed to reserve.');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setError(msg ?? 'Failed to reserve.');
     }
   };
 
@@ -44,8 +53,9 @@ export function MemberWishlistPage() {
     try {
       await client.patch(`/wishlists/${userId}/items/${itemId}/claim`);
       load();
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Failed to update status.');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setError(msg ?? 'Failed to update status.');
     }
   };
 
@@ -53,8 +63,9 @@ export function MemberWishlistPage() {
     try {
       await client.delete(`/wishlists/${userId}/items/${itemId}/claim`);
       load();
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Failed to release claim.');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setError(msg ?? 'Failed to release claim.');
     }
   };
 
@@ -80,10 +91,15 @@ export function MemberWishlistPage() {
               <div style={{ flex: 1 }}>
                 <strong>{item.title}</strong>
                 {item.description && <p style={{ margin: '4px 0', color: '#555' }}>{item.description}</p>}
-                <div style={{ marginTop: 4 }}>
-                  {item.url && <a href={item.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, marginRight: 12 }}>View link</a>}
-                  {item.price != null && <span style={{ fontSize: 13 }}>€{item.price}</span>}
-                </div>
+                {item.urls.length > 0 && (
+                  <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                    {item.urls.map((u, i) => (
+                      <a key={i} href={u} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>
+                        {hostFor(u)}
+                      </a>
+                    ))}
+                  </div>
+                )}
                 <div style={{ marginTop: 8 }}>{statusBadge(item.claim)}</div>
               </div>
 

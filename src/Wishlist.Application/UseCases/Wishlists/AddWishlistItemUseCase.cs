@@ -11,7 +11,17 @@ public class AddWishlistItemUseCase(IWishlistRepository wishlists)
         if (string.IsNullOrWhiteSpace(request.Title))
             throw new DomainException("Item title cannot be empty.");
 
-        var item = await wishlists.CreateAsync(userId, request.Title.Trim(), request.Description, request.Url, request.Price, ct);
-        return new WishlistItemDto(item.Id, item.OwnerId, item.Title, item.Description, item.Url, item.Price, item.CreatedAt, null);
+        var urls = WishlistItemUrlValidator.Validate(request.Urls);
+
+        var item = await wishlists.CreateAsync(userId, request.Title.Trim(), request.Description, urls, ct);
+
+        return new WishlistItemDto(
+            item.Id,
+            item.OwnerId,
+            item.Title,
+            item.Description,
+            item.Urls.OrderBy(u => u.DisplayOrder).Select(u => u.Url).ToList(),
+            item.CreatedAt,
+            Claim: null);
     }
 }

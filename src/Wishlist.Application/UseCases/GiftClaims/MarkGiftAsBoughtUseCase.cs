@@ -22,6 +22,13 @@ public class MarkGiftAsBoughtUseCase(IWishlistRepository wishlists, IGiftClaimRe
         await claims.UpdateStatusAsync(claim.Id, GiftClaimStatus.Bought, ct);
 
         var claimDto = new GiftClaimDto(claim.Id, claim.ClaimedByUserId, claim.Status, true);
-        return new WishlistItemDto(item.Id, item.OwnerId, item.Title, item.Description, item.Url, item.Price, item.CreatedAt, claimDto);
+        return new WishlistItemDto(
+            item.Id,
+            item.OwnerId,
+            item.Title,
+            item.Description,
+            item.Urls.OrderBy(u => u.DisplayOrder).Select(u => u.Url).ToList(),
+            item.CreatedAt,
+            claimDto);
     }
 }

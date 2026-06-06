@@ -8,7 +8,7 @@ public class EditWishlistItemUseCase(IWishlistRepository wishlists)
 {
     public async Task<WishlistItemDto> ExecuteAsync(Guid userId, Guid itemId, EditWishlistItemRequest request, CancellationToken ct = default)
     {
-        var item = await wishlists.GetByIdAsync(itemId, false, ct)
+        var item = await wishlists.GetByIdAsync(itemId, includeClaim: false, ct)
             ?? throw new NotFoundException("Wishlist item not found.");
 
         if (item.OwnerId != userId)
@@ -17,11 +17,29 @@ public class EditWishlistItemUseCase(IWishlistRepository wishlists)
         if (request.Title is not null)
             item.Title = string.IsNullOrWhiteSpace(request.Title) ? throw new DomainException("Title cannot be empty.") : request.Title.Trim();
 
-        if (request.Description is not null) item.Description = request.Description;
-        if (request.Url is not null) item.Url = request.Url;
-        if (request.Price is not null) item.Price = request.Price;
+        if (request.Description is not null)
+            item.Description = request.Description;
 
-        await wishlists.UpdateAsync(item, ct);
-        return new WishlistItemDto(item.Id, item.OwnerId, item.Title, item.Description, item.Url, item.Price, item.CreatedAt, null);
+        // Validate URLs up front so we don't half-persist a title change and
+        // then bail on a bad URL.
+        var validatedUrls = request.Urls is null ? null : WishlistItemUrlValidator.Validate(request.Urls);
+
+        if (validatedUrls is not null)
+        {
+            await wishlists.ReplaceUrlsAsync(item, validatedUrls, ct);
+        }
+        else
+        {
+            await wishlists.UpdateAsync(item, ct);
+        }
+
+        return new WishlistItemDto(
+            item.Id,
+            item.OwnerId,
+            item.Title,
+            item.Description,
+            item.Urls.OrderBy(u => u.DisplayOrder).Select(u => u.Url).ToList(),
+            item.CreatedAt,
+            Claim: null);
     }
 }
