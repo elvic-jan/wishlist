@@ -1,6 +1,9 @@
-@Wishlist.API_HostAddress = http://localhost:5015
+@Wishlist.API_HostAddress = https://localhost:7277
 
-GET {{Wishlist.API_HostAddress}}/weatherforecast/
+# Unauthenticated request to a protected endpoint.
+# Expect 401 Unauthorized — proves the HTTPS listener is reachable
+# and the auth pipeline is wired up.
+GET {{Wishlist.API_HostAddress}}/api/auth/me
 Accept: application/json
 
 ###

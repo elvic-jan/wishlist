@@ -8,6 +8,7 @@ using Wishlist.Application.UseCases.Auth;
 namespace Wishlist.API.Controllers;
 
 [ApiController]
+[RequireHttps]
 [Route("api/auth")]
 public class AuthController(
     RegisterUserUseCase register,
