@@ -15,6 +15,9 @@ public class AuthController(
     LoginUserUseCase login,
     RefreshTokenUseCase refresh,
     LogoutUserUseCase logout,
+    RequestPasswordResetUseCase requestPasswordReset,
+    ResetPasswordUseCase resetPassword,
+    IForgotPasswordRateLimiter forgotPasswordRateLimiter,
     IUserRepository users) : ControllerBase
 {
     [HttpPost("register")]
@@ -52,6 +55,47 @@ public class AuthController(
             await logout.ExecuteAsync(token, ct);
 
         Response.Cookies.Delete("refreshToken");
+        return NoContent();
+    }
+
+    [AllowAnonymous]
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken ct)
+    {
+        // Reject malformed input loudly — this 400 reveals nothing about user
+        // existence (we did not even attempt a lookup).
+        if (string.IsNullOrWhiteSpace(request?.Email))
+        {
+            return BadRequest(new { error = "A valid email address is required." });
+        }
+
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
+        if (!await forgotPasswordRateLimiter.TryAcquireAsync(request.Email, ip, ct))
+        {
+            return StatusCode(StatusCodes.Status429TooManyRequests,
+                new { error = "Too many password-reset requests. Please try again later." });
+        }
+
+        // Use case is enumeration-safe: both branches (user exists / does not)
+        // complete without raising and with comparable timing.
+        await requestPasswordReset.ExecuteAsync(request, ct);
+
+        return Accepted();
+    }
+
+    [AllowAnonymous]
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken ct)
+    {
+        var ok = await resetPassword.ExecuteAsync(request, ct);
+        if (!ok)
+        {
+            // Single generic error for every failure mode (bad email, expired
+            // token, replayed token, weak new password) so we never leak which
+            // specific check failed.
+            return BadRequest(new { error = "Invalid or expired token." });
+        }
+
         return NoContent();
     }
 

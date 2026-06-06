@@ -10,8 +10,20 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      MailKit 4.16.0 patches GHSA-9j88-vvj5-vhgr (STARTTLS Response Injection)
+      and transitively pulls in MimeKit >= 4.15.1, which patches
+      GHSA-g7hc-96xr-gvvx (CRLF injection in quoted local-part → SMTP command
+      injection). Both vulnerabilities are reachable from our SmtpEmailSender
+      (we use SecureSocketOptions.StartTls and feed user-supplied addresses
+      through MailboxAddress.Parse), so we MUST stay on a patched line.
+      Latest stable as of this pin: 4.17.0.
+    -->
+    <PackageReference Include="MailKit" Version="4.17.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
