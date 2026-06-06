@@ -58,6 +58,23 @@ public class UserRepository(UserManager<ApplicationUser> userManager) : IUserRep
         return await userManager.CheckPasswordAsync(user, password);
     }
 
+    public async Task<string> GeneratePasswordResetTokenAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString())
+            ?? throw new InvalidOperationException("User not found.");
+
+        return await userManager.GeneratePasswordResetTokenAsync(user);
+    }
+
+    public async Task<bool> ResetPasswordAsync(Guid userId, string token, string newPassword, CancellationToken ct = default)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null) return false;
+
+        var result = await userManager.ResetPasswordAsync(user, token, newPassword);
+        return result.Succeeded;
+    }
+
     private static User Map(ApplicationUser u) => new()
     {
         Id = u.Id,
