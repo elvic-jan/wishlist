@@ -1,46 +1,100 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import client from '../api/client';
-import { useAuth } from '../context/AuthContext';
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import client from '@/api/client'
+import { useAuth } from '@/context/AuthContext'
+
+type JoinStatus = 'joining' | 'done' | 'error' | 'unauthenticated'
 
 export function JoinGroupPage() {
-  const { code } = useParams<{ code: string }>();
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [status, setStatus] = useState<'joining' | 'done' | 'error' | 'unauthenticated'>('joining');
-  const [error, setError] = useState('');
+  const { code } = useParams<{ code: string }>()
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  // Initial status is derived from auth state directly so we don't have to
+  // setState inside the effect just to reach the 'unauthenticated' branch.
+  const [status, setStatus] = useState<JoinStatus>(user ? 'joining' : 'unauthenticated')
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!user) {
-      setStatus('unauthenticated');
-      return;
-    }
+    if (!user) return
 
-    client.post(`/invitations/${code}/join`)
+    client
+      .post(`/invitations/${code}/join`)
       .then(() => {
-        setStatus('done');
-        setTimeout(() => navigate('/'), 2000);
+        setStatus('done')
+        setTimeout(() => navigate('/'), 2000)
       })
-      .catch((err) => {
-        setStatus('error');
-        setError(err.response?.data?.error ?? 'Failed to join group. The link may have expired.');
-      });
-  }, [code, user, navigate]);
+      .catch((err: unknown) => {
+        const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        setError(msg ?? 'Failed to join group. The link may have expired.')
+        setStatus('error')
+      })
+  }, [code, user, navigate])
 
   if (status === 'unauthenticated') {
     return (
-      <div style={{ maxWidth: 400, margin: '80px auto', padding: 24, textAlign: 'center' }}>
-        <p>Please <a href={`/login?redirect=/join/${code}`}>sign in</a> to join the group.</p>
-      </div>
-    );
+      <Card>
+        <CardHeader>
+          <CardTitle>Sign in to join</CardTitle>
+          <CardDescription>
+            You need to be signed in before you can join a group.
+          </CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Button asChild className="w-full">
+            <Link to={`/login?redirect=/join/${code}`}>Sign in</Link>
+          </Button>
+        </CardFooter>
+      </Card>
+    )
   }
 
-  if (status === 'joining') return <div style={{ textAlign: 'center', marginTop: 80 }}>Joining group…</div>;
-  if (status === 'done') return <div style={{ textAlign: 'center', marginTop: 80 }}>Joined! Redirecting…</div>;
+  if (status === 'joining') {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Joining group…</CardTitle>
+          <CardDescription>This will only take a moment.</CardDescription>
+        </CardHeader>
+      </Card>
+    )
+  }
+
+  if (status === 'done') {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>You&rsquo;re in!</CardTitle>
+          <CardDescription>Taking you to the home page…</CardDescription>
+        </CardHeader>
+      </Card>
+    )
+  }
+
   return (
-    <div style={{ textAlign: 'center', marginTop: 80, color: 'red' }}>
-      <p>{error}</p>
-      <a href="/">Go home</a>
-    </div>
-  );
+    <Card>
+      <CardHeader>
+        <CardTitle>Couldn&rsquo;t join</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </CardContent>
+      <CardFooter className="justify-center">
+        <Button asChild variant="outline">
+          <Link to="/">Go home</Link>
+        </Button>
+      </CardFooter>
+    </Card>
+  )
 }

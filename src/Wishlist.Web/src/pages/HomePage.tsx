@@ -1,81 +1,154 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import client from '../api/client';
-import { useAuth } from '../context/AuthContext';
+import { useEffect, useState } from 'react'
+import { ChevronRight, Plus, Users } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import client from '@/api/client'
 
 interface Group {
-  id: string;
-  name: string;
-  createdAt: string;
+  id: string
+  name: string
+  createdAt: string
 }
 
 export function HomePage() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [newGroupName, setNewGroupName] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
-  const [error, setError] = useState('');
+  const [groups, setGroups] = useState<Group[]>([])
+  const [newGroupName, setNewGroupName] = useState('')
+  const [showCreate, setShowCreate] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    client.get('/groups/me')
+    client
+      .get('/groups/me')
       .then(r => setGroups(r.data))
-      .catch((err) => setError(`Load failed: ${err.response?.status} ${err.response?.data?.error ?? err.message}`));
-  }, []);
+      .catch((err: unknown) => {
+        const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        setError(msg ?? 'Failed to load groups.')
+      })
+  }, [])
 
   const createGroup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+    e.preventDefault()
+    setError('')
     try {
-      const { data } = await client.post('/groups', { name: newGroupName });
-      setGroups(prev => [...prev, data]);
-      setNewGroupName('');
-      setShowCreate(false);
-    } catch (err: any) {
-      setError(`${err.response?.status ?? 'Network error'}: ${err.response?.data?.error ?? err.message}`);
+      const { data } = await client.post('/groups', { name: newGroupName })
+      setGroups(prev => [...prev, data])
+      setNewGroupName('')
+      setShowCreate(false)
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      setError(msg ?? 'Failed to create group.')
     }
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
+  }
 
   return (
-    <div style={{ maxWidth: 600, margin: '40px auto', padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>My groups</h1>
-        <div>
-          <Link to="/wishlist/me" style={{ marginRight: 16 }}>My wishlist</Link>
-          <button onClick={handleLogout}>Sign out ({user?.displayName})</button>
+    <div className="space-y-6">
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2">
+          <Users className="h-5 w-5 text-primary" aria-hidden />
+          <h1 className="text-2xl font-semibold tracking-tight">My groups</h1>
         </div>
+        <p className="text-sm text-muted-foreground">
+          Share wishlists with people you know. Create a group, send the invite
+          link, and you&rsquo;re in.
+        </p>
       </div>
 
-      {groups.length === 0 && <p>You're not in any groups yet. Create one to get started.</p>}
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {groups.map(g => (
-          <li key={g.id} style={{ borderBottom: '1px solid #ddd', padding: '12px 0' }}>
-            <Link to={`/groups/${g.id}`}>{g.name}</Link>
-          </li>
-        ))}
-      </ul>
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {groups.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Users className="h-6 w-6" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">No groups yet</p>
+              <p className="text-sm text-muted-foreground">
+                Create your first group to start sharing.
+              </p>
+            </div>
+            {!showCreate && (
+              <Button onClick={() => setShowCreate(true)} className="mt-2">
+                <Plus className="h-4 w-4" />
+                New group
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <ul className="space-y-2">
+          {groups.map(g => (
+            <li key={g.id}>
+              <Link to={`/groups/${g.id}`} className="group block">
+                <Card className="transition-colors hover:border-primary/40 hover:bg-accent/40">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 py-4">
+                    <CardTitle className="text-base font-medium">
+                      {g.name}
+                    </CardTitle>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
+                  </CardHeader>
+                </Card>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {showCreate ? (
-        <form onSubmit={createGroup}>
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-          <input
-            value={newGroupName}
-            onChange={e => setNewGroupName(e.target.value)}
-            placeholder="Group name"
-            required
-            style={{ marginRight: 8 }}
-          />
-          <button type="submit">Create</button>
-          <button type="button" onClick={() => setShowCreate(false)} style={{ marginLeft: 8 }}>Cancel</button>
-        </form>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">New group</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={createGroup} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="new-group-name">Group name</Label>
+                <Input
+                  id="new-group-name"
+                  value={newGroupName}
+                  onChange={e => setNewGroupName(e.target.value)}
+                  placeholder="Family, Friends, Work Secret Santa…"
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setShowCreate(false)
+                    setNewGroupName('')
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Create group</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       ) : (
-        <button onClick={() => setShowCreate(true)}>+ New group</button>
+        groups.length > 0 && (
+          <Button onClick={() => setShowCreate(true)} variant="outline">
+            <Plus className="h-4 w-4" />
+            New group
+          </Button>
+        )
       )}
     </div>
-  );
+  )
 }
