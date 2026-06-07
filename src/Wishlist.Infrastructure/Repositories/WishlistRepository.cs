@@ -9,7 +9,8 @@ public class WishlistRepository(WishlistDbContext db) : IWishlistRepository
 {
     public async Task<IReadOnlyList<WishlistItem>> GetByOwnerAsync(Guid ownerId, bool includeClaims, CancellationToken ct = default)
     {
-        var query = db.WishlistItems.Where(w => w.OwnerId == ownerId);
+        IQueryable<WishlistItem> query = db.WishlistItems.Where(w => w.OwnerId == ownerId);
+        query = query.Include(w => w.Urls.OrderBy(u => u.DisplayOrder));
         if (includeClaims)
             query = query.Include(w => w.GiftClaim);
         return await query.OrderBy(w => w.CreatedAt).ToListAsync(ct);
@@ -17,13 +18,14 @@ public class WishlistRepository(WishlistDbContext db) : IWishlistRepository
 
     public async Task<WishlistItem?> GetByIdAsync(Guid itemId, bool includeClaim, CancellationToken ct = default)
     {
-        var query = db.WishlistItems.Where(w => w.Id == itemId);
+        IQueryable<WishlistItem> query = db.WishlistItems.Where(w => w.Id == itemId);
+        query = query.Include(w => w.Urls.OrderBy(u => u.DisplayOrder));
         if (includeClaim)
             query = query.Include(w => w.GiftClaim);
         return await query.FirstOrDefaultAsync(ct);
     }
 
-    public async Task<WishlistItem> CreateAsync(Guid ownerId, string title, string? description, string? url, decimal? price, CancellationToken ct = default)
+    public async Task<WishlistItem> CreateAsync(Guid ownerId, string title, string? description, IReadOnlyList<string> urls, CancellationToken ct = default)
     {
         var item = new WishlistItem
         {
@@ -31,11 +33,21 @@ public class WishlistRepository(WishlistDbContext db) : IWishlistRepository
             OwnerId = ownerId,
             Title = title,
             Description = description,
-            Url = url,
-            Price = price,
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
         };
+
+        for (var i = 0; i < urls.Count; i++)
+        {
+            item.Urls.Add(new WishlistItemUrl
+            {
+                Id = Guid.NewGuid(),
+                WishlistItemId = item.Id,
+                Url = urls[i],
+                DisplayOrder = i,
+            });
+        }
+
         db.WishlistItems.Add(item);
         await db.SaveChangesAsync(ct);
         return item;
@@ -45,6 +57,42 @@ public class WishlistRepository(WishlistDbContext db) : IWishlistRepository
     {
         item.UpdatedAt = DateTime.UtcNow;
         db.WishlistItems.Update(item);
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task ReplaceUrlsAsync(WishlistItem item, IReadOnlyList<string> urls, CancellationToken ct = default)
+    {
+        // Wipe existing URL rows directly in SQL so the change tracker
+        // doesn't try to delete entities that the navigation collection
+        // already references.
+        await db.WishlistItemUrls
+            .Where(u => u.WishlistItemId == item.Id)
+            .ExecuteDeleteAsync(ct);
+
+        // Detach the stale tracked copies and clear the in-memory collection
+        // so EF doesn't issue spurious DELETE/UPDATE for already-gone rows.
+        foreach (var oldUrl in item.Urls.ToList())
+        {
+            db.Entry(oldUrl).State = EntityState.Detached;
+        }
+        item.Urls.Clear();
+
+        // Add the new rows via the DbSet so they are tracked as Added.
+        // EF's relationship fixup will also populate the navigation
+        // collection — appending here AND to item.Urls would duplicate
+        // the navigation in-memory.
+        for (var i = 0; i < urls.Count; i++)
+        {
+            db.WishlistItemUrls.Add(new WishlistItemUrl
+            {
+                Id = Guid.NewGuid(),
+                WishlistItemId = item.Id,
+                Url = urls[i],
+                DisplayOrder = i,
+            });
+        }
+
+        item.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
     }
 

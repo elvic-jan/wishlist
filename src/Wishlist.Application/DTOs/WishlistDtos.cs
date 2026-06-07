@@ -2,16 +2,15 @@ using Wishlist.Domain.Enums;
 
 namespace Wishlist.Application.DTOs;
 
-public record AddWishlistItemRequest(string Title, string? Description, string? Url, decimal? Price);
-public record EditWishlistItemRequest(string? Title, string? Description, string? Url, decimal? Price);
+public record AddWishlistItemRequest(string Title, string? Description, IReadOnlyList<string>? Urls);
+public record EditWishlistItemRequest(string? Title, string? Description, IReadOnlyList<string>? Urls);
 
 public record WishlistItemDto(
     Guid Id,
     Guid OwnerId,
     string Title,
     string? Description,
-    string? Url,
-    decimal? Price,
+    IReadOnlyList<string> Urls,
     DateTime CreatedAt,
     GiftClaimDto? Claim);
 

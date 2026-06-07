@@ -12,6 +12,7 @@ public class WishlistDbContext(DbContextOptions<WishlistDbContext> options)
     public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
     public DbSet<GroupInvitation> GroupInvitations => Set<GroupInvitation>();
     public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
+    public DbSet<WishlistItemUrl> WishlistItemUrls => Set<WishlistItemUrl>();
     public DbSet<GiftClaim> GiftClaims => Set<GiftClaim>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
@@ -45,8 +46,20 @@ public class WishlistDbContext(DbContextOptions<WishlistDbContext> options)
         {
             e.HasKey(w => w.Id);
             e.Property(w => w.Title).IsRequired().HasMaxLength(300);
-            e.Property(w => w.Price).HasColumnType("decimal(18,2)");
             e.HasOne(w => w.GiftClaim).WithOne().HasForeignKey<GiftClaim>(c => c.WishlistItemId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(w => w.Urls)
+                .WithOne()
+                .HasForeignKey(u => u.WishlistItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<WishlistItemUrl>(e =>
+        {
+            e.HasKey(u => u.Id);
+            e.Property(u => u.Url).IsRequired().HasMaxLength(2048);
+            e.Property(u => u.WishlistItemId).IsRequired();
+            e.Property(u => u.DisplayOrder).IsRequired();
+            e.HasIndex(u => new { u.WishlistItemId, u.DisplayOrder });
         });
 
         builder.Entity<GiftClaim>(e =>

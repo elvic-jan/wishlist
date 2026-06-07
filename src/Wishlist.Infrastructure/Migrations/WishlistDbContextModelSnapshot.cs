@@ -303,9 +303,6 @@ namespace Wishlist.Infrastructure.Migrations
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uuid");
 
-                    b.Property<decimal?>("Price")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(300)
@@ -314,12 +311,33 @@ namespace Wishlist.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Url")
-                        .HasColumnType("text");
-
                     b.HasKey("Id");
 
                     b.ToTable("WishlistItems");
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.WishlistItemUrl", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<Guid>("WishlistItemId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WishlistItemId", "DisplayOrder");
+
+                    b.ToTable("WishlistItemUrls");
                 });
 
             modelBuilder.Entity("Wishlist.Infrastructure.Persistence.ApplicationUser", b =>
@@ -472,9 +490,20 @@ namespace Wishlist.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Wishlist.Domain.Entities.WishlistItemUrl", b =>
+                {
+                    b.HasOne("Wishlist.Domain.Entities.WishlistItem", null)
+                        .WithMany("Urls")
+                        .HasForeignKey("WishlistItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Wishlist.Domain.Entities.WishlistItem", b =>
                 {
                     b.Navigation("GiftClaim");
+
+                    b.Navigation("Urls");
                 });
 #pragma warning restore 612, 618
         }
