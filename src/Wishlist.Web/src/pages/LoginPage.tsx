@@ -1,53 +1,112 @@
-import { useState } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useAuth } from '@/context/AuthContext'
 
 export function LoginPage() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const { login } = useAuth()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  // Flash message after a successful password reset that revoked sessions.
-  const resetSuccess = searchParams.get('reset') === 'success';
+  const resetSuccess = searchParams.get('reset') === 'success'
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+    e.preventDefault()
+    setError('')
+    setSubmitting(true)
     try {
-      await login(email, password);
-      navigate('/');
+      await login(email, password)
+      navigate('/')
     } catch {
-      setError('Invalid email or password.');
+      setError('Invalid email or password.')
+    } finally {
+      setSubmitting(false)
     }
-  };
+  }
 
   return (
-    <div style={{ maxWidth: 400, margin: '80px auto', padding: 24 }}>
-      <h1>Sign in</h1>
-      {resetSuccess && (
-        <p style={{ color: 'green' }}>
-          Password updated. Please sign in with your new password.
+    <Card>
+      <CardHeader>
+        <CardTitle>Sign in</CardTitle>
+        <CardDescription>
+          Welcome back. Sign in to see your groups and wishlists.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {resetSuccess && (
+          <Alert className="mb-4 border-primary/40">
+            <AlertDescription>
+              Password updated. Please sign in with your new password.
+            </AlertDescription>
+          </Alert>
+        )}
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="login-email">Email</Label>
+            <Input
+              id="login-email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="login-password">Password</Label>
+            <Input
+              id="login-password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={submitting}>
+            {submitting ? 'Signing in…' : 'Sign in'}
+          </Button>
+        </form>
+        <div className="mt-4 text-center text-sm">
+          <Link
+            to="/forgot-password"
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            Forgot your password?
+          </Link>
+        </div>
+      </CardContent>
+      <CardFooter className="justify-center">
+        <p className="text-sm text-muted-foreground">
+          Don&rsquo;t have an account?{' '}
+          <Link
+            to="/register"
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            Register
+          </Link>
         </p>
-      )}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} required style={{ display: 'block', width: '100%', marginBottom: 12 }} />
-        </div>
-        <div>
-          <label>Password</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={{ display: 'block', width: '100%', marginBottom: 12 }} />
-        </div>
-        <button type="submit" style={{ width: '100%' }}>Sign in</button>
-      </form>
-      <p style={{ marginTop: 16 }}>
-        <Link to="/forgot-password">Forgot your password?</Link>
-      </p>
-      <p>Don't have an account? <Link to="/register">Register</Link></p>
-    </div>
-  );
+      </CardFooter>
+    </Card>
+  )
 }

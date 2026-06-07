@@ -4,7 +4,34 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>wishlist-web</title>
+    <title>Wishlist</title>
+    <!--
+      First-paint theme + mode application.
+
+      Runs synchronously before the React bundle so the initial paint
+      already carries the correct `theme-<id>` and (optionally) `dark`
+      classes on <html>. Avoids FOUC. Storage-key strings must stay in
+      sync with `src/themes/registry.ts` — there is no module system
+      available here.
+    -->
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem('theme') || 'terracotta';
+          var mode = localStorage.getItem('mode') || 'system';
+          var isDark =
+            mode === 'dark' ||
+            (mode === 'system' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var root = document.documentElement;
+          root.classList.add('theme-' + theme);
+          if (isDark) root.classList.add('dark');
+        } catch (e) {
+          // Storage unavailable (privacy mode etc.) — fall back to defaults.
+          document.documentElement.classList.add('theme-terracotta');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
