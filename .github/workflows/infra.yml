@@ -1,0 +1,82 @@
+# Provision or update the Azure resources from infra/main.bicep. Run manually:
+# first setup, secret rotation, custom-domain binding, or infra changes.
+name: infra
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Allow CLI extensions to install on demand
+        run: az config set extension.use_dynamic_install=yes_without_prompt --only-show-errors
+
+      # Keep whatever image is running so re-provisioning never rolls the app back.
+      - name: Current image
+        id: current
+        run: |
+          image=$(az containerapp show -g "$RESOURCE_GROUP" -n ca-wishlist \
+            --query "properties.template.containers[0].image" -o tsv 2>/dev/null || true)
+          echo "image=${image:-mcr.microsoft.com/dotnet/samples:aspnetapp}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy Bicep
+        env:
+          IMAGE: ${{ steps.current.outputs.image }}
+          MIN_REPLICAS: ${{ vars.MIN_REPLICAS || '0' }}
+          CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
+          CUSTOM_DOMAIN_CERT_READY: ${{ vars.CUSTOM_DOMAIN_CERT_READY || 'false' }}
+          BUDGET_CONTACT_EMAIL: ${{ vars.BUDGET_CONTACT_EMAIL }}
+          GHCR_USERNAME: ${{ github.repository_owner }}
+          POSTGRES_ADMIN_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+          JWT_KEY: ${{ secrets.JWT_KEY }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+        run: |
+          az deployment group create \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "wishlist-${GITHUB_RUN_ID}" \
+            --template-file infra/main.bicep \
+            --parameters infra/main.parameters.json \
+            --parameters \
+              image="$IMAGE" \
+              minReplicas="$MIN_REPLICAS" \
+              customDomainName="$CUSTOM_DOMAIN" \
+              customDomainCertificateReady="$CUSTOM_DOMAIN_CERT_READY" \
+              budgetContactEmails="[\"$BUDGET_CONTACT_EMAIL\"]" \
+              ghcrUsername="$GHCR_USERNAME" \
+              postgresAdministratorPassword="$POSTGRES_ADMIN_PASSWORD" \
+              jwtKey="$JWT_KEY" \
+              smtpUser="$SMTP_USER" \
+              smtpPassword="$SMTP_PASSWORD" \
+              ghcrToken="$GHCR_PULL_TOKEN" \
+            --query properties.outputs -o json > outputs.json
+
+      - name: Summary
+        run: |
+          {
+            echo "### Deployment outputs"
+            echo '```json'
+            cat outputs.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

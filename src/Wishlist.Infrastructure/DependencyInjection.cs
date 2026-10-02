@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +34,12 @@ public static class DependencyInjection
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<WishlistDbContext>()
             .AddDefaultTokenProviders();
+
+        // Keys live in the database so tokens protected before a restart (the
+        // deployed container scales to zero) stay valid after it.
+        services.AddDataProtection()
+            .PersistKeysToDbContext<WishlistDbContext>()
+            .SetApplicationName("wishlist");
 
         // Identity's data-protected reset tokens use this lifespan.
         services.Configure<DataProtectionTokenProviderOptions>(opts =>

@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using Wishlist.Application;
 using Wishlist.API.Middleware;
@@ -29,7 +30,28 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+if (!builder.Environment.IsDevelopment())
+{
+    // Deployed, TLS terminates at the platform ingress and the container sees
+    // plain HTTP. Trust the ingress's forwarded scheme and client IP so
+    // [RequireHttps] and the per-IP reset limit act on the real connection.
+    // The proxy lists are cleared because ingress addresses are not fixed;
+    // the container is reachable only through that ingress.
+    builder.Services.Configure<ForwardedHeadersOptions>(opts =>
+    {
+        opts.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        opts.ForwardLimit = 1;
+        opts.KnownNetworks.Clear();
+        opts.KnownProxies.Clear();
+    });
+}
+
 var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseForwardedHeaders();
+}
 
 app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseHttpsRedirection();
@@ -40,6 +62,14 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Liveness/readiness probe. Deliberately touches no database so probes neither
+// depend on nor keep Postgres busy.
+app.MapGet("/healthz", () => Results.Ok()).AllowAnonymous();
+
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+// Exposed for WebApplicationFactory in integration tests.
+public partial class Program;
