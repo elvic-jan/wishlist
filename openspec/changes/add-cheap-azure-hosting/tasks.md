@@ -36,6 +36,6 @@
 - [x] 5.1 `infra/README.md`: one-time setup (resource group; Entra app + federated credential for `environment:production` + Contributor on the RG; ACS SMTP Entra app + role + SMTP username format; GHCR read token; GitHub `production` environment with required reviewer, variables and secrets), secret expiry dates, rollback and teardown
 - [ ] 5.2 Run the bootstrap and `infra.yml`; confirm all resources exist and the monthly cost estimate in Azure Cost Management matches ~$15–20
 - [x] 5.3 Merge to `main`, approve the deploy, and verify end-to-end on the `azurecontainerapps.io` FQDN: register, login, reload keeps session, password reset email arrives via ACS
-- [ ] 5.4 Verify scale to zero after idle and that a reset link issued before the scale-down still works after it
+- [x] 5.4 Verify scale to zero after idle and that a reset link issued before the scale-down still works after it (verified 2026-10-10: ScaledToZero ~5 min after last request; cold start ~20 s; pre-scale-down reset link worked)
 - [ ] 5.5 Bind the custom domain (CUSTOM_DOMAIN, then CUSTOM_DOMAIN_CERT_READY=true via infra.yml), update `App__PublicBaseUrl`, re-run `infra.yml`, re-verify login and reset links
 - [x] 5.6 Update the root `README.md` with a short "Deployment" section pointing at `infra/README.md`
