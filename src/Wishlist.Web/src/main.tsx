@@ -8,3 +8,13 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// Production only: in dev, Vite serves unbundled modules that the worker's
+// /assets/* cache would never match anyway, and a stale worker just confuses HMR.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Not fatal: the app works the same, just without the instant shell.
+    })
+  })
+}
