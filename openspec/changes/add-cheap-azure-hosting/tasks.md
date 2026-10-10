@@ -22,7 +22,7 @@
 - [x] 3.4 Communication Services module: Email Communication Service + Azure-managed domain + linked Communication Service; output the sender address
 - [x] 3.5 Container Apps module: Consumption environment wired to Log Analytics; `ca-wishlist` with external ingress on 8080, `allowInsecure: false`, 0.25 vCPU / 0.5 GiB, scale 0–1 (HTTP rule), liveness/readiness probes on `/healthz`, GHCR registry credential, secrets + env vars per design D7
 - [x] 3.6 Budget module: $25/month on the resource group, alerts at 80% and 100% actual spend
-- [ ] 3.7 `az bicep build` and `az deployment group what-if` succeed against an empty resource group
+- [x] 3.7 `az bicep build` and `az deployment group what-if` succeed against an empty resource group
 
 ## 4. CI/CD (GitHub Actions)
 

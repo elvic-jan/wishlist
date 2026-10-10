@@ -82,6 +82,9 @@ expiry. Alternatively make the package public after the first push
 
 ### 4. GitHub `production` environment
 
+The repo must be public (or on GitHub Pro/Team): private repos on the Free plan get no
+environment secrets, and required reviewers on private repos need Enterprise.
+
 In the repo: Settings → Environments → New environment `production` → add yourself as
 **Required reviewer** and limit deployment branches to `main`. Then:
 
@@ -106,7 +109,12 @@ Optional variables: `MIN_REPLICAS` (`1` = no cold starts, ~$10–15/month),
 
 ### 5. First provisioning
 
-Run **Actions → infra → Run workflow**. Once it's approved and finished, the run summary
+Both workflows must be on `main` before they can run: GitHub only dispatches workflows
+from the default branch, and the `production` environment only accepts `main`. So merge
+first; the push starts `deploy`, which builds and pushes the image, then waits for
+approval. **Reject that first deploy** — there is nothing to deploy to yet.
+
+Then run **Actions → infra → Run workflow**. Once it's approved and finished, the run summary
 lists the outputs (`appFqdn`, `communicationServiceName`, `emailSenderAddress`, …).
 The app runs a placeholder image at this point.
 
@@ -136,7 +144,7 @@ Run **infra** again so the app picks up the real username.
 
 ### 7. First deploy
 
-Push or merge to `main` (or **Actions → deploy → Run workflow**) and approve the
+Run **Actions → deploy → Run workflow** (or push to `main`) and approve the
 `deploy` job. When it finishes, open `https://<appFqdn>`, register, and test a
 password reset.
 
