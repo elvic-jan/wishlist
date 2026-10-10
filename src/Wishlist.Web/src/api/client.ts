@@ -20,8 +20,22 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
-let isRefreshing = false;
-let refreshQueue: Array<(token: string) => void> = [];
+// Refresh tokens are single-use (rotated on every call), so concurrent callers —
+// session restore on page load and 401 retries — must share one in-flight request.
+let refreshPromise: Promise<string> | null = null;
+
+export const refreshAccessToken = (): Promise<string> => {
+  refreshPromise ??= axios
+    .post<{ accessToken: string }>('/api/auth/refresh', {}, { withCredentials: true })
+    .then(({ data }) => {
+      setAccessToken(data.accessToken);
+      return data.accessToken;
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+  return refreshPromise;
+};
 
 client.interceptors.response.use(
   (res) => res,
@@ -29,31 +43,16 @@ client.interceptors.response.use(
     const original = error.config;
 
     if (error.response?.status === 401 && !original._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve) => {
-          refreshQueue.push((token) => {
-            original.headers.Authorization = `Bearer ${token}`;
-            resolve(client(original));
-          });
-        });
-      }
-
       original._retry = true;
-      isRefreshing = true;
 
       try {
-        const { data } = await axios.post('/api/auth/refresh', {}, { withCredentials: true });
-        setAccessToken(data.accessToken);
-        refreshQueue.forEach((cb) => cb(data.accessToken));
-        refreshQueue = [];
-        original.headers.Authorization = `Bearer ${data.accessToken}`;
+        const token = await refreshAccessToken();
+        original.headers.Authorization = `Bearer ${token}`;
         return client(original);
       } catch {
         setAccessToken(null);
         window.location.href = '/login';
         return Promise.reject(error);
-      } finally {
-        isRefreshing = false;
       }
     }
 
