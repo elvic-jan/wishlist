@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": { "value": "swedencentral" },
+    "baseName": { "value": "wishlist" },
+    "minReplicas": { "value": 0 },
+    "customDomainName": { "value": "" },
+    "customDomainCertificateReady": { "value": false },
+    "postgresVersion": { "value": "17" },
+    "postgresAdministratorLogin": { "value": "wishlistadmin" },
+    "budgetAmount": { "value": 25 },
+    "budgetStartDate": { "value": "2026-10-01" }
+  }
+}

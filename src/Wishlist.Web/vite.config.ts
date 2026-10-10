@@ -11,10 +11,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  // The basicSsl plugin serves the dev server over HTTPS so the API's
+  // Secure-flagged refresh-token cookie is accepted and sent back in dev.
   server: {
-    // Serve the SPA over HTTPS so the API's Secure-flagged refresh-token
-    // cookie is accepted and sent back by the browser in dev.
-    https: true,
     proxy: {
       '/api': {
         target: 'https://localhost:7277',

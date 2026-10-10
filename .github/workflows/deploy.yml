@@ -1,0 +1,150 @@
+# Build on every push to main; deploy to production after a manual approval on
+# the `production` environment. Rollback: re-run the deploy job of an older run
+# (it carries that run's image tag and migrations bundle).
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 9.0.x
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/Wishlist.Web/package-lock.json
+
+      - name: Test API
+        run: dotnet test Wishlist.sln --configuration Release
+
+      - name: Lint SPA
+        working-directory: src/Wishlist.Web
+        run: |
+          npm ci
+          npm run lint
+
+      - name: Image name
+        id: meta
+        run: |
+          repo="${GITHUB_REPOSITORY,,}"
+          echo "image=ghcr.io/${repo}:sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "latest=ghcr.io/${repo}:latest" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ${{ steps.meta.outputs.latest }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build migrations bundle
+        run: |
+          dotnet tool install --global dotnet-ef --version 9.0.5
+          dotnet ef migrations bundle \
+            --project src/Wishlist.Infrastructure \
+            --startup-project src/Wishlist.API \
+            --self-contained -r linux-x64 \
+            --output efbundle
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: efbundle
+          path: efbundle
+          retention-days: 30
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      CONTAINER_APP: ca-wishlist
+      IMAGE: ${{ needs.build.outputs.image }}
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: efbundle
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Allow CLI extensions to install on demand
+        run: az config set extension.use_dynamic_install=yes_without_prompt --only-show-errors
+
+      - name: Look up Postgres server
+        id: pg
+        run: |
+          name=$(az postgres flexible-server list -g "$RESOURCE_GROUP" --query "[0].name" -o tsv)
+          fqdn=$(az postgres flexible-server show -g "$RESOURCE_GROUP" -n "$name" --query fullyQualifiedDomainName -o tsv)
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "fqdn=$fqdn" >> "$GITHUB_OUTPUT"
+
+      - name: Open database firewall for this runner
+        run: |
+          ip=$(curl -fsS https://api.ipify.org)
+          az postgres flexible-server firewall-rule create -g "$RESOURCE_GROUP" -n "${{ steps.pg.outputs.name }}" \
+            --rule-name "gha-${GITHUB_RUN_ID}" --start-ip-address "$ip" --end-ip-address "$ip" --output none
+
+      - name: Apply migrations
+        env:
+          PG_FQDN: ${{ steps.pg.outputs.fqdn }}
+          PG_LOGIN: ${{ vars.POSTGRES_ADMIN_LOGIN || 'wishlistadmin' }}
+          PG_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+        run: |
+          chmod +x efbundle
+          ./efbundle --connection "Host=${PG_FQDN};Port=5432;Database=wishlist;Username=${PG_LOGIN};Password=${PG_PASSWORD};SSL Mode=VerifyFull"
+
+      - name: Close database firewall
+        if: always() && steps.pg.outputs.name != ''
+        run: |
+          az postgres flexible-server firewall-rule delete -g "$RESOURCE_GROUP" -n "${{ steps.pg.outputs.name }}" \
+            --rule-name "gha-${GITHUB_RUN_ID}" --yes --output none || true
+
+      - name: Deploy image
+        run: az containerapp update -g "$RESOURCE_GROUP" -n "$CONTAINER_APP" --image "$IMAGE" --output none
+
+      - name: Smoke check
+        run: |
+          fqdn=$(az containerapp show -g "$RESOURCE_GROUP" -n "$CONTAINER_APP" --query properties.configuration.ingress.fqdn -o tsv)
+          curl -fsS --retry 10 --retry-delay 6 --retry-all-errors "https://${fqdn}/healthz"
+          echo "Deployed $IMAGE to https://${fqdn}" >> "$GITHUB_STEP_SUMMARY"

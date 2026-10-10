@@ -22,13 +22,4 @@
     </PackageReference>
   </ItemGroup>
 
-  <Target Name="BuildSpa" BeforeTargets="Build" Condition="'$(Configuration)' == 'Release'">
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
-    <ItemGroup>
-      <Content Include="$(SpaRoot)dist\**" CopyToPublishDirectory="PreserveNewest">
-        <Link>wwwroot\%(RecursiveDir)%(FileName)%(Extension)</Link>
-      </Content>
-    </ItemGroup>
-  </Target>
-
 </Project>
