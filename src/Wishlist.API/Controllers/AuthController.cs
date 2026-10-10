@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Wishlist.Application.DTOs;
 using Wishlist.Application.Interfaces;
 using Wishlist.Application.UseCases.Auth;
+using Wishlist.Domain.Exceptions;
 
 namespace Wishlist.API.Controllers;
 
@@ -23,8 +24,9 @@ public class AuthController(
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct)
     {
-        var result = await register.ExecuteAsync(request, ct);
-        return Ok(result);
+        var (response, refreshToken) = await register.ExecuteAsync(request, ct);
+        SetRefreshTokenCookie(refreshToken);
+        return Ok(response);
     }
 
     [HttpPost("login")]
@@ -42,9 +44,18 @@ public class AuthController(
         if (string.IsNullOrEmpty(token))
             return Unauthorized();
 
-        var (accessToken, newRefreshToken) = await refresh.ExecuteAsync(token, ct);
-        SetRefreshTokenCookie(newRefreshToken);
-        return Ok(new { accessToken });
+        try
+        {
+            var (accessToken, newRefreshToken) = await refresh.ExecuteAsync(token, ct);
+            SetRefreshTokenCookie(newRefreshToken);
+            return Ok(new { accessToken });
+        }
+        catch (Exception ex) when (ex is DomainException or NotFoundException)
+        {
+            // Expired, revoked or unknown token (or its user is gone): drop the dead cookie.
+            ClearRefreshTokenCookie();
+            return Unauthorized();
+        }
     }
 
     [HttpPost("logout")]
@@ -54,7 +65,7 @@ public class AuthController(
         if (!string.IsNullOrEmpty(token))
             await logout.ExecuteAsync(token, ct);
 
-        Response.Cookies.Delete("refreshToken");
+        ClearRefreshTokenCookie();
         return NoContent();
     }
 
@@ -121,14 +132,21 @@ public class AuthController(
 
     private void SetRefreshTokenCookie(string token)
     {
-        Response.Cookies.Append("refreshToken", token, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTimeOffset.UtcNow.AddDays(30)
-        });
+        Response.Cookies.Append("refreshToken", token, RefreshTokenCookieOptions(DateTimeOffset.UtcNow.AddDays(30)));
     }
+
+    private void ClearRefreshTokenCookie()
+    {
+        Response.Cookies.Delete("refreshToken", RefreshTokenCookieOptions(expires: null));
+    }
+
+    private static CookieOptions RefreshTokenCookieOptions(DateTimeOffset? expires) => new()
+    {
+        HttpOnly = true,
+        Secure = true,
+        SameSite = SameSiteMode.Strict,
+        Expires = expires
+    };
 
     private Guid GetUserId() =>
         Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)

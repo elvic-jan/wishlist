@@ -6,7 +6,7 @@ namespace Wishlist.Application.UseCases.Auth;
 
 public class RegisterUserUseCase(IUserRepository users, ITokenService tokens)
 {
-    public async Task<AuthResponse> ExecuteAsync(RegisterRequest request, CancellationToken ct = default)
+    public async Task<(AuthResponse Response, string RefreshToken)> ExecuteAsync(RegisterRequest request, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(request.Email) ||
             string.IsNullOrWhiteSpace(request.DisplayName) ||
@@ -18,8 +18,8 @@ public class RegisterUserUseCase(IUserRepository users, ITokenService tokens)
 
         var user = await users.CreateAsync(request.Email, request.DisplayName, request.Password, ct);
         var accessToken = tokens.GenerateAccessToken(user);
-        await tokens.CreateRefreshTokenAsync(user.Id, ct);
+        var refreshToken = await tokens.CreateRefreshTokenAsync(user.Id, ct);
 
-        return new AuthResponse(accessToken, new UserDto(user.Id, user.Email, user.DisplayName));
+        return (new AuthResponse(accessToken, new UserDto(user.Id, user.Email, user.DisplayName)), refreshToken.Token);
     }
 }

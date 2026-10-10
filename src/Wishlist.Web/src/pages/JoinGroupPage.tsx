@@ -17,11 +17,12 @@ type JoinStatus = 'joining' | 'done' | 'error' | 'unauthenticated'
 
 export function JoinGroupPage() {
   const { code } = useParams<{ code: string }>()
-  const { user } = useAuth()
+  const { user, restoring } = useAuth()
   const navigate = useNavigate()
-  // Initial status is derived from auth state directly so we don't have to
-  // setState inside the effect just to reach the 'unauthenticated' branch.
-  const [status, setStatus] = useState<JoinStatus>(user ? 'joining' : 'unauthenticated')
+  const [joinStatus, setStatus] = useState<Exclude<JoinStatus, 'unauthenticated'>>('joining')
+  // Derived from auth state so we don't have to setState inside the effect
+  // just to reach the 'unauthenticated' branch.
+  const status: JoinStatus = user ? joinStatus : 'unauthenticated'
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -39,6 +40,8 @@ export function JoinGroupPage() {
         setStatus('error')
       })
   }, [code, user, navigate])
+
+  if (restoring) return null
 
   if (status === 'unauthenticated') {
     return (
