@@ -48,13 +48,19 @@ if (!builder.Environment.IsDevelopment())
 
 var app = builder.Build();
 
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
 {
+    app.UseHttpsRedirection();
+}
+else
+{
+    // No HTTPS redirection here: the ingress already redirects HTTP to HTTPS, and
+    // the container only ever sees plain HTTP (health probes included), so the
+    // middleware would find no HTTPS port and just log a warning on every start.
     app.UseForwardedHeaders();
 }
 
 app.UseMiddleware<ErrorHandlingMiddleware>();
-app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
