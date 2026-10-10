@@ -124,7 +124,9 @@ The SMTP app needs permission on the Communication Service, and the SMTP usernam
 embeds its name:
 
 ```bash
-ACS=$(az communication list -g $RG --query "[0].name" -o tsv)
+# plain `az resource` avoids the `communication` CLI extension
+ACS=$(az resource list -g $RG --resource-type Microsoft.Communication/CommunicationServices --query "[0].name" -o tsv)
+ACS_ID=$(az resource list -g $RG --resource-type Microsoft.Communication/CommunicationServices --query "[0].id" -o tsv)
 az role definition create --role-definition "{
   \"Name\": \"ACS SMTP Sender (wishlist)\",
   \"Actions\": [
@@ -135,7 +137,7 @@ az role definition create --role-definition "{
   \"AssignableScopes\": [\"/subscriptions/$SUB/resourceGroups/$RG\"]
 }"
 az role assignment create --assignee $SMTP_APP_ID --role "ACS SMTP Sender (wishlist)" \
-  --scope $(az communication show -n $ACS -g $RG --query id -o tsv)
+  --scope $ACS_ID
 
 gh secret set SMTP_USER --env production --body "$ACS.$SMTP_APP_ID.$TENANT" -R $REPO
 ```
