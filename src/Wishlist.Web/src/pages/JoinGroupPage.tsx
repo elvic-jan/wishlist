@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { WakingUp } from '@/components/WakingUp'
 import client from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
 
@@ -41,7 +42,7 @@ export function JoinGroupPage() {
       })
   }, [code, user, navigate])
 
-  if (restoring) return null
+  if (restoring) return <WakingUp fullScreen={false} />
 
   if (status === 'unauthenticated') {
     return (
