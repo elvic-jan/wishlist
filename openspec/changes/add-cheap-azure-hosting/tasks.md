@@ -29,7 +29,7 @@
 - [x] 4.1 `.github/workflows/infra.yml`: `workflow_dispatch`, `environment: production`, OIDC `azure/login`, `az deployment group create` passing secrets from the environment
 - [x] 4.2 `.github/workflows/deploy.yml` build job: `dotnet test`, SPA lint + build, docker build + push `ghcr.io/<owner>/wishlist:sha-<sha7>` (and `latest`), build a self-contained linux-x64 EF migrations bundle as an artifact
 - [x] 4.3 `deploy.yml` deploy job (`environment: production`): OIDC login, add a temporary Postgres firewall rule for the runner IP, run the migrations bundle, remove the rule in an `always()` step, `az containerapp update --image`, smoke-check `GET /healthz` on the public URL
-- [ ] 4.4 Confirm the workflow fails without updating the app when the migration step fails
+- [x] 4.4 Confirm the workflow fails without updating the app when the migration step fails (verified by inspection: "Deploy image" only runs after "Apply migrations" succeeds; "Close database firewall" runs `always()`)
 
 ## 5. Bootstrap docs and first deploy
 
