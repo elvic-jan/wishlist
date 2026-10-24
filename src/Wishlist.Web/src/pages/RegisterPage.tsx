@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,9 +12,67 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { InvalidInvitation } from '@/components/InvalidInvitation'
+import { WakingUp } from '@/components/WakingUp'
+import client from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
+import { inviteErrorMessage } from '@/lib/inviteErrors'
+import { useInvitationCheck } from '@/lib/useInvitationCheck'
 
 export function RegisterPage() {
+  const [searchParams] = useSearchParams()
+  const inviteCode = searchParams.get('invite') ?? undefined
+  return inviteCode ? <InvitedRegistration inviteCode={inviteCode} /> : <CodelessRegistration />
+}
+
+/** Checks the code before showing the form, so a dead link is reported up front. */
+function InvitedRegistration({ inviteCode }: { inviteCode: string }) {
+  const invitation = useInvitationCheck(inviteCode)
+
+  if (invitation.state === 'checking') return <WakingUp fullScreen={false} />
+  if (invitation.state === 'invalid') return <InvalidInvitation message={invitation.message} />
+  return <RegisterForm inviteCode={inviteCode} />
+}
+
+/**
+ * Without a code the form is only offered while the system has no accounts yet
+ * (first-account bootstrap); otherwise sign-up is by invitation only.
+ */
+function CodelessRegistration() {
+  const [inviteRequired, setInviteRequired] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    client
+      .get<{ inviteRequired: boolean }>('/auth/registration')
+      .then(({ data }) => setInviteRequired(data.inviteRequired))
+      .catch(() => setInviteRequired(true))
+  }, [])
+
+  if (inviteRequired === null) return <WakingUp fullScreen={false} />
+  if (inviteRequired) return <InvitationOnly />
+  return <RegisterForm />
+}
+
+function InvitationOnly() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Invitation only</CardTitle>
+        <CardDescription>
+          Accounts are created from an invite link. Ask a family member to send
+          you one from their group page.
+        </CardDescription>
+      </CardHeader>
+      <CardFooter>
+        <Button asChild variant="outline" className="w-full">
+          <Link to="/login">Sign in</Link>
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}
+
+function RegisterForm({ inviteCode }: { inviteCode?: string }) {
   const { register } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -28,11 +86,10 @@ export function RegisterPage() {
     setError('')
     setSubmitting(true)
     try {
-      await register(email, displayName, password)
-      navigate('/')
+      const joinedGroupId = await register(email, displayName, password, inviteCode)
+      navigate(joinedGroupId ? `/groups/${joinedGroupId}` : '/')
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-      setError(msg ?? 'Registration failed.')
+      setError(inviteErrorMessage(err, 'Registration failed.'))
     } finally {
       setSubmitting(false)
     }
@@ -43,7 +100,9 @@ export function RegisterPage() {
       <CardHeader>
         <CardTitle>Create account</CardTitle>
         <CardDescription>
-          Set up your account to share wishlists with friends and family.
+          {inviteCode
+            ? 'You’ve been invited to join a group. Create your account to accept.'
+            : 'Set up your account to share wishlists with friends and family.'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -98,7 +157,7 @@ export function RegisterPage() {
         <p className="text-sm text-muted-foreground">
           Already have an account?{' '}
           <Link
-            to="/login"
+            to={inviteCode ? `/login?redirect=/join/${inviteCode}` : '/login'}
             className="text-primary underline-offset-4 hover:underline"
           >
             Sign in
