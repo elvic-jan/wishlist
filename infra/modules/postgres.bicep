@@ -47,6 +47,9 @@ resource server 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
   }
 }
 
+// The server accepts one operation at a time and answers 'ServerIsBusy' to the
+// rest, so its child resources are chained with dependsOn instead of letting
+// ARM deploy them in parallel.
 resource requireTls 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = {
   parent: server
   name: 'require_secure_transport'
@@ -65,6 +68,7 @@ resource allowAzure 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@202
     startIpAddress: '0.0.0.0'
     endIpAddress: '0.0.0.0'
   }
+  dependsOn: [requireTls]
 }
 
 resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2024-08-01' = {
@@ -74,6 +78,7 @@ resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2024-08-0
     charset: 'UTF8'
     collation: 'en_US.utf8'
   }
+  dependsOn: [allowAzure]
 }
 
 output name string = server.name
