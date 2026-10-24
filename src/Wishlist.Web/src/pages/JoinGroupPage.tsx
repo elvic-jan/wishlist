@@ -10,9 +10,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { InvalidInvitation } from '@/components/InvalidInvitation'
 import { WakingUp } from '@/components/WakingUp'
 import client from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
+import { inviteErrorMessage } from '@/lib/inviteErrors'
+import { useInvitationCheck } from '@/lib/useInvitationCheck'
 
 type JoinStatus = 'joining' | 'done' | 'error' | 'unauthenticated'
 
@@ -36,25 +39,33 @@ export function JoinGroupPage() {
         setTimeout(() => navigate('/'), 2000)
       })
       .catch((err: unknown) => {
-        const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-        setError(msg ?? 'Failed to join group. The link may have expired.')
+        setError(inviteErrorMessage(err, 'Failed to join group. The link may have expired.'))
         setStatus('error')
       })
   }, [code, user, navigate])
 
+  // Signed-out visitors get the code checked before they're offered sign-up;
+  // signed-in users find out from the join call itself.
+  const invitation = useInvitationCheck(!restoring && !user ? code : undefined)
+
   if (restoring) return <WakingUp fullScreen={false} />
 
   if (status === 'unauthenticated') {
+    if (invitation.state === 'checking') return <WakingUp fullScreen={false} />
+    if (invitation.state === 'invalid') return <InvalidInvitation message={invitation.message} />
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Sign in to join</CardTitle>
+          <CardTitle>You&rsquo;ve been invited</CardTitle>
           <CardDescription>
-            You need to be signed in before you can join a group.
+            Create an account to join the group, or sign in if you already have one.
           </CardDescription>
         </CardHeader>
-        <CardFooter>
+        <CardFooter className="flex-col gap-2">
           <Button asChild className="w-full">
+            <Link to={`/register?invite=${code}`}>Create account</Link>
+          </Button>
+          <Button asChild variant="outline" className="w-full">
             <Link to={`/login?redirect=/join/${code}`}>Sign in</Link>
           </Button>
         </CardFooter>

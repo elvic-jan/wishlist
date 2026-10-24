@@ -14,7 +14,9 @@ public class GroupsController(
     GetUserGroupsUseCase getUserGroups,
     CreateGroupUseCase createGroup,
     GenerateGroupInvitationUseCase generateInvitation,
+    CheckInvitationUseCase checkInvitation,
     JoinGroupViaInvitationUseCase joinGroup,
+    InviteCodeGuard inviteCodeGuard,
     ListGroupMembersUseCase listMembers,
     LeaveGroupUseCase leaveGroup) : ControllerBase
 {
@@ -40,12 +42,18 @@ public class GroupsController(
         return Ok(result);
     }
 
+    [AllowAnonymous]
+    [HttpGet("invitations/{code}")]
+    public Task<IActionResult> Check(string code, CancellationToken ct) =>
+        inviteCodeGuard.RunAsync(HttpContext, async () => Ok(await checkInvitation.ExecuteAsync(code, ct)));
+
     [HttpPost("invitations/{code}/join")]
-    public async Task<IActionResult> Join(string code, CancellationToken ct)
-    {
-        await joinGroup.ExecuteAsync(GetUserId(), code, ct);
-        return Ok();
-    }
+    public Task<IActionResult> Join(string code, CancellationToken ct) =>
+        inviteCodeGuard.RunAsync(HttpContext, async () =>
+        {
+            await joinGroup.ExecuteAsync(GetUserId(), code, ct);
+            return Ok();
+        });
 
     [HttpGet("groups/{groupId:guid}/members")]
     public async Task<IActionResult> ListMembers(Guid groupId, CancellationToken ct)

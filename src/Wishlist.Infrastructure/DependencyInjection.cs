@@ -54,6 +54,7 @@ public static class DependencyInjection
 
         ValidateRequiredOptions(config, environment);
 
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IGroupRepository, GroupRepository>();
         services.AddScoped<IInvitationRepository, InvitationRepository>();
@@ -64,6 +65,7 @@ public static class DependencyInjection
         services.AddScoped<IAppUrlProvider, AppUrlProvider>();
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
         services.AddSingleton<IForgotPasswordRateLimiter, ForgotPasswordRateLimiter>();
+        services.AddSingleton<IInviteCodeAttemptLimiter, InviteCodeAttemptLimiter>();
 
         return services;
     }

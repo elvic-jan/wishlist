@@ -98,13 +98,7 @@ export function LoginPage() {
       </CardContent>
       <CardFooter className="justify-center">
         <p className="text-sm text-muted-foreground">
-          Don&rsquo;t have an account?{' '}
-          <Link
-            to="/register"
-            className="text-primary underline-offset-4 hover:underline"
-          >
-            Register
-          </Link>
+          New here? Ask a family member for an invite link.
         </p>
       </CardFooter>
     </Card>

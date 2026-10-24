@@ -11,6 +11,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddScoped<RegisterUserUseCase>();
+        services.AddScoped<GetRegistrationStatusUseCase>();
         services.AddScoped<LoginUserUseCase>();
         services.AddScoped<RefreshTokenUseCase>();
         services.AddScoped<LogoutUserUseCase>();
@@ -20,6 +21,8 @@ public static class DependencyInjection
         services.AddScoped<GetUserGroupsUseCase>();
         services.AddScoped<CreateGroupUseCase>();
         services.AddScoped<GenerateGroupInvitationUseCase>();
+        services.AddScoped<InvitationResolver>();
+        services.AddScoped<CheckInvitationUseCase>();
         services.AddScoped<JoinGroupViaInvitationUseCase>();
         services.AddScoped<ListGroupMembersUseCase>();
         services.AddScoped<LeaveGroupUseCase>();

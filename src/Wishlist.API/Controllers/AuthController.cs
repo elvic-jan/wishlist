@@ -13,6 +13,8 @@ namespace Wishlist.API.Controllers;
 [Route("api/auth")]
 public class AuthController(
     RegisterUserUseCase register,
+    GetRegistrationStatusUseCase registrationStatus,
+    InviteCodeGuard inviteCodeGuard,
     LoginUserUseCase login,
     RefreshTokenUseCase refresh,
     LogoutUserUseCase logout,
@@ -24,10 +26,22 @@ public class AuthController(
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct)
     {
-        var (response, refreshToken) = await register.ExecuteAsync(request, ct);
-        SetRefreshTokenCookie(refreshToken);
-        return Ok(response);
+        async Task<IActionResult> Attempt()
+        {
+            var (response, refreshToken) = await register.ExecuteAsync(request, ct);
+            SetRefreshTokenCookie(refreshToken);
+            return Ok(response);
+        }
+
+        return string.IsNullOrWhiteSpace(request.InviteCode)
+            ? await Attempt()
+            : await inviteCodeGuard.RunAsync(HttpContext, Attempt);
     }
+
+    [AllowAnonymous]
+    [HttpGet("registration")]
+    public async Task<IActionResult> RegistrationStatus(CancellationToken ct) =>
+        Ok(await registrationStatus.ExecuteAsync(ct));
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
