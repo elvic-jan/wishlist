@@ -10,6 +10,14 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
+        services.AddScoped<RegistrationGate>();
+        services.AddScoped<AuthSessionFactory>();
+        services.AddScoped<AccountEmails>();
+        services.AddScoped<PasskeySignInUseCase>();
+        services.AddScoped<PasskeySignUpUseCase>();
+        services.AddScoped<PasskeyRecoveryUseCase>();
+        services.AddScoped<AccountSecurityUseCase>();
+        services.AddScoped<EmailConfirmationUseCase>();
         services.AddScoped<RegisterUserUseCase>();
         services.AddScoped<GetRegistrationStatusUseCase>();
         services.AddScoped<LoginUserUseCase>();

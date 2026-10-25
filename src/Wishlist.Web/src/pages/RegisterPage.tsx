@@ -14,10 +14,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { InvalidInvitation } from '@/components/InvalidInvitation'
 import { WakingUp } from '@/components/WakingUp'
+import { Fingerprint } from 'lucide-react'
 import client from '@/api/client'
+import { signUpWithPasskey } from '@/api/passkeys'
 import { useAuth } from '@/context/AuthContext'
 import { inviteErrorMessage } from '@/lib/inviteErrors'
 import { useInvitationCheck } from '@/lib/useInvitationCheck'
+import { isPasskeyCancelled, passkeyErrorMessage, passkeysSupported } from '@/lib/webauthn'
 
 export function RegisterPage() {
   const [searchParams] = useSearchParams()
@@ -73,23 +76,37 @@ function InvitationOnly() {
 }
 
 function RegisterForm({ inviteCode }: { inviteCode?: string }) {
-  const { register } = useAuth()
+  const { register, startSession } = useAuth()
   const navigate = useNavigate()
+  const canUsePasskeys = passkeysSupported()
+  const [usePassword, setUsePassword] = useState(!canUsePasskeys)
   const [email, setEmail] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  const goToCircle = (joinedGroupId?: string | null) =>
+    navigate(joinedGroupId ? `/circles/${joinedGroupId}` : '/')
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setSubmitting(true)
     try {
-      const joinedGroupId = await register(email, displayName, password, inviteCode)
-      navigate(joinedGroupId ? `/circles/${joinedGroupId}` : '/')
+      if (usePassword) {
+        goToCircle(await register(email, displayName, password, inviteCode))
+      } else {
+        const result = await signUpWithPasskey(email, displayName, inviteCode)
+        startSession(result)
+        goToCircle(result.joinedGroupId)
+      }
     } catch (err: unknown) {
-      setError(inviteErrorMessage(err, 'Registration failed.'))
+      if (!usePassword && isPasskeyCancelled(err)) {
+        setError('Face ID / fingerprint was cancelled. Try again, or use a password instead.')
+      } else {
+        setError(passkeyErrorMessage(err) ?? inviteErrorMessage(err, 'Registration failed.'))
+      }
     } finally {
       setSubmitting(false)
     }
@@ -133,25 +150,54 @@ function RegisterForm({ inviteCode }: { inviteCode?: string }) {
               required
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="register-password">Password</Label>
-            <Input
-              id="register-password"
-              type="password"
-              autoComplete="new-password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              minLength={8}
-            />
-            <p className="text-xs text-muted-foreground">
-              At least 8 characters.
-            </p>
-          </div>
-          <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? 'Creating account…' : 'Create account'}
-          </Button>
+          {usePassword ? (
+            <>
+              <div className="space-y-1.5">
+                <Label htmlFor="register-password">Password</Label>
+                <Input
+                  id="register-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                />
+                <p className="text-xs text-muted-foreground">
+                  At least 8 characters.
+                </p>
+              </div>
+              <Button type="submit" className="w-full" disabled={submitting}>
+                {submitting ? 'Creating account…' : 'Create account'}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button type="submit" className="w-full" disabled={submitting}>
+                <Fingerprint className="mr-2 h-4 w-4" aria-hidden />
+                {submitting ? 'Waiting for your device…' : 'Create account with Face ID / fingerprint'}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Your phone or computer will ask for Face ID, your fingerprint or
+                its screen lock. No password to remember.
+              </p>
+            </>
+          )}
         </form>
+        {canUsePasskeys && (
+          <div className="mt-4 text-center text-sm">
+            <button
+              type="button"
+              className="text-primary underline-offset-4 hover:underline"
+              onClick={() => {
+                setError('')
+                setUsePassword(p => !p)
+              }}
+            >
+              {usePassword ? 'Use Face ID / fingerprint instead' : 'Use a password instead'}
+            </button>
+          </div>
+        )}
       </CardContent>
       <CardFooter className="justify-center">
         <p className="text-sm text-muted-foreground">

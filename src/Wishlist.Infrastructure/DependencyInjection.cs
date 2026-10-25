@@ -30,10 +30,14 @@ public static class DependencyInjection
                 opts.Password.RequireUppercase = false;
                 opts.Password.RequireDigit = false;
                 opts.User.RequireUniqueEmail = true;
+                opts.Stores.SchemaVersion = IdentitySchema.Version;
+                opts.Tokens.EmailConfirmationTokenProvider = EmailConfirmationTokenProvider<ApplicationUser>.ProviderName;
             })
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<WishlistDbContext>()
-            .AddDefaultTokenProviders();
+            .AddDefaultTokenProviders()
+            .AddTokenProvider<EmailConfirmationTokenProvider<ApplicationUser>>(
+                EmailConfirmationTokenProvider<ApplicationUser>.ProviderName);
 
         // Keys live in the database so tokens protected before a restart (the
         // deployed container scales to zero) stay valid after it.
@@ -53,6 +57,7 @@ public static class DependencyInjection
         services.Configure<AppOptions>(config.GetSection(AppOptions.SectionName));
 
         ValidateRequiredOptions(config, environment);
+        AddPasskeys(services, config);
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserRepository, UserRepository>();
@@ -68,6 +73,35 @@ public static class DependencyInjection
         services.AddSingleton<IInviteCodeAttemptLimiter, InviteCodeAttemptLimiter>();
 
         return services;
+    }
+
+    private static void AddPasskeys(IServiceCollection services, IConfiguration config)
+    {
+        var publicBaseUrl = config[$"{AppOptions.SectionName}:{nameof(AppOptions.PublicBaseUrl)}"]!;
+        var passkeyConfig = new PasskeyConfigOptions();
+        config.GetSection(PasskeyConfigOptions.SectionName).Bind(passkeyConfig);
+
+        var serverDomain = PasskeyConfigOptions.ResolveServerDomain(passkeyConfig.ServerDomain, publicBaseUrl);
+        var allowedOrigins = PasskeyConfigOptions.ResolveAllowedOrigins(publicBaseUrl, passkeyConfig.AdditionalOrigins);
+
+        services.Configure<IdentityPasskeyOptions>(opts =>
+        {
+            opts.ServerDomain = serverDomain;
+            // Discoverable credentials let people sign in without typing an email.
+            opts.ResidentKeyRequirement = "required";
+            opts.UserVerificationRequirement = "required";
+            // Only our own pages, never inside someone else's iframe. The default
+            // check compares against the request's Origin header, which the dev
+            // proxy may rewrite; an explicit allow-list is clearer.
+            opts.ValidateOrigin = ctx => ValueTask.FromResult(
+                !ctx.CrossOrigin
+                && Uri.TryCreate(ctx.Origin, UriKind.Absolute, out var origin)
+                && allowedOrigins.Contains(origin.GetLeftPart(UriPartial.Authority).ToLowerInvariant()));
+        });
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<IPasskeyHandler<ApplicationUser>, PasskeyHandler<ApplicationUser>>();
+        services.AddScoped<IPasskeyService, PasskeyService>();
     }
 
     private static void ValidateRequiredOptions(IConfiguration config, IHostEnvironment environment)

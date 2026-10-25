@@ -40,26 +40,44 @@ public class InMemoryApi : WebApplicationFactory<Program>
             services.AddSingleton<IInvitationRepository, InMemoryInvitations>();
             services.AddSingleton<IUnitOfWork, InMemoryUnitOfWork>();
             services.AddSingleton<ITokenService, InMemoryTokens>();
+            services.AddSingleton<IPasskeyService, FakePasskeys>();
+            // The real key ring lives in the database; keep test keys in memory.
+            services.AddSingleton<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>(
+                new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider());
+            services.AddSingleton<IEmailSender, CapturingEmailSender>();
         });
     }
 
     /// <summary>Sends a request as if it came through the ingress from <paramref name="ip"/>.</summary>
     public static async Task<HttpResponseMessage> Send(
         HttpClient client, HttpMethod method, string path,
-        object? body = null, string? cookie = null, string? bearer = null, string ip = "203.0.113.1")
+        object? body = null, string? cookie = null, string? bearer = null, string ip = "203.0.113.1",
+        string? ceremony = null)
     {
         var request = new HttpRequestMessage(method, path);
-        if (method != HttpMethod.Get) request.Content = JsonContent.Create(body ?? new { });
+        if (method != HttpMethod.Get && method != HttpMethod.Delete) request.Content = JsonContent.Create(body ?? new { });
         request.Headers.Add("X-Forwarded-Proto", "https");
         request.Headers.Add("X-Forwarded-For", ip);
-        if (cookie is not null) request.Headers.Add("Cookie", $"refreshToken={cookie}");
+        var cookies = new List<string>();
+        if (cookie is not null) cookies.Add($"refreshToken={cookie}");
+        if (ceremony is not null) cookies.Add($"passkeyCeremony={ceremony}");
+        if (cookies.Count > 0) request.Headers.Add("Cookie", string.Join("; ", cookies));
         if (bearer is not null) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
         return await client.SendAsync(request);
     }
 
     public static Task<HttpResponseMessage> Post(HttpClient client, string path, object? body = null, string? cookie = null,
-        string? bearer = null, string ip = "203.0.113.1") =>
-        Send(client, HttpMethod.Post, path, body, cookie, bearer, ip);
+        string? bearer = null, string ip = "203.0.113.1", string? ceremony = null) =>
+        Send(client, HttpMethod.Post, path, body, cookie, bearer, ip, ceremony);
+
+    /// <summary>The value of a cookie set by <paramref name="response"/>, or null.</summary>
+    public static string? SetCookieValue(HttpResponseMessage response, string name) =>
+        SetCookieHeader(response, name)?.Split(';')[0][(name.Length + 1)..];
+
+    public static string? SetCookieHeader(HttpResponseMessage response, string name) =>
+        response.Headers.TryGetValues("Set-Cookie", out var values)
+            ? values.LastOrDefault(v => v.StartsWith(name + "=", StringComparison.Ordinal))
+            : null;
 }
 
 public sealed class InMemoryStore
@@ -67,6 +85,30 @@ public sealed class InMemoryStore
     public ConcurrentDictionary<Guid, User> Users { get; } = new();
     public ConcurrentDictionary<(Guid GroupId, Guid UserId), GroupMember> Members { get; } = new();
     public ConcurrentDictionary<string, GroupInvitation> Invitations { get; } = new();
+    public ConcurrentDictionary<string, FakePasskey> Passkeys { get; } = new();
+    public ConcurrentQueue<EmailMessage> SentEmails { get; } = new();
+    public ConcurrentDictionary<string, RefreshToken> RefreshTokens { get; } = new();
+
+    /// <summary>Changes whenever reset/confirmation tokens must stop working (like Identity's security stamp).</summary>
+    public ConcurrentDictionary<Guid, int> SecurityStamps { get; } = new();
+
+    public IEnumerable<EmailMessage> EmailsTo(string address) => SentEmails.Where(m => m.To == address);
+
+    public User AddPasskeyUser(string? email = null, bool emailConfirmed = false)
+    {
+        var user = AddUser(email);
+        user.HasPassword = false;
+        user.EmailConfirmed = emailConfirmed;
+        AddPasskeyFor(user.Id);
+        return user;
+    }
+
+    public FakePasskey AddPasskeyFor(Guid userId, string? name = null)
+    {
+        var passkey = new FakePasskey(Guid.NewGuid().ToString("N"), userId) { Name = name };
+        Passkeys[passkey.Id] = passkey;
+        return passkey;
+    }
 
     /// <summary>Makes the next membership insert fail, to exercise rollback.</summary>
     public bool FailNextAddMember { get; set; }
@@ -76,7 +118,7 @@ public sealed class InMemoryStore
         var user = new User
         {
             Id = Guid.NewGuid(), Email = email ?? $"{Guid.NewGuid()}@example.com",
-            DisplayName = "Existing", CreatedAt = DateTime.UtcNow,
+            DisplayName = "Existing", CreatedAt = DateTime.UtcNow, HasPassword = true,
         };
         Users[user.Id] = user;
         return user;
@@ -112,15 +154,63 @@ internal sealed class InMemoryUsers(InMemoryStore store) : IUserRepository
 
     public Task<User> CreateAsync(string email, string displayName, string password, CancellationToken ct = default)
     {
-        var user = new User { Id = Guid.NewGuid(), Email = email, DisplayName = displayName, CreatedAt = DateTime.UtcNow };
+        var user = new User
+        {
+            Id = Guid.NewGuid(), Email = email, DisplayName = displayName, CreatedAt = DateTime.UtcNow, HasPassword = true,
+        };
         store.Users[user.Id] = user;
         return Task.FromResult(user);
     }
 
+    public Task<User> CreateWithoutPasswordAsync(Guid id, string email, string displayName, CancellationToken ct = default)
+    {
+        if (store.Users.ContainsKey(id) || store.Users.Values.Any(u => u.Email == email))
+            throw new InvalidOperationException("Duplicate user.");
+        var user = new User { Id = id, Email = email, DisplayName = displayName, CreatedAt = DateTime.UtcNow };
+        store.Users[user.Id] = user;
+        return Task.FromResult(user);
+    }
+
+    private string Stamp(Guid userId) => store.SecurityStamps.GetOrAdd(userId, 0).ToString();
+
+    public Task<string> GenerateEmailConfirmationTokenAsync(Guid userId, CancellationToken ct = default) =>
+        Task.FromResult($"confirm-{userId:N}-{Stamp(userId)}");
+
+    public Task<bool> ConfirmEmailAsync(Guid userId, string token, CancellationToken ct = default)
+    {
+        if (!store.Users.TryGetValue(userId, out var user) || token != $"confirm-{userId:N}-{Stamp(userId)}")
+            return Task.FromResult(false);
+        user.EmailConfirmed = true;
+        return Task.FromResult(true);
+    }
+
+    public Task MarkEmailConfirmedAsync(Guid userId, CancellationToken ct = default)
+    {
+        store.Users[userId].EmailConfirmed = true;
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> VerifyPasswordResetTokenAsync(Guid userId, string token, CancellationToken ct = default) =>
+        Task.FromResult(token == $"reset-{userId:N}-{Stamp(userId)}");
+
+    public Task InvalidateSecurityTokensAsync(Guid userId, CancellationToken ct = default)
+    {
+        store.SecurityStamps.AddOrUpdate(userId, 1, (_, s) => s + 1);
+        return Task.CompletedTask;
+    }
+
     public Task UpdateDisplayNameAsync(Guid userId, string displayName, CancellationToken ct = default) => Task.CompletedTask;
     public Task<bool> CheckPasswordAsync(Guid userId, string password, CancellationToken ct = default) => Task.FromResult(true);
-    public Task<string> GeneratePasswordResetTokenAsync(Guid userId, CancellationToken ct = default) => Task.FromResult("reset");
-    public Task<bool> ResetPasswordAsync(Guid userId, string token, string newPassword, CancellationToken ct = default) => Task.FromResult(false);
+    public Task<string> GeneratePasswordResetTokenAsync(Guid userId, CancellationToken ct = default) =>
+        Task.FromResult($"reset-{userId:N}-{Stamp(userId)}");
+
+    public async Task<bool> ResetPasswordAsync(Guid userId, string token, string newPassword, CancellationToken ct = default)
+    {
+        if (!await VerifyPasswordResetTokenAsync(userId, token, ct)) return false;
+        store.Users[userId].HasPassword = true;
+        await InvalidateSecurityTokensAsync(userId, ct);
+        return true;
+    }
 }
 
 internal sealed class InMemoryGroups(InMemoryStore store) : IGroupRepository
@@ -188,9 +278,9 @@ internal sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
 }
 
 /// <summary>Real, verifiable JWTs (so [Authorize] endpoints work) with refresh tokens in memory.</summary>
-internal sealed class InMemoryTokens(IConfiguration config) : ITokenService
+internal sealed class InMemoryTokens(IConfiguration config, InMemoryStore store) : ITokenService
 {
-    private readonly ConcurrentDictionary<string, RefreshToken> _tokens = new();
+    private ConcurrentDictionary<string, RefreshToken> _tokens => store.RefreshTokens;
 
     public string GenerateAccessToken(User user)
     {
@@ -227,6 +317,110 @@ internal sealed class InMemoryTokens(IConfiguration config) : ITokenService
     public Task RevokeAllUserRefreshTokensAsync(Guid userId, CancellationToken ct = default)
     {
         foreach (var t in _tokens.Values.Where(t => t.UserId == userId)) t.RevokedAt = DateTime.UtcNow;
+        return Task.CompletedTask;
+    }
+
+    public Task RevokeOtherUserRefreshTokensAsync(Guid userId, string? keepToken, CancellationToken ct = default)
+    {
+        foreach (var t in _tokens.Values.Where(t => t.UserId == userId && t.Token != keepToken)) t.RevokedAt = DateTime.UtcNow;
+        return Task.CompletedTask;
+    }
+}
+
+public sealed record FakePasskey(string Id, Guid UserId)
+{
+    public string? Name { get; set; }
+    public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
+    public int SignIns { get; set; }
+}
+
+/// <summary>
+/// Stands in for WebAuthn. Options carry a random challenge; the state remembers
+/// it (plus the user for registrations); a "credential" is
+/// <c>{ "id": …, "challenge": … }</c> and only verifies against the state it was
+/// issued with — just like a real assertion is bound to its challenge.
+/// </summary>
+internal sealed class FakePasskeys(InMemoryStore store) : IPasskeyService
+{
+    private sealed record State(string Challenge, PasskeyUser? User);
+    private sealed record Credential(string Id, string Challenge);
+
+    public Task<PasskeyOptions> BeginRegistrationAsync(PasskeyUser user, CancellationToken ct = default) =>
+        Task.FromResult(Issue(user));
+
+    public Task<VerifiedPasskey> CompleteRegistrationAsync(string credentialJson, string state, CancellationToken ct = default)
+    {
+        var (s, c) = Read(credentialJson, state);
+        if (s?.User is null || c is null || c.Challenge != s.Challenge || store.Passkeys.ContainsKey(c.Id))
+            throw new Wishlist.Domain.Exceptions.DomainException(Wishlist.Application.UseCases.Auth.PasskeyMessages.NotSaved);
+
+        var id = Base64UrlDecode(c.Id);
+        return Task.FromResult(new VerifiedPasskey(s.User, new PasskeyCredential(
+            id, [1], DateTimeOffset.UtcNow, 0, ["internal"], true, true, true, [], [])));
+    }
+
+    public Task AddAsync(Guid userId, PasskeyCredential credential, string? name, CancellationToken ct = default)
+    {
+        var id = Base64UrlEncode(credential.CredentialId);
+        store.Passkeys[id] = new FakePasskey(id, userId) { Name = name };
+        return Task.CompletedTask;
+    }
+
+    public Task<PasskeyOptions> BeginSignInAsync(CancellationToken ct = default) => Task.FromResult(Issue(null));
+
+    public Task<Guid> CompleteSignInAsync(string credentialJson, string state, CancellationToken ct = default)
+    {
+        var (s, c) = Read(credentialJson, state);
+        if (s is null || c is null || c.Challenge != s.Challenge || !store.Passkeys.TryGetValue(c.Id, out var passkey))
+            throw new Wishlist.Domain.Exceptions.DomainException(Wishlist.Application.UseCases.Auth.PasskeyMessages.SignInFailed);
+
+        passkey.SignIns++;
+        return Task.FromResult(passkey.UserId);
+    }
+
+    public Task<IReadOnlyList<PasskeySummary>> ListAsync(Guid userId, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<PasskeySummary>>(store.Passkeys.Values
+            .Where(p => p.UserId == userId).OrderBy(p => p.CreatedAt)
+            .Select(p => new PasskeySummary(p.Id, p.Name, p.CreatedAt, true)).ToList());
+
+    public Task<bool> RenameAsync(Guid userId, string passkeyId, string name, CancellationToken ct = default)
+    {
+        if (!store.Passkeys.TryGetValue(passkeyId, out var p) || p.UserId != userId) return Task.FromResult(false);
+        p.Name = name;
+        return Task.FromResult(true);
+    }
+
+    public Task<bool> RemoveAsync(Guid userId, string passkeyId, CancellationToken ct = default) =>
+        Task.FromResult(store.Passkeys.TryGetValue(passkeyId, out var p) && p.UserId == userId
+            && store.Passkeys.TryRemove(passkeyId, out _));
+
+    private static PasskeyOptions Issue(PasskeyUser? user)
+    {
+        var challenge = Guid.NewGuid().ToString("N");
+        var options = System.Text.Json.JsonSerializer.Serialize(new { challenge, user });
+        var state = System.Text.Json.JsonSerializer.Serialize(new State(challenge, user));
+        return new PasskeyOptions(options, state);
+    }
+
+    private static (State?, Credential?) Read(string credentialJson, string state)
+    {
+        var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        return (System.Text.Json.JsonSerializer.Deserialize<State>(state, options),
+            System.Text.Json.JsonSerializer.Deserialize<Credential>(credentialJson, options));
+    }
+
+    // Fake credential IDs are 32 hex chars; treat them as base64url text so the
+    // ID round-trips through PasskeyCredential's byte[] unchanged.
+    private static byte[] Base64UrlDecode(string id) => System.Buffers.Text.Base64Url.DecodeFromChars(id);
+    private static string Base64UrlEncode(byte[] id) => System.Buffers.Text.Base64Url.EncodeToString(id);
+}
+
+/// <summary>Keeps every email the app tries to send, instead of sending it.</summary>
+internal sealed class CapturingEmailSender(InMemoryStore store) : IEmailSender
+{
+    public Task SendAsync(EmailMessage message, CancellationToken ct = default)
+    {
+        store.SentEmails.Enqueue(message);
         return Task.CompletedTask;
     }
 }
