@@ -1,3 +1,5 @@
+// First: catch the browser's install offer even if it fires before React mounts.
+import './lib/installPrompt'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'

@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.IdentityModel.Tokens;
 using Wishlist.Application;
 using Wishlist.API.Controllers;
@@ -65,7 +66,11 @@ else
 }
 
 app.UseMiddleware<ErrorHandlingMiddleware>();
-app.UseStaticFiles();
+// The SPA's web app manifest must be served as application/manifest+json;
+// map it explicitly so static files never refuse the extension.
+var contentTypes = new FileExtensionContentTypeProvider();
+contentTypes.Mappings[".webmanifest"] = "application/manifest+json";
+app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = contentTypes });
 
 app.UseRouting();
 app.UseAuthentication();

@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { InstallAppLink } from '@/components/InstallApp'
 import { apiErrorMessage, signInWithPasskey } from '@/api/passkeys'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -193,10 +194,11 @@ export function LoginPage() {
           </Link>
         </div>
       </CardContent>
-      <CardFooter className="justify-center">
+      <CardFooter className="flex-col gap-3">
         <p className="text-sm text-muted-foreground">
           New here? Ask a family member for an invite link.
         </p>
+        <InstallAppLink />
       </CardFooter>
     </Card>
   )
