@@ -1,7 +1,7 @@
 ## 1. Domain, Application ports and use cases
 
 - [x] 1.1 `User` gains `EmailConfirmed` and `HasPassword`; `IUserRepository` gains passwordless create (with a given ID), email-confirmation token generate/confirm, mark-confirmed, reset-token verification without consuming, and security-stamp rotation
-- [x] 1.2 `IPasskeyService` port with plain records: begin/complete sign-in, begin/complete registration (returns a verified passkey + user entity), add, list, rename, remove, count
+- [x] 1.2 `IPasskeyService` port with plain records: begin/complete sign-in, begin/complete registration (returns a verified passkey + user entity), add, list, rename, remove
 - [x] 1.3 `ITokenService.RevokeOtherUserRefreshTokensAsync(userId, keepToken)`
 - [x] 1.4 Extract the shared registration gate (input, invite/bootstrap, duplicate email) from `RegisterUserUseCase`
 - [x] 1.5 Use cases: passkey sign-in, passkey sign-up (begin/complete, one transaction), security overview, add/rename/remove passkey (last-method rule), revoke other sessions, send/confirm email confirmation, passkey recovery (begin/complete)
