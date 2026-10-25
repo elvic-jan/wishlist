@@ -10,7 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useState } from 'react'
 import { AccountBanners } from '@/components/AccountBanners'
+import { InstallAppMenuItem, IosInstallHelp } from '@/components/InstallApp'
 import { ModeToggle } from '@/components/ModeToggle'
 import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/lib/utils'
@@ -33,6 +35,7 @@ function navLinkClasses(isActive: boolean): string {
 export function AppShell() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [showIosInstallHelp, setShowIosInstallHelp] = useState(false)
 
   const handleLogout = async () => {
     await logout()
@@ -97,6 +100,7 @@ export function AppShell() {
                   )}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <InstallAppMenuItem onShowIosHelp={() => setShowIosInstallHelp(true)} />
                 <DropdownMenuItem onClick={() => navigate('/settings/security')}>
                   <ShieldCheck className="mr-2 h-4 w-4" />
                   Sign-in &amp; security
@@ -114,6 +118,7 @@ export function AppShell() {
       <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 md:py-12">
         <AccountBanners />
         <Outlet />
+        <IosInstallHelp open={showIosInstallHelp} onOpenChange={setShowIosInstallHelp} />
       </main>
     </div>
   )
