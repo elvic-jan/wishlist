@@ -55,12 +55,12 @@
   - Owner creates a group invite
   - Signed-out window opens `/join/<code>` → Create account → lands on the group page as a member
   - `/register` with no code shows "invitation only"
-- [ ] 5.2 Open the PR and merge to `main`
-- [ ] 5.3 Bring the site back online:
+- [x] 5.2 Open the PR and merge to `main` (PR #11, 2026-10-24)
+- [x] 5.3 Bring the site back online (2026-10-24; the infra run first needed the Postgres ordering fix, PR #12):
   - Reject the stale pending deploys from #9/#10
   - Run `infra` to re-enable ingress
   - Approve the deploy (it ships #9, #10 and this change)
-- [ ] 5.4 Verify on the live URL:
+- [x] 5.4 Verify on the live URL (403 and `inviteRequired` checked 2026-10-24/25; live invite sign-up confirmed by the owner 2026-10-25):
   - `POST /api/auth/register` without a code returns 403
   - `GET /api/auth/registration` returns `inviteRequired: true`
   - An invite link from the owner's group registers a test account into the group
