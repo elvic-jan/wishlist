@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Check, Copy, LogOut, Users } from 'lucide-react'
+import { Check, ChevronRight, Copy, LogOut, Users } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
@@ -12,8 +12,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -22,6 +20,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
+import { BackButton } from '@/components/BackButton'
 import { useToast } from '@/hooks/use-toast'
 import client from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
@@ -32,14 +32,22 @@ interface Member {
   role: string
 }
 
-interface WishlistEntry {
-  userId: string
-  displayName: string
+interface Circle {
+  id: string
+  name: string
 }
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).slice(0, 2)
-  return parts.map(p => p[0]?.toUpperCase() ?? '').join('') || '?'
+/** A full-width row that opens something; shows just a label. */
+function RowLink({ to, children }: { to: string; children: React.ReactNode }) {
+  return (
+    <Link
+      to={to}
+      className="flex w-full items-center justify-between gap-3 rounded-md border px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <span className="truncate">{children}</span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+    </Link>
+  )
 }
 
 export function GroupDetailPage() {
@@ -47,24 +55,33 @@ export function GroupDetailPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
-  const [members, setMembers] = useState<Member[]>([])
-  const [wishlists, setWishlists] = useState<WishlistEntry[]>([])
+  const [members, setMembers] = useState<Member[] | null>(null)
+  const [circles, setCircles] = useState<Circle[] | null>(null)
   const [inviteUrl, setInviteUrl] = useState('')
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
   const [confirmLeave, setConfirmLeave] = useState(false)
 
   useEffect(() => {
-    Promise.all([
-      client.get(`/groups/${groupId}/members`),
-      client.get(`/groups/${groupId}/wishlists`),
-    ])
-      .then(([membersRes, wishlistsRes]) => {
+    let cancelled = false
+    Promise.all([client.get<Member[]>(`/groups/${groupId}/members`), client.get<Circle[]>('/groups/me')])
+      .then(([membersRes, circlesRes]) => {
+        if (cancelled) return
         setMembers(membersRes.data)
-        setWishlists(wishlistsRes.data)
+        setCircles(circlesRes.data)
       })
-      .catch(() => setError('Failed to load circle details.'))
+      .catch(() => !cancelled && setError('Failed to load circle details.'))
+    return () => {
+      cancelled = true
+    }
   }, [groupId])
+
+  const circleName = circles?.find(c => c.id === groupId)?.name
+  const otherCircles = circles?.filter(c => c.id !== groupId) ?? []
+  // You first, then everyone else in the order the API gives.
+  const orderedMembers = members
+    ? [...members.filter(m => m.userId === user?.id), ...members.filter(m => m.userId !== user?.id)]
+    : null
 
   const generateInvite = async () => {
     try {
@@ -95,15 +112,14 @@ export function GroupDetailPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2">
-          <Link to="/">
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Link>
-        </Button>
+        <BackButton />
         <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-primary" aria-hidden />
-          <h1 className="text-2xl font-semibold tracking-tight">Circle</h1>
+          <Users className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+          {circleName ? (
+            <h1 className="truncate text-2xl font-semibold tracking-tight">{circleName}</h1>
+          ) : (
+            <Skeleton className="h-8 w-48" aria-label="Loading circle" />
+          )}
         </div>
       </div>
 
@@ -117,54 +133,45 @@ export function GroupDetailPage() {
         <CardHeader>
           <CardTitle className="text-base">Members</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {members.map(m => (
-            <div
-              key={m.userId}
-              className="flex items-center justify-between gap-3 py-1"
-            >
-              <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
-                    {initials(m.displayName)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium">{m.displayName}</span>
-                {m.role === 'Owner' && (
-                  <Badge variant="secondary" className="text-xs font-normal">
-                    Owner
-                  </Badge>
-                )}
-              </div>
-              {m.userId !== user?.id && (
-                <Button asChild variant="ghost" size="sm">
-                  <Link to={`/wishlist/${m.userId}`}>View wishlist</Link>
-                </Button>
-              )}
+        <CardContent>
+          {!orderedMembers ? (
+            <div className="space-y-2" aria-label="Loading members">
+              <Skeleton className="h-11 w-full" />
+              <Skeleton className="h-11 w-full" />
             </div>
-          ))}
+          ) : (
+            <ul className="space-y-2">
+              {orderedMembers.map(m => (
+                <li key={m.userId}>
+                  {m.userId === user?.id ? (
+                    <RowLink to="/wishlist/me">
+                      {m.displayName}{' '}
+                      <span className="font-normal text-muted-foreground">(you)</span>
+                    </RowLink>
+                  ) : (
+                    <RowLink to={`/wishlist/${m.userId}`}>{m.displayName}</RowLink>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Other wishlists</CardTitle>
+          <CardTitle className="text-base">Other circles</CardTitle>
         </CardHeader>
         <CardContent>
-          {wishlists.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No other wishlists in this circle yet.
-            </p>
+          {!circles ? (
+            <Skeleton className="h-11 w-full" aria-label="Loading circles" />
+          ) : otherCircles.length === 0 ? (
+            <p className="text-sm text-muted-foreground">You&rsquo;re not in any other circles.</p>
           ) : (
             <ul className="space-y-2">
-              {wishlists.map(w => (
-                <li key={w.userId}>
-                  <Link to={`/wishlist/${w.userId}`} className="block">
-                    <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm transition-colors hover:bg-accent/40">
-                      <span>{w.displayName}&rsquo;s wishlist</span>
-                      <span className="text-muted-foreground">→</span>
-                    </div>
-                  </Link>
+              {otherCircles.map(c => (
+                <li key={c.id}>
+                  <RowLink to={`/circles/${c.id}`}>{c.name}</RowLink>
                 </li>
               ))}
             </ul>

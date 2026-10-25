@@ -24,6 +24,12 @@ import {
   passkeysSupported,
 } from '@/lib/webauthn'
 
+/** The server looked at a chosen passkey and said no (as opposed to a network or startup failure). */
+function isPasskeyRejected(err: unknown): boolean {
+  const e = err as { response?: { status?: number }; config?: { url?: string } }
+  return e?.response?.status === 400 && (e.config?.url ?? '').endsWith('/auth/passkey/login')
+}
+
 /** Only same-site paths, so a crafted link can't send people elsewhere after sign-in. */
 function safeRedirect(value: string | null): string {
   return value && value.startsWith('/') && !value.startsWith('//') ? value : '/'
@@ -63,25 +69,42 @@ export function LoginPage() {
   }, [])
 
   // Offer saved passkeys in the email field's autofill, without a dialog.
+  // This runs in the background, so it stays silent unless the server rejects
+  // a passkey the person actually picked. If the request couldn't even start
+  // (e.g. the backend is still waking up behind the instantly-shown page), it
+  // quietly tries again a few times.
   const startAutofill = useCallback(() => {
-    autofill.current?.abort()
-    const controller = new AbortController()
-    autofill.current = controller
-    passkeyAutofillSupported()
-      .then(supported =>
-        supported && !controller.signal.aborted
-          ? signInWithPasskey({ conditional: true, signal: controller.signal }).then(finishPasskeySignIn)
-          : undefined,
-      )
-      .catch(err => {
-        if (!controller.signal.aborted) passkeyFailed(err)
-      })
-    return controller
+    const run = (attempt: number) => {
+      autofill.current?.abort()
+      const controller = new AbortController()
+      autofill.current = controller
+      passkeyAutofillSupported()
+        .then(supported =>
+          supported && !controller.signal.aborted
+            ? signInWithPasskey({ conditional: true, signal: controller.signal }).then(finishPasskeySignIn)
+            : undefined,
+        )
+        .catch(err => {
+          if (controller.signal.aborted || isPasskeyCancelled(err)) return
+          if (isPasskeyRejected(err)) {
+            passkeyFailed(err)
+          } else if (attempt < 3) {
+            setTimeout(() => {
+              // Skip if the page moved on (button pressed, page left) meanwhile.
+              if (autofill.current === controller && !controller.signal.aborted) run(attempt + 1)
+            }, 5000)
+          }
+        })
+    }
+    run(0)
   }, [finishPasskeySignIn, passkeyFailed])
 
   useEffect(() => {
-    const controller = startAutofill()
-    return () => controller.abort()
+    startAutofill()
+    return () => {
+      autofill.current?.abort()
+      autofill.current = null
+    }
   }, [startAutofill])
 
   const handlePasskey = async () => {

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ExternalLink, Gift, Plus, Trash2, X } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { ExternalLink, Gift, Plus, Trash2, X } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   AlertDialog,
@@ -22,6 +21,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Skeleton } from '@/components/ui/skeleton'
+import { BackButton } from '@/components/BackButton'
 import client from '@/api/client'
 
 interface WishlistItem {
@@ -69,12 +70,15 @@ export function MyWishlistPage() {
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState('')
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  // Until the first load finishes, show a placeholder rather than "No items yet".
+  const [loaded, setLoaded] = useState(false)
 
   const load = () =>
     client
       .get('/wishlists/me')
       .then(r => setItems(r.data))
       .catch(() => setError('Failed to load wishlist.'))
+      .finally(() => setLoaded(true))
 
   useEffect(() => {
     load()
@@ -204,12 +208,7 @@ export function MyWishlistPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2">
-          <Link to="/">
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Link>
-        </Button>
+        <BackButton />
         <div className="flex items-center gap-2">
           <Gift className="h-5 w-5 text-primary" aria-hidden />
           <h1 className="text-2xl font-semibold tracking-tight">My wishlist</h1>
@@ -226,7 +225,12 @@ export function MyWishlistPage() {
         </Alert>
       )}
 
-      {items.length === 0 && !adding ? (
+      {!loaded ? (
+        <div className="space-y-3" aria-label="Loading wishlist">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      ) : items.length === 0 && !adding ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center gap-3 py-12 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">

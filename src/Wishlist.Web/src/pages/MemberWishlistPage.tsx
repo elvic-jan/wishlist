@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowLeft, Check, ExternalLink, Gift, Lock } from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { Check, ExternalLink, Gift, Lock } from 'lucide-react'
+import { useParams } from 'react-router-dom'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { BackButton } from '@/components/BackButton'
 import { useToast } from '@/hooks/use-toast'
 import client from '@/api/client'
 
@@ -80,13 +82,16 @@ export function MemberWishlistPage() {
   const { toast } = useToast()
   const [items, setItems] = useState<WishlistItem[]>([])
   const [error, setError] = useState('')
+  // Until the first load finishes, show a placeholder rather than "Nothing here yet".
+  const [loaded, setLoaded] = useState(false)
 
   const load = useCallback(
     () =>
       client
         .get(`/wishlists/${userId}`)
         .then(r => setItems(r.data))
-        .catch(() => setError('Failed to load wishlist.')),
+        .catch(() => setError('Failed to load wishlist.'))
+        .finally(() => setLoaded(true)),
     [userId],
   )
 
@@ -133,12 +138,7 @@ export function MemberWishlistPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2">
-          <Link to="/">
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Link>
-        </Button>
+        <BackButton />
         <div className="flex items-center gap-2">
           <Gift className="h-5 w-5 text-primary" aria-hidden />
           <h1 className="text-2xl font-semibold tracking-tight">Wishlist</h1>
@@ -151,7 +151,12 @@ export function MemberWishlistPage() {
         </Alert>
       )}
 
-      {items.length === 0 ? (
+      {!loaded ? (
+        <div className="space-y-3" aria-label="Loading wishlist">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      ) : items.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center gap-3 py-12 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
