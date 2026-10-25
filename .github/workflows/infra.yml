@@ -45,6 +45,8 @@ jobs:
           MIN_REPLICAS: ${{ vars.MIN_REPLICAS || '0' }}
           CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
           CUSTOM_DOMAIN_CERT_READY: ${{ vars.CUSTOM_DOMAIN_CERT_READY || 'false' }}
+          EMAIL_DOMAIN: ${{ vars.EMAIL_DOMAIN }}
+          EMAIL_DOMAIN_VERIFIED: ${{ vars.EMAIL_DOMAIN_VERIFIED || 'false' }}
           BUDGET_CONTACT_EMAIL: ${{ vars.BUDGET_CONTACT_EMAIL }}
           GHCR_USERNAME: ${{ github.repository_owner }}
           POSTGRES_ADMIN_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
@@ -63,6 +65,8 @@ jobs:
               minReplicas="$MIN_REPLICAS" \
               customDomainName="$CUSTOM_DOMAIN" \
               customDomainCertificateReady="$CUSTOM_DOMAIN_CERT_READY" \
+              emailCustomDomain="$EMAIL_DOMAIN" \
+              emailCustomDomainVerified="$EMAIL_DOMAIN_VERIFIED" \
               budgetContactEmails="[\"$BUDGET_CONTACT_EMAIL\"]" \
               ghcrUsername="$GHCR_USERNAME" \
               postgresAdministratorPassword="$POSTGRES_ADMIN_PASSWORD" \
