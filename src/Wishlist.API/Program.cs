@@ -43,7 +43,7 @@ if (!builder.Environment.IsDevelopment())
     {
         opts.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
         opts.ForwardLimit = 1;
-        opts.KnownNetworks.Clear();
+        opts.KnownIPNetworks.Clear();
         opts.KnownProxies.Clear();
     });
 }
