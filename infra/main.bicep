@@ -19,6 +19,12 @@ param minReplicas int = 0
 param customDomainName string = ''
 param customDomainCertificateReady bool = false
 
+@description('Own email sending domain, e.g. giftcircles.app. Empty = Azure-managed azurecomm.net sender.')
+param emailCustomDomain string = ''
+
+@description('True once the email domain\'s DNS records are verified in Azure; switches the sender to noreply@<domain>.')
+param emailCustomDomainVerified bool = false
+
 param postgresVersion string = '17'
 param postgresAdministratorLogin string = 'wishlistadmin'
 
@@ -74,6 +80,8 @@ module email 'modules/email.bicep' = {
   name: 'email'
   params: {
     name: 'acs-${baseName}-${suffix}'
+    customDomainName: emailCustomDomain
+    customDomainVerified: emailCustomDomainVerified
   }
 }
 
@@ -120,3 +128,6 @@ output postgresFqdn string = postgres.outputs.fqdn
 output postgresDatabaseName string = postgres.outputs.databaseName
 output communicationServiceName string = email.outputs.communicationServiceName
 output emailSenderAddress string = email.outputs.senderAddress
+output emailServiceName string = email.outputs.emailServiceName
+output emailDomainVerificationRecords object = email.outputs.customDomainVerificationRecords
+output emailDomainVerificationStates object = email.outputs.customDomainVerificationStates
