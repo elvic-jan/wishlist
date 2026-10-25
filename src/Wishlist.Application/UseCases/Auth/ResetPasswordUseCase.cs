@@ -50,21 +50,21 @@ public class ResetPasswordUseCase(
         var changedAtUtc = DateTime.UtcNow;
         var message = new EmailMessage(
             To: user.Email,
-            Subject: "Your Wishlist password was changed",
+            Subject: "Your GiftCircles password was changed",
             PlainTextBody:
                 $"Hi {user.DisplayName},\r\n\r\n" +
-                $"Your Wishlist account password was just changed (at {changedAtUtc:yyyy-MM-dd HH:mm} UTC).\r\n\r\n" +
+                $"Your GiftCircles account password was just changed (at {changedAtUtc:yyyy-MM-dd HH:mm} UTC).\r\n\r\n" +
                 "If you made this change, no action is needed.\r\n\r\n" +
                 "If you did NOT make this change, request another password reset from the " +
                 "sign-in page right away, and contact support if you cannot regain access.\r\n\r\n" +
-                "Thanks,\r\nWishlist",
+                "Thanks,\r\nGiftCircles",
             HtmlBody:
                 $"<p>Hi {System.Net.WebUtility.HtmlEncode(user.DisplayName)},</p>" +
-                $"<p>Your Wishlist account password was just changed (at <strong>{changedAtUtc:yyyy-MM-dd HH:mm} UTC</strong>).</p>" +
+                $"<p>Your GiftCircles account password was just changed (at <strong>{changedAtUtc:yyyy-MM-dd HH:mm} UTC</strong>).</p>" +
                 "<p>If you made this change, no action is needed.</p>" +
                 "<p>If you did <strong>not</strong> make this change, request another password reset from the " +
                 "sign-in page right away, and contact support if you cannot regain access.</p>" +
-                "<p>Thanks,<br/>Wishlist</p>");
+                "<p>Thanks,<br/>GiftCircles</p>");
 
         try
         {

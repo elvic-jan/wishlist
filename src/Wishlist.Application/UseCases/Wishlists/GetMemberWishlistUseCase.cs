@@ -9,7 +9,7 @@ public class GetMemberWishlistUseCase(IWishlistRepository wishlists, IGroupRepos
     public async Task<IReadOnlyList<WishlistItemDto>> ExecuteAsync(Guid requestingUserId, Guid ownerId, CancellationToken ct = default)
     {
         if (!await groups.SharesGroupAsync(requestingUserId, ownerId, ct))
-            throw new ForbiddenException("You do not share a group with this user.");
+            throw new ForbiddenException("You do not share a circle with this user.");
 
         var items = await wishlists.GetByOwnerAsync(ownerId, includeClaims: true, ct);
         return items.Select(i =>

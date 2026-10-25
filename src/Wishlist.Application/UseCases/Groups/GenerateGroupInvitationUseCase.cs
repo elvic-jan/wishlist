@@ -9,7 +9,7 @@ public class GenerateGroupInvitationUseCase(IGroupRepository groups, IInvitation
     public async Task<InvitationDto> ExecuteAsync(Guid userId, Guid groupId, string baseUrl, CancellationToken ct = default)
     {
         if (!await groups.IsMemberAsync(groupId, userId, ct))
-            throw new ForbiddenException("You must be a member of this group to generate an invitation.");
+            throw new ForbiddenException("You must be a member of this circle to generate an invitation.");
 
         var invitation = await invitations.CreateAsync(groupId, userId, ct);
         var url = $"{baseUrl}/join/{invitation.InviteCode}";

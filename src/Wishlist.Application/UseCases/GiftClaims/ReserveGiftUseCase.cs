@@ -18,7 +18,7 @@ public class ReserveGiftUseCase(IWishlistRepository wishlists, IGiftClaimReposit
             throw new ForbiddenException("You cannot claim an item from your own wishlist.");
 
         if (!await groups.SharesGroupAsync(requestingUserId, ownerId, ct))
-            throw new ForbiddenException("You do not share a group with this user.");
+            throw new ForbiddenException("You do not share a circle with this user.");
 
         if (item.GiftClaim is not null)
             throw new ConflictException("This item has already been claimed.");

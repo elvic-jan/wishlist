@@ -9,7 +9,7 @@ public class ListGroupWishlistsUseCase(IGroupRepository groups, IWishlistReposit
     public async Task<IReadOnlyList<GroupWishlistEntryDto>> ExecuteAsync(Guid userId, Guid groupId, CancellationToken ct = default)
     {
         if (!await groups.IsMemberAsync(groupId, userId, ct))
-            throw new ForbiddenException("You are not a member of this group.");
+            throw new ForbiddenException("You are not a member of this circle.");
 
         var members = await wishlists.GetGroupMemberSummariesAsync(groupId, userId, ct);
         return members.Select(m => new GroupWishlistEntryDto(m.UserId, m.DisplayName)).ToList();

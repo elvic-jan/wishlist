@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { AuthProvider } from '@/context/AuthContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -15,6 +15,11 @@ import { GroupDetailPage } from '@/pages/GroupDetailPage'
 import { MyWishlistPage } from '@/pages/MyWishlistPage'
 import { MemberWishlistPage } from '@/pages/MemberWishlistPage'
 import { JoinGroupPage } from '@/pages/JoinGroupPage'
+
+function LegacyGroupRedirect() {
+  const { groupId } = useParams()
+  return <Navigate to={`/circles/${groupId}`} replace />
+}
 
 export default function App() {
   return (
@@ -41,7 +46,9 @@ export default function App() {
                 }
               >
                 <Route path="/" element={<HomePage />} />
-                <Route path="/groups/:groupId" element={<GroupDetailPage />} />
+                <Route path="/circles/:groupId" element={<GroupDetailPage />} />
+                {/* Circles used to be called groups; keep old bookmarks working. */}
+                <Route path="/groups/:groupId" element={<LegacyGroupRedirect />} />
                 <Route path="/wishlist/me" element={<MyWishlistPage />} />
                 <Route path="/wishlist/:userId" element={<MemberWishlistPage />} />
               </Route>

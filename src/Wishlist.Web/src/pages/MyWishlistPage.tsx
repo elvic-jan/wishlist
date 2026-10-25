@@ -215,7 +215,7 @@ export function MyWishlistPage() {
           <h1 className="text-2xl font-semibold tracking-tight">My wishlist</h1>
         </div>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          People in your groups will see this list, but you won&rsquo;t see who
+          People in your circles will see this list, but you won&rsquo;t see who
           has reserved what.
         </p>
       </div>

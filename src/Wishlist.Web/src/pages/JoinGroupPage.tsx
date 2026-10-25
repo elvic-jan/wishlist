@@ -39,7 +39,7 @@ export function JoinGroupPage() {
         setTimeout(() => navigate('/'), 2000)
       })
       .catch((err: unknown) => {
-        setError(inviteErrorMessage(err, 'Failed to join group. The link may have expired.'))
+        setError(inviteErrorMessage(err, 'Failed to join circle. The link may have expired.'))
         setStatus('error')
       })
   }, [code, user, navigate])
@@ -58,7 +58,7 @@ export function JoinGroupPage() {
         <CardHeader>
           <CardTitle>You&rsquo;ve been invited</CardTitle>
           <CardDescription>
-            Create an account to join the group, or sign in if you already have one.
+            Create an account to join the circle, or sign in if you already have one.
           </CardDescription>
         </CardHeader>
         <CardFooter className="flex-col gap-2">
@@ -77,7 +77,7 @@ export function JoinGroupPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Joining group…</CardTitle>
+          <CardTitle>Joining circle…</CardTitle>
           <CardDescription>This will only take a moment.</CardDescription>
         </CardHeader>
       </Card>

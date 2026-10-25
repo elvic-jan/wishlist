@@ -48,7 +48,7 @@ export function AppShell() {
               className="flex items-center gap-2 text-sm font-semibold tracking-tight text-foreground hover:text-foreground"
             >
               <Gift className="h-5 w-5 text-primary" aria-hidden />
-              <span>Wishlist</span>
+              <span>GiftCircles</span>
             </Link>
             <nav className="flex items-center gap-1">
               <NavLink
@@ -56,7 +56,7 @@ export function AppShell() {
                 end
                 className={({ isActive }) => navLinkClasses(isActive)}
               >
-                Groups
+                Circles
               </NavLink>
               <NavLink
                 to="/wishlist/me"

@@ -44,7 +44,7 @@ export function LoginPage() {
       <CardHeader>
         <CardTitle>Sign in</CardTitle>
         <CardDescription>
-          Welcome back. Sign in to see your groups and wishlists.
+          Welcome back. Sign in to see your circles and wishlists.
         </CardDescription>
       </CardHeader>
       <CardContent>
