@@ -11,7 +11,7 @@ COPY src/Wishlist.Web/ ./
 RUN npm run build
 
 # --- API publish -------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS api
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS api
 WORKDIR /src
 # Restore on project files alone so the layer is cached across code changes.
 COPY src/Wishlist.Domain/Wishlist.Domain.csproj src/Wishlist.Domain/
@@ -24,7 +24,7 @@ RUN dotnet publish src/Wishlist.API/Wishlist.API.csproj -c Release --no-restore 
 COPY --from=spa /src/Wishlist.Web/dist/ /app/wwwroot/
 
 # --- Runtime -----------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=api /app ./
 ENV ASPNETCORE_HTTP_PORTS=8080 \
