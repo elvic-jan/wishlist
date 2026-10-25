@@ -494,14 +494,15 @@ public class PasskeyTests : IClassFixture<InMemoryApi>
     private string RecoveryToken(User user)
     {
         var mail = _api.Store.EmailsTo(user.Email).Last();
-        var query = mail.PlainTextBody.Split("?email=")[1].Split(Environment.NewLine.ToCharArray())[0];
+        // Emails use \r\n whatever the OS, so split on both rather than Environment.NewLine.
+        var query = mail.PlainTextBody.Split("?email=")[1].Split('\r', '\n')[0];
         var token = query.Split("&token=")[1].Trim();
         return Uri.UnescapeDataString(token);
     }
 
     private static (Guid UserId, string Token) ConfirmationLink(Wishlist.Application.Interfaces.EmailMessage mail)
     {
-        var query = mail.PlainTextBody.Split("/confirm-email?")[1].Split(Environment.NewLine.ToCharArray())[0];
+        var query = mail.PlainTextBody.Split("/confirm-email?")[1].Split('\r', '\n')[0];
         var parts = query.Split('&').Select(p => p.Split('=', 2)).ToDictionary(p => p[0], p => Uri.UnescapeDataString(p[1]));
         return (Guid.Parse(parts["userId"]), parts["token"]);
     }

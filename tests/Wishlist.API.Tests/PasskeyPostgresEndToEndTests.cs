@@ -162,7 +162,8 @@ public class PasskeyPostgresEndToEndTests
 
     private static (string, string) LinkParts(EmailMessage mail, string marker, string first, string second)
     {
-        var query = mail.PlainTextBody.Split(marker)[1].Split(Environment.NewLine.ToCharArray())[0];
+        // Emails use \r\n whatever the OS, so split on both rather than Environment.NewLine.
+        var query = mail.PlainTextBody.Split(marker)[1].Split('\r', '\n')[0];
         var parts = query.Split('&').Select(p => p.Split('=', 2)).ToDictionary(p => p[0], p => Uri.UnescapeDataString(p[1]));
         return (parts[first], parts[second]);
     }
