@@ -31,7 +31,7 @@ export function HomePage() {
       .then(r => setGroups(r.data))
       .catch((err: unknown) => {
         const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-        setError(msg ?? 'Failed to load groups.')
+        setError(msg ?? 'Failed to load circles.')
       })
   }, [])
 
@@ -45,7 +45,7 @@ export function HomePage() {
       setShowCreate(false)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-      setError(msg ?? 'Failed to create group.')
+      setError(msg ?? 'Failed to create circle.')
     }
   }
 
@@ -54,10 +54,10 @@ export function HomePage() {
       <div className="space-y-1.5">
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" aria-hidden />
-          <h1 className="text-2xl font-semibold tracking-tight">My groups</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">My circles</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Share wishlists with people you know. Create a group, send the invite
+          Share wishlists with people you know. Create a circle, send the invite
           link, and you&rsquo;re in.
         </p>
       </div>
@@ -75,15 +75,15 @@ export function HomePage() {
               <Users className="h-6 w-6" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium">No groups yet</p>
+              <p className="text-sm font-medium">No circles yet</p>
               <p className="text-sm text-muted-foreground">
-                Create your first group to start sharing.
+                Create your first circle to start sharing.
               </p>
             </div>
             {!showCreate && (
               <Button onClick={() => setShowCreate(true)} className="mt-2">
                 <Plus className="h-4 w-4" />
-                New group
+                New circle
               </Button>
             )}
           </CardContent>
@@ -92,7 +92,7 @@ export function HomePage() {
         <ul className="space-y-2">
           {groups.map(g => (
             <li key={g.id}>
-              <Link to={`/groups/${g.id}`} className="group block">
+              <Link to={`/circles/${g.id}`} className="group block">
                 <Card className="transition-colors hover:border-primary/40 hover:bg-accent/40">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 py-4">
                     <CardTitle className="text-base font-medium">
@@ -110,12 +110,12 @@ export function HomePage() {
       {showCreate ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">New group</CardTitle>
+            <CardTitle className="text-base">New circle</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={createGroup} className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="new-group-name">Group name</Label>
+                <Label htmlFor="new-group-name">Circle name</Label>
                 <Input
                   id="new-group-name"
                   value={newGroupName}
@@ -136,7 +136,7 @@ export function HomePage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Create group</Button>
+                <Button type="submit">Create circle</Button>
               </div>
             </form>
           </CardContent>
@@ -145,7 +145,7 @@ export function HomePage() {
         groups.length > 0 && (
           <Button onClick={() => setShowCreate(true)} variant="outline">
             <Plus className="h-4 w-4" />
-            New group
+            New circle
           </Button>
         )
       )}

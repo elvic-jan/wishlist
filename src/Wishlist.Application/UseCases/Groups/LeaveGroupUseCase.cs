@@ -9,7 +9,7 @@ public class LeaveGroupUseCase(IGroupRepository groups)
     public async Task ExecuteAsync(Guid userId, Guid groupId, CancellationToken ct = default)
     {
         var role = await groups.GetMemberRoleAsync(groupId, userId, ct)
-            ?? throw new ForbiddenException("You are not a member of this group.");
+            ?? throw new ForbiddenException("You are not a member of this circle.");
 
         if (role == GroupMemberRole.Owner)
         {

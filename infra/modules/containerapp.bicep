@@ -38,7 +38,7 @@ param postgresAdministratorPassword string
 param jwtKey string
 
 param smtpFromAddress string
-param smtpFromName string = 'Wishlist'
+param smtpFromName string = 'GiftCircles'
 
 @secure()
 param smtpUser string

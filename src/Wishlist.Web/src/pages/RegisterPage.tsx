@@ -60,7 +60,7 @@ function InvitationOnly() {
         <CardTitle>Invitation only</CardTitle>
         <CardDescription>
           Accounts are created from an invite link. Ask a family member to send
-          you one from their group page.
+          you one from their circle page.
         </CardDescription>
       </CardHeader>
       <CardFooter>
@@ -87,7 +87,7 @@ function RegisterForm({ inviteCode }: { inviteCode?: string }) {
     setSubmitting(true)
     try {
       const joinedGroupId = await register(email, displayName, password, inviteCode)
-      navigate(joinedGroupId ? `/groups/${joinedGroupId}` : '/')
+      navigate(joinedGroupId ? `/circles/${joinedGroupId}` : '/')
     } catch (err: unknown) {
       setError(inviteErrorMessage(err, 'Registration failed.'))
     } finally {
@@ -101,7 +101,7 @@ function RegisterForm({ inviteCode }: { inviteCode?: string }) {
         <CardTitle>Create account</CardTitle>
         <CardDescription>
           {inviteCode
-            ? 'You’ve been invited to join a group. Create your account to accept.'
+            ? 'You’ve been invited to join a circle. Create your account to accept.'
             : 'Set up your account to share wishlists with friends and family.'}
         </CardDescription>
       </CardHeader>

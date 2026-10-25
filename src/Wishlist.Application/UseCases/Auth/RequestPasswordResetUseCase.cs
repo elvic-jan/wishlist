@@ -46,21 +46,21 @@ public class RequestPasswordResetUseCase(
 
         var message = new EmailMessage(
             To: user.Email,
-            Subject: "Reset your Wishlist password",
+            Subject: "Reset your GiftCircles password",
             PlainTextBody:
                 $"Hi {user.DisplayName},\r\n\r\n" +
-                "We received a request to reset the password for your Wishlist account. " +
+                "We received a request to reset the password for your GiftCircles account. " +
                 "If you did not make this request, you can safely ignore this email.\r\n\r\n" +
                 "To set a new password, open the link below within the next 30 minutes:\r\n" +
                 $"{resetUrl}\r\n\r\n" +
-                "Thanks,\r\nWishlist",
+                "Thanks,\r\nGiftCircles",
             HtmlBody:
                 $"<p>Hi {System.Net.WebUtility.HtmlEncode(user.DisplayName)},</p>" +
-                "<p>We received a request to reset the password for your Wishlist account. " +
+                "<p>We received a request to reset the password for your GiftCircles account. " +
                 "If you did not make this request, you can safely ignore this email.</p>" +
                 $"<p>To set a new password, open the link below within the next 30 minutes:</p>" +
                 $"<p><a href=\"{resetUrl}\">{resetUrl}</a></p>" +
-                "<p>Thanks,<br/>Wishlist</p>");
+                "<p>Thanks,<br/>GiftCircles</p>");
 
         try
         {

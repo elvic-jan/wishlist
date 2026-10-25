@@ -63,7 +63,7 @@ export function GroupDetailPage() {
         setMembers(membersRes.data)
         setWishlists(wishlistsRes.data)
       })
-      .catch(() => setError('Failed to load group details.'))
+      .catch(() => setError('Failed to load circle details.'))
   }, [groupId])
 
   const generateInvite = async () => {
@@ -88,7 +88,7 @@ export function GroupDetailPage() {
       navigate('/')
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-      setError(msg ?? 'Failed to leave group.')
+      setError(msg ?? 'Failed to leave circle.')
     }
   }
 
@@ -103,7 +103,7 @@ export function GroupDetailPage() {
         </Button>
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" aria-hidden />
-          <h1 className="text-2xl font-semibold tracking-tight">Group</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Circle</h1>
         </div>
       </div>
 
@@ -153,7 +153,7 @@ export function GroupDetailPage() {
         <CardContent>
           {wishlists.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No other wishlists in this group yet.
+              No other wishlists in this circle yet.
             </p>
           ) : (
             <ul className="space-y-2">
@@ -189,7 +189,7 @@ export function GroupDetailPage() {
           className="text-destructive hover:bg-destructive/10 hover:text-destructive"
         >
           <LogOut className="h-4 w-4" />
-          Leave group
+          Leave circle
         </Button>
       </div>
 
@@ -202,7 +202,7 @@ export function GroupDetailPage() {
       <AlertDialog open={confirmLeave} onOpenChange={setConfirmLeave}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Leave this group?</AlertDialogTitle>
+            <AlertDialogTitle>Leave this circle?</AlertDialogTitle>
             <AlertDialogDescription>
               You&rsquo;ll lose access to other members&rsquo; wishlists. You
               can rejoin later if someone shares the invite link with you
@@ -215,7 +215,7 @@ export function GroupDetailPage() {
               onClick={leaveGroup}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Leave group
+              Leave circle
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
