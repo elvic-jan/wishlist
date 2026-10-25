@@ -29,7 +29,7 @@ public class AuthController(
         async Task<IActionResult> Attempt()
         {
             var (response, refreshToken) = await register.ExecuteAsync(request, ct);
-            SetRefreshTokenCookie(refreshToken);
+            RefreshTokenCookie.Set(Response, refreshToken);
             return Ok(response);
         }
 
@@ -47,27 +47,27 @@ public class AuthController(
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
     {
         var (response, refreshToken) = await login.ExecuteAsync(request, ct);
-        SetRefreshTokenCookie(refreshToken);
+        RefreshTokenCookie.Set(Response, refreshToken);
         return Ok(response);
     }
 
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh(CancellationToken ct)
     {
-        var token = Request.Cookies["refreshToken"];
+        var token = RefreshTokenCookie.Read(Request);
         if (string.IsNullOrEmpty(token))
             return Unauthorized();
 
         try
         {
             var (accessToken, newRefreshToken) = await refresh.ExecuteAsync(token, ct);
-            SetRefreshTokenCookie(newRefreshToken);
+            RefreshTokenCookie.Set(Response, newRefreshToken);
             return Ok(new { accessToken });
         }
         catch (Exception ex) when (ex is DomainException or NotFoundException)
         {
             // Expired, revoked or unknown token (or its user is gone): drop the dead cookie.
-            ClearRefreshTokenCookie();
+            RefreshTokenCookie.Clear(Response);
             return Unauthorized();
         }
     }
@@ -75,11 +75,11 @@ public class AuthController(
     [HttpPost("logout")]
     public async Task<IActionResult> Logout(CancellationToken ct)
     {
-        var token = Request.Cookies["refreshToken"];
+        var token = RefreshTokenCookie.Read(Request);
         if (!string.IsNullOrEmpty(token))
             await logout.ExecuteAsync(token, ct);
 
-        ClearRefreshTokenCookie();
+        RefreshTokenCookie.Clear(Response);
         return NoContent();
     }
 
@@ -143,24 +143,6 @@ public class AuthController(
         var user = await users.GetByIdAsync(userId, ct);
         return Ok(new UserDto(user!.Id, user.Email, user.DisplayName));
     }
-
-    private void SetRefreshTokenCookie(string token)
-    {
-        Response.Cookies.Append("refreshToken", token, RefreshTokenCookieOptions(DateTimeOffset.UtcNow.AddDays(30)));
-    }
-
-    private void ClearRefreshTokenCookie()
-    {
-        Response.Cookies.Delete("refreshToken", RefreshTokenCookieOptions(expires: null));
-    }
-
-    private static CookieOptions RefreshTokenCookieOptions(DateTimeOffset? expires) => new()
-    {
-        HttpOnly = true,
-        Secure = true,
-        SameSite = SameSiteMode.Strict,
-        Expires = expires
-    };
 
     private Guid GetUserId() =>
         Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)

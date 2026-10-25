@@ -11,6 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddSingleton<InviteCodeGuard>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<PasskeyCeremonyCookie>();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 

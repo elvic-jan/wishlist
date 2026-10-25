@@ -9,7 +9,9 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { LoginPage } from '@/pages/LoginPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
-import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
+import { RecoverPage } from '@/pages/RecoverPage'
+import { ConfirmEmailPage } from '@/pages/ConfirmEmailPage'
+import { SecurityPage } from '@/pages/SecurityPage'
 import { HomePage } from '@/pages/HomePage'
 import { GroupDetailPage } from '@/pages/GroupDetailPage'
 import { MyWishlistPage } from '@/pages/MyWishlistPage'
@@ -33,7 +35,10 @@ export default function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/recover" element={<RecoverPage />} />
+                {/* Links sent before recovery offered passkeys. */}
+                <Route path="/reset-password" element={<RecoverPage />} />
+                <Route path="/confirm-email" element={<ConfirmEmailPage />} />
                 <Route path="/join/:code" element={<JoinGroupPage />} />
               </Route>
 
@@ -49,6 +54,7 @@ export default function App() {
                 <Route path="/circles/:groupId" element={<GroupDetailPage />} />
                 {/* Circles used to be called groups; keep old bookmarks working. */}
                 <Route path="/groups/:groupId" element={<LegacyGroupRedirect />} />
+                <Route path="/settings/security" element={<SecurityPage />} />
                 <Route path="/wishlist/me" element={<MyWishlistPage />} />
                 <Route path="/wishlist/:userId" element={<MemberWishlistPage />} />
               </Route>

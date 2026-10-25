@@ -44,6 +44,9 @@ public class ResetPasswordUseCase(
         // credentials may be compromised."
         await tokens.RevokeAllUserRefreshTokensAsync(user.Id, ct);
 
+        // The token reached them by email, so the address is theirs.
+        await users.MarkEmailConfirmedAsync(user.Id, ct);
+
         // Out-of-band confirmation so the legitimate inbox owner has a chance
         // to react if the reset was triggered by someone else. Best-effort —
         // a delivery failure here MUST NOT fail the reset.

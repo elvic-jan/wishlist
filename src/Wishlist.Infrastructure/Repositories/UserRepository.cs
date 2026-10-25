@@ -46,6 +46,82 @@ public class UserRepository(UserManager<ApplicationUser> userManager) : IUserRep
         return Map(appUser);
     }
 
+    public async Task<User> CreateWithoutPasswordAsync(Guid id, string email, string displayName, CancellationToken ct = default)
+    {
+        var appUser = new ApplicationUser
+        {
+            Id = id,
+            Email = email,
+            UserName = email,
+            DisplayName = displayName,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var result = await userManager.CreateAsync(appUser);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
+
+        return Map(appUser);
+    }
+
+    public async Task<string> GenerateEmailConfirmationTokenAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString())
+            ?? throw new InvalidOperationException("User not found.");
+        return await userManager.GenerateEmailConfirmationTokenAsync(user);
+    }
+
+    public async Task<bool> ConfirmEmailAsync(Guid userId, string token, CancellationToken ct = default)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null) return false;
+        try
+        {
+            return (await userManager.ConfirmEmailAsync(user, token)).Succeeded;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
+    public async Task MarkEmailConfirmedAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString())
+            ?? throw new InvalidOperationException("User not found.");
+        if (user.EmailConfirmed) return;
+
+        user.EmailConfirmed = true;
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
+    }
+
+    public async Task<bool> VerifyPasswordResetTokenAsync(Guid userId, string token, CancellationToken ct = default)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null) return false;
+        try
+        {
+            return await userManager.VerifyUserTokenAsync(
+                user, userManager.Options.Tokens.PasswordResetTokenProvider,
+                UserManager<ApplicationUser>.ResetPasswordTokenPurpose, token);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
+    public async Task InvalidateSecurityTokensAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString())
+            ?? throw new InvalidOperationException("User not found.");
+        var result = await userManager.UpdateSecurityStampAsync(user);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
+    }
+
     public async Task UpdateDisplayNameAsync(Guid userId, string displayName, CancellationToken ct = default)
     {
         var user = await userManager.FindByIdAsync(userId.ToString())
@@ -84,6 +160,8 @@ public class UserRepository(UserManager<ApplicationUser> userManager) : IUserRep
         Id = u.Id,
         Email = u.Email ?? string.Empty,
         DisplayName = u.DisplayName,
-        CreatedAt = u.CreatedAt
+        CreatedAt = u.CreatedAt,
+        EmailConfirmed = u.EmailConfirmed,
+        HasPassword = u.PasswordHash is not null
     };
 }

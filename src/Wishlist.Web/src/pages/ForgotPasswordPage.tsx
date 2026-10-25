@@ -45,8 +45,9 @@ export function ForgotPasswordPage() {
         <CardHeader>
           <CardTitle>Check your inbox</CardTitle>
           <CardDescription>
-            If an account exists for <strong>{email}</strong>, we&rsquo;ve sent a
-            link to reset your password. The link expires in 30 minutes.
+            If we can send recovery mail for <strong>{email}</strong>, a link is
+            on its way. Open it within 30 minutes on the phone or computer you
+            want to use.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
@@ -60,6 +61,11 @@ export function ForgotPasswordPage() {
               request another one
             </button>
             .
+          </p>
+          <p>
+            If you signed up with Face ID or a fingerprint and never confirmed
+            your email address, we can&rsquo;t send a link. Ask someone in your
+            circle to send you a new invite instead.
           </p>
         </CardContent>
         <CardFooter className="justify-center">
@@ -77,10 +83,10 @@ export function ForgotPasswordPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Forgot your password?</CardTitle>
+        <CardTitle>Can&rsquo;t sign in?</CardTitle>
         <CardDescription>
-          Enter the email address on your account and we&rsquo;ll send you a
-          reset link.
+          Lost your phone, or forgot your password? Enter the email address on
+          your account and we&rsquo;ll send you a link to get back in.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -102,7 +108,7 @@ export function ForgotPasswordPage() {
             />
           </div>
           <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? 'Sending…' : 'Send reset link'}
+            {submitting ? 'Sending…' : 'Email me a link'}
           </Button>
         </form>
       </CardContent>

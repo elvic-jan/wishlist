@@ -78,4 +78,16 @@ public class TokenService(IConfiguration config, WishlistDbContext db) : ITokenS
 
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task RevokeOtherUserRefreshTokensAsync(Guid userId, string? keepToken, CancellationToken ct = default)
+    {
+        var tokens = await db.RefreshTokens
+            .Where(r => r.UserId == userId && r.RevokedAt == null && r.Token != keepToken)
+            .ToListAsync(ct);
+
+        foreach (var t in tokens)
+            t.RevokedAt = DateTime.UtcNow;
+
+        await db.SaveChangesAsync(ct);
+    }
 }

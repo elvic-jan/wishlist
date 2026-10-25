@@ -21,6 +21,8 @@ interface AuthContextType {
   ) => Promise<string | null>;
   logout: () => Promise<void>;
   setUser: (user: User | null) => void;
+  /** Takes over a session the server started another way (passkey sign-in or sign-up, recovery). */
+  startSession: (result: { accessToken: string; user: User }) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -71,8 +73,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const startSession = useCallback((result: { accessToken: string; user: User }) => {
+    setAccessToken(result.accessToken);
+    setUser(result.user);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, restoring, login, register, logout, setUser }}>
+    <AuthContext.Provider value={{ user, restoring, login, register, logout, setUser, startSession }}>
       {children}
     </AuthContext.Provider>
   );

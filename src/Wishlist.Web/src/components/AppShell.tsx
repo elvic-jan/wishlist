@@ -1,4 +1,4 @@
-import { Gift, LogOut } from 'lucide-react'
+import { Gift, LogOut, ShieldCheck } from 'lucide-react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { AccountBanners } from '@/components/AccountBanners'
 import { ModeToggle } from '@/components/ModeToggle'
 import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/lib/utils'
@@ -96,6 +97,10 @@ export function AppShell() {
                   )}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/settings/security')}>
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Sign-in &amp; security
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign out
@@ -107,6 +112,7 @@ export function AppShell() {
       </header>
 
       <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 md:py-12">
+        <AccountBanners />
         <Outlet />
       </main>
     </div>
