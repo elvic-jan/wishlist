@@ -8,8 +8,10 @@
     <meta name="description" content="Share wishlists with your family and friends." />
     <!-- Installable app: manifest for Android/desktop, Apple tags for iPhone/iPad. -->
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0c0a09" media="(prefers-color-scheme: dark)" />
+    <!-- Browser bar colour. The first-paint script below and ThemeProvider
+         keep it in step with the app's own Light/Dark/System choice. -->
+    <meta name="theme-color" content="#fafaf9" />
+    <meta name="color-scheme" content="light dark" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-title" content="GiftCircles" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -36,6 +38,11 @@
           var root = document.documentElement;
           root.classList.add('theme-' + theme);
           if (isDark) root.classList.add('dark');
+          // CSS isn't loaded yet, so use the default theme's background;
+          // ThemeProvider replaces it with the real one after mount.
+          document
+            .querySelector('meta[name="theme-color"]')
+            .setAttribute('content', isDark ? '#0c0a09' : '#fafaf9');
         } catch (e) {
           // Storage unavailable (privacy mode etc.) — fall back to defaults.
           document.documentElement.classList.add('theme-terracotta');

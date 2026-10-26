@@ -18,6 +18,12 @@
 
 :root {
   --radius: 0.5rem;
+  color-scheme: light;
+}
+
+/* Lets the browser draw its own controls and bars to match the mode. */
+:root.dark {
+  color-scheme: dark;
 }
 
 .theme-terracotta {

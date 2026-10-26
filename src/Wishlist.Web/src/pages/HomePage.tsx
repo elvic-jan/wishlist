@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
 import client from '@/api/client'
 
 interface Group {
@@ -20,7 +21,7 @@ interface Group {
 }
 
 export function HomePage() {
-  const [groups, setGroups] = useState<Group[]>([])
+  const [groups, setGroups] = useState<Group[] | null>(null)
   const [newGroupName, setNewGroupName] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [error, setError] = useState('')
@@ -40,7 +41,7 @@ export function HomePage() {
     setError('')
     try {
       const { data } = await client.post('/groups', { name: newGroupName })
-      setGroups(prev => [...prev, data])
+      setGroups(prev => [...(prev ?? []), data])
       setNewGroupName('')
       setShowCreate(false)
     } catch (err: unknown) {
@@ -68,7 +69,15 @@ export function HomePage() {
         </Alert>
       )}
 
-      {groups.length === 0 ? (
+      {!groups ? (
+        // Still loading: never show "No circles yet" before the circles arrive.
+        error ? null : (
+          <div className="space-y-2" aria-label="Loading circles">
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+          </div>
+        )
+      ) : groups.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center gap-3 py-12 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -142,7 +151,7 @@ export function HomePage() {
           </CardContent>
         </Card>
       ) : (
-        groups.length > 0 && (
+        groups && groups.length > 0 && (
           <Button onClick={() => setShowCreate(true)} variant="outline">
             <Plus className="h-4 w-4" />
             New circle
