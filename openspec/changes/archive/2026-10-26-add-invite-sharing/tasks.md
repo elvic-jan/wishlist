@@ -21,4 +21,4 @@
 - [x] 4.1 Tests: new links expire after 3 days; old 7-day links still work; check returns inviter and circle ("Someone" fallback); `/join/{code}` personal tags for a valid code, generic for unknown, expired and rate-limited codes; names are HTML-encoded
 - [x] 4.2 Build, tests, SPA lint and build
 - [x] 4.3 Browser check (phone width): menu options, message text, WhatsApp and mailto URLs, copy; join page text; preview tags in the HTML of `/join/{code}`
-- [ ] 4.4 After deploy (user): share a link in WhatsApp and see the preview card
+- [x] 4.4 After deploy: the user checked the result (2026-10-26); production serves the preview tags with https://www.giftcircles.app image URLs
