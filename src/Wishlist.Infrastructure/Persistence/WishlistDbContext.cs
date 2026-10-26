@@ -18,6 +18,9 @@ public class WishlistDbContext(DbContextOptions<WishlistDbContext> options)
     public DbSet<WishlistItemUrl> WishlistItemUrls => Set<WishlistItemUrl>();
     public DbSet<GiftClaim> GiftClaims => Set<GiftClaim>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<LegacyUser> LegacyUsers => Set<LegacyUser>();
+    public DbSet<LegacyItem> LegacyItems => Set<LegacyItem>();
+    public DbSet<UserMessageState> UserMessageStates => Set<UserMessageState>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -77,6 +80,35 @@ public class WishlistDbContext(DbContextOptions<WishlistDbContext> options)
             e.HasKey(r => r.Id);
             e.Property(r => r.Token).IsRequired().HasMaxLength(512);
             e.HasIndex(r => r.Token).IsUnique();
+        });
+
+        // The old wishlist site's usernames and live items, loaded once by the
+        // legacy-load job. A deleted account releases its claim.
+        builder.Entity<LegacyUser>(e =>
+        {
+            e.HasKey(u => u.LegacyId);
+            e.Property(u => u.LegacyId).ValueGeneratedNever();
+            e.Property(u => u.UserName).IsRequired().HasMaxLength(100);
+            e.HasIndex(u => u.UserName).IsUnique();
+            // One import per account; Postgres allows many NULLs in a unique index.
+            e.HasIndex(u => u.ClaimedByUserId).IsUnique();
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(u => u.ClaimedByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<LegacyItem>(e =>
+        {
+            e.HasKey(i => i.LegacyId);
+            e.Property(i => i.LegacyId).ValueGeneratedNever();
+            e.Property(i => i.Title).IsRequired().HasMaxLength(300);
+            e.HasIndex(i => i.LegacyOwnerId);
+            e.HasOne<LegacyUser>().WithMany().HasForeignKey(i => i.LegacyOwnerId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<UserMessageState>(e =>
+        {
+            e.HasKey(s => new { s.UserId, s.MessageId });
+            e.Property(s => s.MessageId).HasMaxLength(100);
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -1,7 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Wishlist.Application.UseCases.Auth;
 using Wishlist.Application.UseCases.GiftClaims;
+using Wishlist.Application.Messages;
 using Wishlist.Application.UseCases.Groups;
+using Wishlist.Application.UseCases.LegacyImport;
 using Wishlist.Application.UseCases.Wishlists;
 
 namespace Wishlist.Application;
@@ -48,6 +50,17 @@ public static class DependencyInjection
         services.AddScoped<KeepReservationUseCase>();
         services.AddScoped<ReservationEmails>();
         services.AddScoped<ProcessReservationsUseCase>();
+
+        services.AddScoped<LoadLegacyDataUseCase>();
+        services.AddScoped<GetLegacyImportStatusUseCase>();
+        services.AddScoped<PreviewLegacyImportUseCase>();
+        services.AddScoped<ImportLegacyItemsUseCase>();
+
+        // Messages, shown in this order. Add new ones at the end.
+        services.AddScoped<IMessageDefinition, LegacyImportMessage>();
+        services.AddScoped<IMessageDefinition, WhatsNewNovember2026Message>();
+        services.AddScoped<GetMyMessagesUseCase>();
+        services.AddScoped<DismissMessageUseCase>();
 
         return services;
     }

@@ -26,6 +26,7 @@ public class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandling
             ForbiddenException => (StatusCodes.Status403Forbidden, ex.Message),
             ConflictException => (StatusCodes.Status409Conflict, ex.Message),
             GoneException => (StatusCodes.Status410Gone, ex.Message),
+            TooManyRequestsException => (StatusCodes.Status429TooManyRequests, ex.Message),
             DomainException => (StatusCodes.Status400BadRequest, ex.Message),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
         };

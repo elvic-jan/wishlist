@@ -1,4 +1,4 @@
-import { Gift, LogOut, ShieldCheck } from 'lucide-react'
+import { Download, Gift, LogOut, ShieldCheck } from 'lucide-react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,7 @@ import {
 import { useState } from 'react'
 import { AccountBanners } from '@/components/AccountBanners'
 import { InstallAppMenuItem, IosInstallHelp } from '@/components/InstallApp'
+import { MessageToaster } from '@/components/MessageToaster'
 import { ModeToggle } from '@/components/ModeToggle'
 import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/lib/utils'
@@ -101,6 +102,10 @@ export function AppShell() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <InstallAppMenuItem onShowIosHelp={() => setShowIosInstallHelp(true)} />
+                <DropdownMenuItem onClick={() => navigate('/import')}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Import from old site
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/settings/security')}>
                   <ShieldCheck className="mr-2 h-4 w-4" />
                   Sign-in &amp; security
@@ -120,6 +125,7 @@ export function AppShell() {
         <Outlet />
         <IosInstallHelp open={showIosInstallHelp} onOpenChange={setShowIosInstallHelp} />
       </main>
+      <MessageToaster hiddenOn={['/import']} />
     </div>
   )
 }

@@ -20,6 +20,11 @@ public class ConflictException : DomainException
     public ConflictException(string message) : base(message) { }
 }
 
+public class TooManyRequestsException : DomainException
+{
+    public TooManyRequestsException(string message) : base(message) { }
+}
+
 public class GoneException : DomainException
 {
     public GoneException(string message) : base(message) { }
