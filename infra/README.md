@@ -251,7 +251,7 @@ the wrong one, connect to the database (see **Connect to the database** above) a
 
 ```sql
 UPDATE "LegacyUsers" SET "ClaimedByUserId" = NULL, "ClaimedAt" = NULL, "ImportedItemCount" = NULL
-WHERE "UserName" = 'JAN.VDB';
+WHERE "UserName" = 'JOHN.DOE';
 ```
 
 The wishes already imported stay with the account that imported them, which can delete
