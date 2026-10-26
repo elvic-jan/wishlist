@@ -21,7 +21,7 @@ public class LegacyImportTests
     {
         var path = TestXlsx.Write(
             ["USER_ID", "NAME", "EMAILADDRESS"],
-            [["21", "j", "x@example.test"], ["5107", "JAN.VDB", ""]]);
+            [["21", "j", "x@example.test"], ["2", "JOHN.DOE", ""]]);
 
         var rows = new XlsxReader().ReadRows(path);
 
@@ -35,7 +35,7 @@ public class LegacyImportTests
     public async Task Load_keeps_usernames_and_live_items_only()
     {
         var users = TestXlsx.Write(["USER_ID", "NAME", "PASSWORD", "DISPLAYNAME", "EMAILADDRESS"],
-            [["1", " jan.vdb ", "0123456789abcdef0123456789abcdef", "Jan", "jan@example.test"], ["2", "MIEKE", "", "", ""]]);
+            [["1", " john.doe ", "0123456789abcdef0123456789abcdef", "John", "john@example.test"], ["2", "JANE.DOE", "", "", ""]]);
         var items = TestXlsx.Write(["ITEM_ID", "OWNER", "NAME", "DESCRIPTION", "STATE", "STATE_TS", "DELETED", "PRIO", "REMARK"],
             [
                 ["10", "1", "Bike", "Red one", "1", "45643.5", "", "1", "secret remark"],
@@ -48,7 +48,7 @@ public class LegacyImportTests
 
         await new LoadLegacyDataUseCase(new XlsxReader(), repo, NullLogger<LoadLegacyDataUseCase>.Instance).ExecuteAsync(users, items);
 
-        Assert.Equal(["JAN.VDB", "MIEKE"], repo.Users.Select(u => u.UserName).Order());
+        Assert.Equal(["JANE.DOE", "JOHN.DOE"], repo.Users.Select(u => u.UserName).Order());
         Assert.Equal([10, 13], repo.Items.Select(i => i.LegacyId).Order());
         var bike = repo.Items.Single(i => i.LegacyId == 10);
         Assert.Equal(("Bike", "Red one"), (bike.Title, bike.Description));
@@ -84,11 +84,11 @@ public class LegacyImportTests
     public async Task Preview_matches_usernames_without_regard_to_case_and_suggests_recent_items()
     {
         var w = new World();
-        w.Legacy.AddUser(5, "JAN.VDB", (50, "Old", new DateTime(2015, 1, 1)), (51, "New", new DateTime(2025, 3, 1)));
+        w.Legacy.AddUser(5, "JOHN.DOE", (50, "Old", new DateTime(2015, 1, 1)), (51, "New", new DateTime(2025, 3, 1)));
 
-        var preview = await w.Preview(" jan.vdb ");
+        var preview = await w.Preview(" john.doe ");
 
-        Assert.Equal("JAN.VDB", preview.UserName);
+        Assert.Equal("JOHN.DOE", preview.UserName);
         Assert.Equal([(51, true), (50, false)], preview.Items.Select(i => (i.LegacyId, i.Suggested)));
         Assert.Null(w.Legacy.Users.Single().ClaimedByUserId);
     }
@@ -97,7 +97,7 @@ public class LegacyImportTests
     public async Task Preview_of_an_unknown_username_is_404_and_counts_toward_the_limit()
     {
         var w = new World();
-        w.Legacy.AddUser(5, "JAN.VDB");
+        w.Legacy.AddUser(5, "JOHN.DOE");
 
         for (var i = 0; i < LegacyUserNameAttemptLimiter.FailuresPerWindow; i++)
         {
@@ -106,20 +106,20 @@ public class LegacyImportTests
         }
 
         // Blocked now, even for a real username.
-        await Assert.ThrowsAsync<TooManyRequestsException>(() => w.Preview("JAN.VDB"));
+        await Assert.ThrowsAsync<TooManyRequestsException>(() => w.Preview("JOHN.DOE"));
     }
 
     [Fact]
     public async Task Import_adds_only_ticked_items_of_that_username_and_claims_it()
     {
         var w = new World();
-        w.Legacy.AddUser(5, "JAN.VDB", (50, "Bike", null), (51, "Book", null));
-        w.Legacy.AddUser(6, "MIEKE", (60, "Not mine", null));
+        w.Legacy.AddUser(5, "JOHN.DOE", (50, "Bike", null), (51, "Book", null));
+        w.Legacy.AddUser(6, "JANE.DOE", (60, "Not mine", null));
         w.Legacy.Items.Single(i => i.LegacyId == 51).Description = "https://example.test/b";
 
-        var status = await w.Import("Jan.Vdb", 51, 60);
+        var status = await w.Import("John.Doe", 51, 60);
 
-        Assert.Equal((true, "JAN.VDB", 1), (status.Imported, status.UserName, status.ItemCount));
+        Assert.Equal((true, "JOHN.DOE", 1), (status.Imported, status.UserName, status.ItemCount));
         var created = Assert.Single(w.Wishlists.Created);
         Assert.Equal(("Book", (string?)null, "https://example.test/b"), (created.Title, created.Description, created.Urls.Single()));
         Assert.Equal(w.UserId, w.Legacy.Users.Single(u => u.LegacyId == 5).ClaimedByUserId);
@@ -129,15 +129,15 @@ public class LegacyImportTests
     public async Task Import_happens_once_per_account_and_once_per_username()
     {
         var w = new World();
-        w.Legacy.AddUser(5, "JAN.VDB", (50, "Bike", null));
-        w.Legacy.AddUser(6, "MIEKE", (60, "Book", null));
-        await w.Import("JAN.VDB", 50);
+        w.Legacy.AddUser(5, "JOHN.DOE", (50, "Bike", null));
+        w.Legacy.AddUser(6, "JANE.DOE", (60, "Book", null));
+        await w.Import("JOHN.DOE", 50);
 
-        var again = await Assert.ThrowsAsync<ConflictException>(() => w.Import("MIEKE", 60));
+        var again = await Assert.ThrowsAsync<ConflictException>(() => w.Import("JANE.DOE", 60));
         Assert.Equal(LegacyImportRules.AlreadyImported, again.Message);
 
         var other = new World(w.Legacy);
-        var taken = await Assert.ThrowsAsync<ConflictException>(() => other.Import("JAN.VDB", 50));
+        var taken = await Assert.ThrowsAsync<ConflictException>(() => other.Import("JOHN.DOE", 50));
         Assert.Equal(LegacyImportRules.AlreadyClaimed, taken.Message);
         Assert.Single(w.Wishlists.Created);
         Assert.Empty(other.Wishlists.Created);
@@ -149,12 +149,12 @@ public class LegacyImportTests
         var w = new World();
         Assert.Equal(new LegacyImportStatusDto(false, false, null, null, null), await w.Status());
 
-        w.Legacy.AddUser(5, "JAN.VDB", (50, "Bike", null));
+        w.Legacy.AddUser(5, "JOHN.DOE", (50, "Bike", null));
         Assert.Equal((true, false), ((await w.Status()).Available, (await w.Status()).Imported));
 
-        await w.Import("JAN.VDB", 50);
+        await w.Import("JOHN.DOE", 50);
         var status = await w.Status();
-        Assert.Equal((true, "JAN.VDB", 1), (status.Imported, status.UserName, status.ItemCount));
+        Assert.Equal((true, "JOHN.DOE", 1), (status.Imported, status.UserName, status.ItemCount));
     }
 
     // ---- Messages ------------------------------------------------------------------------
@@ -165,11 +165,11 @@ public class LegacyImportTests
         var w = new World();
         Assert.DoesNotContain(await w.Messages(), m => m.Id == "legacy-import");
 
-        w.Legacy.AddUser(5, "JAN.VDB", (50, "Bike", null));
+        w.Legacy.AddUser(5, "JOHN.DOE", (50, "Bike", null));
         var message = Assert.Single(await w.Messages(), m => m.Id == "legacy-import");
         Assert.Equal(new MessageAction("Import my wishes", "/import"), message.Action);
 
-        await w.Import("JAN.VDB", 50);
+        await w.Import("JOHN.DOE", 50);
         Assert.DoesNotContain(await w.Messages(), m => m.Id == "legacy-import");
     }
 

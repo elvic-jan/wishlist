@@ -19,7 +19,7 @@ public class LegacyImportPostgresTests
         await api.ResetDatabaseAsync();
 
         var users = TestXlsx.Write(["USER_ID", "NAME", "PASSWORD", "EMAILADDRESS"],
-            [["1", "JAN.VDB", "0123456789abcdef0123456789abcdef", "jan@example.test"], ["2", "MIEKE", "", ""]]);
+            [["1", "JOHN.DOE", "0123456789abcdef0123456789abcdef", "john@example.test"], ["2", "JANE.DOE", "", ""]]);
         var items = TestXlsx.Write(["ITEM_ID", "OWNER", "NAME", "DESCRIPTION", "STATE", "STATE_TS", "DELETED"],
             [["10", "1", "Bike", "see https://example.test/bike", "1", "45643.5", ""], ["11", "1", "Struck", "", "3", "", ""], ["20", "2", "Book", "", "2", "", ""]]);
 
@@ -32,13 +32,13 @@ public class LegacyImportPostgresTests
             bob = (await s.GetRequiredService<IUserRepository>().CreateAsync("bob@example.test", "Bob", "Passw0rd!long")).Id;
         }
 
-        // Ann imports JAN.VDB's bike.
-        var status = await Run(api, s => s.GetRequiredService<ImportLegacyItemsUseCase>().ExecuteAsync(ann, new LegacyImportRequest("jan.vdb", [10, 20])));
-        Assert.Equal(("JAN.VDB", 1), (status.UserName, status.ItemCount));
+        // Ann imports JOHN.DOE's bike.
+        var status = await Run(api, s => s.GetRequiredService<ImportLegacyItemsUseCase>().ExecuteAsync(ann, new LegacyImportRequest("john.doe", [10, 20])));
+        Assert.Equal(("JOHN.DOE", 1), (status.UserName, status.ItemCount));
 
-        // Bob can't take JAN.VDB; Ann can't import MIEKE as well.
-        await Assert.ThrowsAsync<ConflictException>(() => Run(api, s => s.GetRequiredService<ImportLegacyItemsUseCase>().ExecuteAsync(bob, new LegacyImportRequest("JAN.VDB", [10]))));
-        await Assert.ThrowsAsync<ConflictException>(() => Run(api, s => s.GetRequiredService<ImportLegacyItemsUseCase>().ExecuteAsync(ann, new LegacyImportRequest("MIEKE", [20]))));
+        // Bob can't take JOHN.DOE; Ann can't import JANE.DOE as well.
+        await Assert.ThrowsAsync<ConflictException>(() => Run(api, s => s.GetRequiredService<ImportLegacyItemsUseCase>().ExecuteAsync(bob, new LegacyImportRequest("JOHN.DOE", [10]))));
+        await Assert.ThrowsAsync<ConflictException>(() => Run(api, s => s.GetRequiredService<ImportLegacyItemsUseCase>().ExecuteAsync(ann, new LegacyImportRequest("JANE.DOE", [20]))));
 
         // Even past the use case's checks, the database allows one claim per account.
         await Assert.ThrowsAsync<ConflictException>(() => Run(api, s => s.GetRequiredService<ILegacyRepository>().TryClaimAsync(2, ann, DateTime.UtcNow, 0)));

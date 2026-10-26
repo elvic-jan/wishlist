@@ -174,7 +174,7 @@ export function ImportPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Your old username</CardTitle>
-            <CardDescription>The name you used to sign in on {OLD_SITE}, for example JAN.VDB.</CardDescription>
+            <CardDescription>The name you used to sign in on {OLD_SITE}, for example JOHN.DOE.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={lookUp} className="flex flex-col gap-3 sm:flex-row">
