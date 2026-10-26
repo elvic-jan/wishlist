@@ -28,11 +28,19 @@ public sealed class PostgresFactAttribute : FactAttribute
     }
 }
 
+/// <summary>Postgres tests share one throwaway database, so they run one at a time.</summary>
+[CollectionDefinition(Name)]
+public sealed class PostgresCollection
+{
+    public const string Name = "Postgres";
+}
+
 /// <summary>
 /// The real WebAuthn verification (Identity's PasskeyHandler), the passkey
 /// table and every passkey endpoint, against Postgres, with a software
 /// authenticator standing in for the browser.
 /// </summary>
+[Collection(PostgresCollection.Name)]
 public class PasskeyPostgresEndToEndTests
 {
     private const string Origin = "https://giftcircles.test";

@@ -96,6 +96,7 @@ jobs:
     env:
       RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
       CONTAINER_APP: ca-wishlist
+      RESERVATION_JOB: caj-wishlist-reservations
       IMAGE: ${{ needs.build.outputs.image }}
     steps:
       - uses: actions/download-artifact@v5
@@ -142,6 +143,16 @@ jobs:
 
       - name: Deploy image
         run: az containerapp update -g "$RESOURCE_GROUP" -n "$CONTAINER_APP" --image "$IMAGE" --output none
+
+      # The monthly job runs the same image, so it always matches the app and
+      # the schema. It's created by the infra workflow; until then, skip.
+      - name: Update reservation job image
+        run: |
+          if az containerapp job show -g "$RESOURCE_GROUP" -n "$RESERVATION_JOB" --output none 2>/dev/null; then
+            az containerapp job update -g "$RESOURCE_GROUP" -n "$RESERVATION_JOB" --image "$IMAGE" --output none
+          else
+            echo "::notice::$RESERVATION_JOB doesn't exist yet; run the infra workflow to create it."
+          fi
 
       - name: Smoke check
         run: |

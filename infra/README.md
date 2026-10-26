@@ -8,6 +8,7 @@ rationale: `openspec/changes/add-cheap-azure-hosting/design.md` (archived under
 | Resource | SKU | Expected cost / month |
 |---|---|---|
 | Container App `ca-wishlist` (+ environment `cae-wishlist`) | Consumption, 0.25 vCPU / 0.5 GiB, 0–1 replicas | ~$0 (inside free grant) |
+| Container Apps job `caj-wishlist-reservations` | Scheduled, 1st of the month 07:00 UTC, same image | ~$0 (seconds per month) |
 | PostgreSQL Flexible Server `psql-wishlist-<suffix>` | Standard_B1ms, 32 GiB, 7-day backups | ~$13–16 |
 | Communication Services `acs-wishlist-<suffix>` (+ `-email`) | Azure-managed domain | ~$0.00025 / email |
 | Log Analytics `log-wishlist` | PerGB2018, 0.1 GB/day cap | cents |
@@ -200,6 +201,13 @@ it's `noreply@<domain>` with the display name GiftCircles. Same two-phase patter
 
 - **Logs**: `az containerapp logs show -g $RG -n ca-wishlist --follow`, or query
   `ContainerAppConsoleLogs_CL` in `log-wishlist`.
+- **Reservation job** (`caj-wishlist-reservations`): runs on the 1st of each month at
+  07:00 UTC with the app's image and settings (`--job reservations`). It emails reminders
+  for reservations ending next month, then ends the expired ones and emails their reservers.
+  The deploy workflow keeps its image in step with the app. Run it by hand with
+  `az containerapp job start -g $RG -n caj-wishlist-reservations`; see past runs with
+  `az containerapp job execution list -g $RG -n caj-wishlist-reservations -o table`. Its
+  log line ("Reservation run: …") is in `ContainerAppConsoleLogs_CL`.
 - **Rollback**: re-run the `deploy` job of an earlier successful run (its image tag and
   migrations bundle are kept for 30 days), or
   `az containerapp update -g $RG -n ca-wishlist --image ghcr.io/<owner>/wishlist:sha-<old>`.

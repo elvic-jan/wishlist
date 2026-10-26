@@ -7,6 +7,9 @@ param environmentName string
 @description('Container app name.')
 param appName string
 
+@description('Name of the monthly reservation job (same image, run with --job reservations).')
+param reservationJobName string
+
 @description('Log Analytics workspace that receives console logs.')
 param logAnalyticsWorkspaceName string
 
@@ -106,6 +109,31 @@ var appSecrets = concat(
   usePrivateRegistry ? [{ name: 'ghcr-token', value: ghcrToken }] : []
 )
 
+// Shared by the app and the reservation job, so both see the same settings.
+var appEnv = [
+  { name: 'ASPNETCORE_ENVIRONMENT', value: 'Production' }
+  { name: 'App__PublicBaseUrl', value: effectivePublicBaseUrl }
+  { name: 'ConnectionStrings__DefaultConnection', secretRef: 'db-connection' }
+  { name: 'Jwt__Key', secretRef: 'jwt-key' }
+  { name: 'Smtp__Host', value: 'smtp.azurecomm.net' }
+  { name: 'Smtp__Port', value: '587' }
+  { name: 'Smtp__UseStartTls', value: 'true' }
+  { name: 'Smtp__User', secretRef: 'smtp-user' }
+  { name: 'Smtp__Password', secretRef: 'smtp-password' }
+  { name: 'Smtp__FromAddress', value: smtpFromAddress }
+  { name: 'Smtp__FromName', value: smtpFromName }
+]
+
+var registries = usePrivateRegistry
+  ? [
+      {
+        server: 'ghcr.io'
+        username: ghcrUsername
+        passwordSecretRef: 'ghcr-token'
+      }
+    ]
+  : []
+
 resource app 'Microsoft.App/containerApps@2024-03-01' = {
   name: appName
   location: location
@@ -129,15 +157,7 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
             ]
           : []
       }
-      registries: usePrivateRegistry
-        ? [
-            {
-              server: 'ghcr.io'
-              username: ghcrUsername
-              passwordSecretRef: 'ghcr-token'
-            }
-          ]
-        : []
+      registries: registries
       secrets: appSecrets
     }
     template: {
@@ -149,19 +169,7 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
             cpu: json('0.25')
             memory: '0.5Gi'
           }
-          env: [
-            { name: 'ASPNETCORE_ENVIRONMENT', value: 'Production' }
-            { name: 'App__PublicBaseUrl', value: effectivePublicBaseUrl }
-            { name: 'ConnectionStrings__DefaultConnection', secretRef: 'db-connection' }
-            { name: 'Jwt__Key', secretRef: 'jwt-key' }
-            { name: 'Smtp__Host', value: 'smtp.azurecomm.net' }
-            { name: 'Smtp__Port', value: '587' }
-            { name: 'Smtp__UseStartTls', value: 'true' }
-            { name: 'Smtp__User', secretRef: 'smtp-user' }
-            { name: 'Smtp__Password', secretRef: 'smtp-password' }
-            { name: 'Smtp__FromAddress', value: smtpFromAddress }
-            { name: 'Smtp__FromName', value: smtpFromName }
-          ]
+          env: appEnv
           probes: [
             {
               type: 'Startup'
@@ -201,7 +209,46 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
+// Monthly reservation run: reminders, then ending expired reservations.
+// The cron must match ReservationSchedule (RunDayOfMonth, RunHourUtc) in
+// src/Wishlist.Domain/ReservationSchedule.cs. Costs a few seconds of
+// Consumption compute per month.
+resource reservationJob 'Microsoft.App/jobs@2024-03-01' = {
+  name: reservationJobName
+  location: location
+  properties: {
+    environmentId: environment.id
+    configuration: {
+      triggerType: 'Schedule'
+      replicaTimeout: 600
+      replicaRetryLimit: 1
+      scheduleTriggerConfig: {
+        cronExpression: '0 7 1 * *'
+        parallelism: 1
+        replicaCompletionCount: 1
+      }
+      registries: registries
+      secrets: appSecrets
+    }
+    template: {
+      containers: [
+        {
+          name: 'reservations'
+          image: image
+          args: ['--job', 'reservations']
+          resources: {
+            cpu: json('0.25')
+            memory: '0.5Gi'
+          }
+          env: appEnv
+        }
+      ]
+    }
+  }
+}
+
 output name string = app.name
+output reservationJobName string = reservationJob.name
 output fqdn string = app.properties.configuration.ingress.fqdn
 output customDomainVerificationId string = app.properties.customDomainVerificationId
 output publicBaseUrl string = effectivePublicBaseUrl

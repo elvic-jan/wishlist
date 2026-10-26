@@ -19,7 +19,8 @@ public class WishlistsController(
     ListGroupWishlistsUseCase listGroup,
     ReserveGiftUseCase reserve,
     MarkGiftAsBoughtUseCase markBought,
-    ReleaseGiftClaimUseCase release) : ControllerBase
+    ReleaseGiftClaimUseCase release,
+    KeepReservationUseCase keep) : ControllerBase
 {
     [HttpGet("groups/{groupId:guid}/wishlists")]
     public async Task<IActionResult> ListGroupWishlists(Guid groupId, CancellationToken ct)
@@ -82,6 +83,14 @@ public class WishlistsController(
     {
         await release.ExecuteAsync(GetUserId(), userId, itemId, ct);
         return NoContent();
+    }
+
+    /// <summary>The reserver keeps their reservation for another period.</summary>
+    [HttpPost("wishlists/{userId:guid}/items/{itemId:guid}/claim/extend")]
+    public async Task<IActionResult> Keep(Guid userId, Guid itemId, CancellationToken ct)
+    {
+        var result = await keep.ExecuteAsync(GetUserId(), userId, itemId, ct);
+        return Ok(result);
     }
 
     private Guid GetUserId() =>

@@ -45,6 +45,9 @@ public static class DependencyInjection
         services.AddScoped<ReserveGiftUseCase>();
         services.AddScoped<MarkGiftAsBoughtUseCase>();
         services.AddScoped<ReleaseGiftClaimUseCase>();
+        services.AddScoped<KeepReservationUseCase>();
+        services.AddScoped<ReservationEmails>();
+        services.AddScoped<ProcessReservationsUseCase>();
 
         return services;
     }

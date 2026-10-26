@@ -20,6 +20,8 @@ interface GiftClaim {
   claimedByUserId: string
   status: 'Reserved' | 'Bought'
   isClaimedByMe: boolean
+  /** When your reservation ends; only sent for your own reservations. */
+  expiresAt?: string | null
 }
 
 interface WishlistItem {
@@ -38,6 +40,18 @@ function hostFor(rawUrl: string): string {
   } catch {
     return rawUrl
   }
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+/** "Keep reservation" is offered once the reminder is due: one month or less left. */
+function canKeep(claim: GiftClaim): boolean {
+  if (!claim.isClaimedByMe || claim.status !== 'Reserved' || !claim.expiresAt) return false
+  const reminderDue = new Date(claim.expiresAt)
+  reminderDue.setMonth(reminderDue.getMonth() - 1)
+  return reminderDue.getTime() <= Date.now()
 }
 
 function StatusBadge({ claim }: { claim: GiftClaim | null }) {
@@ -126,6 +140,17 @@ export function MemberWishlistPage() {
     }
   }
 
+  const keepReservation = async (itemId: string) => {
+    try {
+      const { data } = await client.post<WishlistItem>(`/wishlists/${userId}/items/${itemId}/claim/extend`)
+      const until = data.claim?.expiresAt
+      toast({ title: 'Reservation kept', description: until ? `It now ends on ${formatDate(until)}.` : undefined })
+      load()
+    } catch (err) {
+      handleErr(err, 'Failed to keep the reservation.')
+    }
+  }
+
   const releaseClaim = async (itemId: string) => {
     try {
       await client.delete(`/wishlists/${userId}/items/${itemId}/claim`)
@@ -207,6 +232,13 @@ export function MemberWishlistPage() {
                   </CardContent>
                 )}
                 <CardContent className="flex flex-wrap gap-2 pt-0">
+                  {item.claim?.isClaimedByMe &&
+                    item.claim.status === 'Reserved' &&
+                    item.claim.expiresAt && (
+                      <p className="w-full text-xs text-muted-foreground">
+                        Your reservation ends on {formatDate(item.claim.expiresAt)}.
+                      </p>
+                    )}
                   {!item.claim && (
                     <Button size="sm" onClick={() => reserve(item.id)}>
                       Reserve
@@ -222,6 +254,15 @@ export function MemberWishlistPage() {
                         Mark as bought
                       </Button>
                     )}
+                  {item.claim && canKeep(item.claim) && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => keepReservation(item.id)}
+                    >
+                      Keep reservation
+                    </Button>
+                  )}
                   {item.claim?.isClaimedByMe && (
                     <Button
                       size="sm"

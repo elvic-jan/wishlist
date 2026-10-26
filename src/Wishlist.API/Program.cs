@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.IdentityModel.Tokens;
 using Wishlist.Application;
+using Wishlist.Application.UseCases.GiftClaims;
 using Wishlist.API.Controllers;
 using Wishlist.API.Middleware;
 using Wishlist.Infrastructure;
@@ -52,6 +53,19 @@ if (!builder.Environment.IsDevelopment())
 }
 
 var app = builder.Build();
+
+// Job mode: the monthly scheduled job runs this same image with
+// "--job reservations". It does its work and exits; no web server starts.
+var job = app.Configuration["job"];
+if (job is not null)
+{
+    if (job != "reservations")
+        throw new InvalidOperationException($"Unknown job \"{job}\". The only job is \"reservations\".");
+
+    await using var scope = app.Services.CreateAsyncScope();
+    await scope.ServiceProvider.GetRequiredService<ProcessReservationsUseCase>().ExecuteAsync();
+    return;
+}
 
 if (app.Environment.IsDevelopment())
 {

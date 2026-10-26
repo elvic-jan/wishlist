@@ -4,7 +4,7 @@ using Wishlist.Domain.Exceptions;
 
 namespace Wishlist.Application.UseCases.Wishlists;
 
-public class GetMemberWishlistUseCase(IWishlistRepository wishlists, IGroupRepository groups)
+public class GetMemberWishlistUseCase(IWishlistRepository wishlists, IGroupRepository groups, TimeProvider time)
 {
     public async Task<IReadOnlyList<WishlistItemDto>> ExecuteAsync(Guid requestingUserId, Guid ownerId, CancellationToken ct = default)
     {
@@ -12,10 +12,11 @@ public class GetMemberWishlistUseCase(IWishlistRepository wishlists, IGroupRepos
             throw new ForbiddenException("You do not share a circle with this user.");
 
         var items = await wishlists.GetByOwnerAsync(ownerId, includeClaims: true, ct);
+        var now = time.GetUtcNow().UtcDateTime;
         return items.Select(i =>
         {
-            var claim = i.GetClaimVisibleTo(requestingUserId);
-            var claimDto = claim is null ? null : new GiftClaimDto(claim.Id, claim.ClaimedByUserId, claim.Status, claim.ClaimedByUserId == requestingUserId);
+            var claim = i.GetClaimVisibleTo(requestingUserId, now);
+            var claimDto = claim is null ? null : GiftClaimDto.For(claim, requestingUserId);
             return new WishlistItemDto(
                 i.Id,
                 i.OwnerId,
