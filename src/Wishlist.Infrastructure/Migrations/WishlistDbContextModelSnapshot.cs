@@ -203,6 +203,12 @@ namespace Wishlist.Infrastructure.Migrations
                     b.Property<Guid>("ClaimedByUserId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ReminderSentAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");

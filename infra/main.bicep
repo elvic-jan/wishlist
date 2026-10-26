@@ -1,5 +1,5 @@
 // Cheapest production hosting for the wishlist app: one resource group with a
-// scale-to-zero Container App, a Burstable Postgres server, ACS Email and a
+// scale-to-zero Container App (plus its monthly reservation job), a Burstable Postgres server, ACS Email and a
 // budget alert. See infra/README.md for the one-time bootstrap.
 targetScope = 'resourceGroup'
 
@@ -91,6 +91,7 @@ module app 'modules/containerapp.bicep' = {
     location: location
     environmentName: 'cae-${baseName}'
     appName: 'ca-${baseName}'
+    reservationJobName: 'caj-${baseName}-reservations'
     logAnalyticsWorkspaceName: logs.outputs.name
     image: image
     minReplicas: minReplicas
@@ -120,6 +121,7 @@ module budget 'modules/budget.bicep' = {
 }
 
 output containerAppName string = app.outputs.name
+output reservationJobName string = app.outputs.reservationJobName
 output appFqdn string = app.outputs.fqdn
 output publicBaseUrl string = app.outputs.publicBaseUrl
 output customDomainVerificationId string = app.outputs.customDomainVerificationId

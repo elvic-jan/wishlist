@@ -1,10 +1,11 @@
 using Wishlist.Application.DTOs;
 using Wishlist.Application.Interfaces;
+using Wishlist.Domain;
 using Wishlist.Domain.Exceptions;
 
 namespace Wishlist.Application.UseCases.GiftClaims;
 
-public class ReserveGiftUseCase(IWishlistRepository wishlists, IGiftClaimRepository claims, IGroupRepository groups)
+public class ReserveGiftUseCase(IWishlistRepository wishlists, IGiftClaimRepository claims, IGroupRepository groups, TimeProvider time)
 {
     public async Task<WishlistItemDto> ExecuteAsync(Guid requestingUserId, Guid ownerId, Guid itemId, CancellationToken ct = default)
     {
@@ -20,11 +21,16 @@ public class ReserveGiftUseCase(IWishlistRepository wishlists, IGiftClaimReposit
         if (!await groups.SharesGroupAsync(requestingUserId, ownerId, ct))
             throw new ForbiddenException("You do not share a circle with this user.");
 
-        if (item.GiftClaim is not null)
+        var now = time.GetUtcNow().UtcDateTime;
+        if (item.GetActiveClaim(now) is not null)
             throw new ConflictException("This item has already been claimed.");
 
-        var claim = await claims.CreateAsync(itemId, requestingUserId, ct);
-        var claimDto = new GiftClaimDto(claim.Id, claim.ClaimedByUserId, claim.Status, true);
+        // A reservation that ran out counts as no claim; make room for the new one.
+        if (item.GiftClaim is not null)
+            await claims.DeleteAsync(item.GiftClaim.Id, ct);
+
+        var claim = await claims.CreateAsync(itemId, requestingUserId, now, ReservationSchedule.EndDateFrom(now), ct);
+        var claimDto = GiftClaimDto.For(claim, requestingUserId);
         return new WishlistItemDto(
             item.Id,
             item.OwnerId,

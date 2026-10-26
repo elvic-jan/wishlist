@@ -13,11 +13,15 @@ public class WishlistItem
 
     public GiftClaim? GiftClaim { get; set; }
 
-    public GiftClaim? GetClaimVisibleTo(Guid requestingUserId)
+    /// <summary>The claim, unless it's a reservation that has run out.</summary>
+    public GiftClaim? GetActiveClaim(DateTime now) =>
+        GiftClaim is not null && GiftClaim.IsActive(now) ? GiftClaim : null;
+
+    public GiftClaim? GetClaimVisibleTo(Guid requestingUserId, DateTime now)
     {
         if (requestingUserId == OwnerId)
             return null;
 
-        return GiftClaim;
+        return GetActiveClaim(now);
     }
 }
