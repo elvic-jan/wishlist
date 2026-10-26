@@ -66,6 +66,18 @@ function applyClasses(theme: ThemeId, dark: boolean) {
   root.classList.add(`theme-${theme}`)
   if (dark) root.classList.add('dark')
   else root.classList.remove('dark')
+  syncBrowserColors()
+}
+
+/**
+ * Lets the browser's own bars and controls follow the app's mode, not only the
+ * phone's setting: the theme-color meta gets the page background of the active
+ * theme, and color-scheme tells the browser the page is light or dark.
+ */
+function syncBrowserColors() {
+  const meta = document.querySelector('meta[name="theme-color"]')
+  const background = getComputedStyle(document.body).backgroundColor
+  if (meta && background) meta.setAttribute('content', background)
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
