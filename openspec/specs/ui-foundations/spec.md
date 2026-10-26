@@ -145,6 +145,18 @@ The application SHALL be installable from the browser as a standalone home-scree
 - **WHEN** someone adds the app to the home screen in Safari on iPhone or iPad
 - **THEN** the home-screen icon is the GiftCircles icon and the title is "GiftCircles"
 
+#### Scenario: Icons are filled to the edge
+- **WHEN** any of the app's icon images is shown
+- **THEN** its background colour reaches every edge, with no white or lighter lines along a side
+
+#### Scenario: System bars readable in dark mode
+- **WHEN** the installed app runs on Android with the phone or the app in dark mode
+- **THEN** the system navigation bar is not white, and its buttons stay visible
+
+#### Scenario: Browser colour follows the app's mode
+- **WHEN** the user picks Light, Dark or System in the app
+- **THEN** the page's `theme-color` and `color-scheme` match the resolved mode, not only the phone's setting
+
 #### Scenario: Install from the account menu on Android or desktop
 - **WHEN** the browser reports that the app can be installed and the user chooses "Install app" in the account menu
 - **THEN** the browser's own install dialog opens
@@ -193,4 +205,8 @@ Pages that load a list SHALL show a loading placeholder until the data has arriv
 #### Scenario: No empty-state flash
 - **WHEN** a wishlist page is opened or returned to and its items are still loading
 - **THEN** a loading placeholder is shown, not "No items yet" or "Nothing here yet"
+
+#### Scenario: No "No circles yet" flash
+- **WHEN** "My circles" is opened or returned to, for example with Back from a circle, and the circles are still loading
+- **THEN** a loading placeholder is shown, not "No circles yet" or the "New circle" button
 

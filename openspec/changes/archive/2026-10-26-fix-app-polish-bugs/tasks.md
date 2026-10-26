@@ -16,4 +16,4 @@
 
 - [x] 4.1 SPA lint and build
 - [x] 4.2 Browser check: no "No circles yet" flash on "My circles" (slow network), empty state still shown for a user with no circles, theme-color follows the mode toggle, manifest serves the new colours
-- [ ] 4.3 On a phone after deploy (user): iPhone icon re-added has no white line; Android navigation bar no longer white in dark mode
+- [x] 4.3 On a phone after deploy (user): iPhone icon re-added has no white line; Android navigation bar no longer white in dark mode
