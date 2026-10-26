@@ -219,6 +219,44 @@ it's `noreply@<domain>` with the display name GiftCircles. Same two-phase patter
   then delete the rule.
 - **Teardown**: `pg_dump` first, then `az group delete -n $RG`. Backups are deleted with the server.
 
+## Old wishlist site (one-time load)
+
+People can import their wishes from the old site (verlanglijstje) on `/import`. The old
+data has to be loaded into production once, from the exported `vl_users.xlsx` and
+`vl_items.xlsx`. The export files stay on your PC and never go into git. The job keeps only
+usernames and live items (not struck out, not deleted). Emails, names, passwords,
+priorities, remarks and reservations are never stored.
+
+Run from the repository root in PowerShell, with the Postgres admin password at hand:
+
+```powershell
+$RG = "rg-wishlist-prod"
+$PG = az postgres flexible-server list -g $RG --query "[0].name" -o tsv
+$IP = Invoke-RestMethod https://api.ipify.org
+az postgres flexible-server firewall-rule create -g $RG -s $PG -n legacy-load --start-ip-address $IP --end-ip-address $IP --output none
+
+$env:ConnectionStrings__DefaultConnection = "Host=$PG.postgres.database.azure.com;Port=5432;Database=wishlist;Username=wishlistadmin;Password=<admin password>;SSL Mode=VerifyFull"
+dotnet run --project src/Wishlist.API --launch-profile https -- --job legacy-load --users "$HOME\Downloads\vl_users.xlsx" --items "$HOME\Downloads\vl_items.xlsx"
+Remove-Item Env:ConnectionStrings__DefaultConnection
+
+az postgres flexible-server firewall-rule delete -g $RG -s $PG -n legacy-load --yes
+```
+
+The job logs `Legacy load: 79 usernames and 475 live items stored (…)` and exits. Running it
+again is safe: it updates what's there, adds what's missing, and keeps every claim. Until it
+has run, `/import` says importing isn't available and the import message isn't shown.
+
+**Release a wrong claim.** Each old username can be imported by one account. If someone took
+the wrong one, connect to the database (see **Connect to the database** above) and run:
+
+```sql
+UPDATE "LegacyUsers" SET "ClaimedByUserId" = NULL, "ClaimedAt" = NULL, "ImportedItemCount" = NULL
+WHERE "UserName" = 'JAN.VDB';
+```
+
+The wishes already imported stay with the account that imported them, which can delete
+them. Deleting an account also releases its claim.
+
 ## Expiring credentials
 
 | Credential | Where | Expires | Effect when expired |

@@ -8,6 +8,7 @@ using Wishlist.Application;
 using Wishlist.Application.Interfaces;
 using Wishlist.Application.UseCases.GiftClaims;
 using Wishlist.Application.UseCases.Groups;
+using Wishlist.Application.UseCases.LegacyImport;
 using Wishlist.API.Controllers;
 using Wishlist.API.Middleware;
 using Wishlist.Infrastructure;
@@ -58,16 +59,27 @@ if (!builder.Environment.IsDevelopment())
 
 var app = builder.Build();
 
-// Job mode: the monthly scheduled job runs this same image with
-// "--job reservations". It does its work and exits; no web server starts.
+// Job mode: the same image runs a job and exits; no web server starts.
+// - "--job reservations": the monthly scheduled reservation run.
+// - "--job legacy-load --users <xlsx> --items <xlsx>": loads the old wishlist
+//   site's export once (see infra/README.md).
 var job = app.Configuration["job"];
 if (job is not null)
 {
-    if (job != "reservations")
-        throw new InvalidOperationException($"Unknown job \"{job}\". The only job is \"reservations\".");
-
     await using var scope = app.Services.CreateAsyncScope();
-    await scope.ServiceProvider.GetRequiredService<ProcessReservationsUseCase>().ExecuteAsync();
+    switch (job)
+    {
+        case "reservations":
+            await scope.ServiceProvider.GetRequiredService<ProcessReservationsUseCase>().ExecuteAsync();
+            break;
+        case "legacy-load":
+            var usersPath = app.Configuration["users"] ?? throw new InvalidOperationException("Pass --users <path to vl_users.xlsx>.");
+            var itemsPath = app.Configuration["items"] ?? throw new InvalidOperationException("Pass --items <path to vl_items.xlsx>.");
+            await scope.ServiceProvider.GetRequiredService<LoadLegacyDataUseCase>().ExecuteAsync(usersPath, itemsPath);
+            break;
+        default:
+            throw new InvalidOperationException($"Unknown job \"{job}\". Jobs: \"reservations\", \"legacy-load\".");
+    }
     return;
 }
 

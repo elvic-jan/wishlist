@@ -302,6 +302,62 @@ namespace Wishlist.Infrastructure.Migrations
                     b.ToTable("GroupMembers");
                 });
 
+            modelBuilder.Entity("Wishlist.Domain.Entities.LegacyItem", b =>
+                {
+                    b.Property<int>("LegacyId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<int>("LegacyOwnerId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.HasKey("LegacyId");
+
+                    b.HasIndex("LegacyOwnerId");
+
+                    b.ToTable("LegacyItems");
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.LegacyUser", b =>
+                {
+                    b.Property<int>("LegacyId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ClaimedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ClaimedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("ImportedItemCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("LegacyId");
+
+                    b.HasIndex("ClaimedByUserId")
+                        .IsUnique();
+
+                    b.HasIndex("UserName")
+                        .IsUnique();
+
+                    b.ToTable("LegacyUsers");
+                });
+
             modelBuilder.Entity("Wishlist.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -331,6 +387,23 @@ namespace Wishlist.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.UserMessageState", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MessageId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("DismissedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UserId", "MessageId");
+
+                    b.ToTable("UserMessageStates");
                 });
 
             modelBuilder.Entity("Wishlist.Domain.Entities.WishlistItem", b =>
@@ -583,6 +656,32 @@ namespace Wishlist.Infrastructure.Migrations
                     b.HasOne("Wishlist.Domain.Entities.Group", null)
                         .WithMany()
                         .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.LegacyItem", b =>
+                {
+                    b.HasOne("Wishlist.Domain.Entities.LegacyUser", null)
+                        .WithMany()
+                        .HasForeignKey("LegacyOwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.LegacyUser", b =>
+                {
+                    b.HasOne("Wishlist.Infrastructure.Persistence.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ClaimedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.UserMessageState", b =>
+                {
+                    b.HasOne("Wishlist.Infrastructure.Persistence.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

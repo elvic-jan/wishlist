@@ -17,6 +17,7 @@ import { GroupDetailPage } from '@/pages/GroupDetailPage'
 import { MyWishlistPage } from '@/pages/MyWishlistPage'
 import { MemberWishlistPage } from '@/pages/MemberWishlistPage'
 import { JoinGroupPage } from '@/pages/JoinGroupPage'
+import { ImportPage } from '@/pages/ImportPage'
 
 function LegacyGroupRedirect() {
   const { groupId } = useParams()
@@ -55,6 +56,7 @@ export default function App() {
                 {/* Circles used to be called groups; keep old bookmarks working. */}
                 <Route path="/groups/:groupId" element={<LegacyGroupRedirect />} />
                 <Route path="/settings/security" element={<SecurityPage />} />
+                <Route path="/import" element={<ImportPage />} />
                 <Route path="/wishlist/me" element={<MyWishlistPage />} />
                 <Route path="/wishlist/:userId" element={<MemberWishlistPage />} />
               </Route>
