@@ -4,7 +4,7 @@ import { inviteErrorMessage } from '@/lib/inviteErrors'
 
 export type InvitationCheck =
   | { state: 'checking' }
-  | { state: 'valid' }
+  | { state: 'valid'; inviterName: string; circleName: string }
   | { state: 'invalid'; message: string }
 
 /**
@@ -18,9 +18,10 @@ export function useInvitationCheck(code: string | undefined): InvitationCheck {
     if (!code) return
     let cancelled = false
     client
-      .get(`/invitations/${code}`)
-      .then(() => {
-        if (!cancelled) setResult({ code, check: { state: 'valid' } })
+      .get<{ inviterName: string; circleName: string }>(`/invitations/${code}`)
+      .then(({ data }) => {
+        if (!cancelled)
+          setResult({ code, check: { state: 'valid', inviterName: data.inviterName, circleName: data.circleName } })
       })
       .catch((err: unknown) => {
         if (!cancelled)

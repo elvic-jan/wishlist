@@ -71,6 +71,6 @@ public class ReservationPostgresTests
         // 1 August: expired; the bought gift never is.
         var expired = Assert.Single(await claims.GetExpiredAsync(Utc(2027, 8, 1, 8)));
         Assert.Equal(reservedId, expired.ClaimId);
-        Assert.Empty((await claims.GetExpiredAsync(Utc(2040, 1, 1))).Where(n => n.ClaimId == boughtId));
+        Assert.DoesNotContain(await claims.GetExpiredAsync(Utc(2040, 1, 1)), n => n.ClaimId == boughtId);
     }
 }

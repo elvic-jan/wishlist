@@ -5,6 +5,7 @@ namespace Wishlist.Application.Interfaces;
 
 public interface IGroupRepository
 {
+    Task<Group?> GetByIdAsync(Guid groupId, CancellationToken ct = default);
     Task<Group> CreateAsync(string name, Guid createdByUserId, CancellationToken ct = default);
     Task<bool> IsMemberAsync(Guid groupId, Guid userId, CancellationToken ct = default);
     Task<IReadOnlyList<GroupMember>> GetMembersAsync(Guid groupId, CancellationToken ct = default);

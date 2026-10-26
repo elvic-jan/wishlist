@@ -82,7 +82,15 @@ public class InMemoryApi : WebApplicationFactory<Program>
 
 public sealed class InMemoryStore
 {
+    public Group AddGroup(string name)
+    {
+        var group = new Group { Id = Guid.NewGuid(), Name = name, CreatedAt = DateTime.UtcNow };
+        Groups[group.Id] = group;
+        return group;
+    }
+
     public ConcurrentDictionary<Guid, User> Users { get; } = new();
+    public ConcurrentDictionary<Guid, Group> Groups { get; } = new();
     public ConcurrentDictionary<(Guid GroupId, Guid UserId), GroupMember> Members { get; } = new();
     public ConcurrentDictionary<string, GroupInvitation> Invitations { get; } = new();
     public ConcurrentDictionary<string, FakePasskey> Passkeys { get; } = new();
@@ -124,12 +132,12 @@ public sealed class InMemoryStore
         return user;
     }
 
-    public GroupInvitation AddInvitation(DateTime? expiresAt = null)
+    public GroupInvitation AddInvitation(DateTime? expiresAt = null, Guid? groupId = null, Guid? createdBy = null)
     {
         var invitation = new GroupInvitation
         {
-            Id = Guid.NewGuid(), GroupId = Guid.NewGuid(), InviteCode = Guid.NewGuid().ToString("N"),
-            CreatedByUserId = Guid.NewGuid(), CreatedAt = DateTime.UtcNow,
+            Id = Guid.NewGuid(), GroupId = groupId ?? Guid.NewGuid(), InviteCode = Guid.NewGuid().ToString("N"),
+            CreatedByUserId = createdBy ?? Guid.NewGuid(), CreatedAt = DateTime.UtcNow,
             ExpiresAt = expiresAt ?? DateTime.UtcNow.AddDays(7),
         };
         Invitations[invitation.InviteCode] = invitation;
@@ -215,6 +223,9 @@ internal sealed class InMemoryUsers(InMemoryStore store) : IUserRepository
 
 internal sealed class InMemoryGroups(InMemoryStore store) : IGroupRepository
 {
+    public Task<Group?> GetByIdAsync(Guid groupId, CancellationToken ct = default) =>
+        Task.FromResult(store.Groups.GetValueOrDefault(groupId));
+
     public Task<bool> IsMemberAsync(Guid groupId, Guid userId, CancellationToken ct = default) =>
         Task.FromResult(store.IsMember(groupId, userId));
 
