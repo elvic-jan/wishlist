@@ -27,4 +27,4 @@
 - [x] 5.1 Tests: xlsx reader and load (live only, sensitive columns absent, re-run keeps claims); mapping (HTML, links); preview (case-insensitive, 404, 409, limit); import (ticked only, foreign ids ignored, once per account and per username, race); messages (audience, window, dismiss idempotent, 404, import message disappears after import)
 - [x] 5.2 Build, tests (with Postgres), SPA lint and build
 - [x] 5.3 Local run: load the real exports into the local database with the job (79 usernames, 475 live items, only username/item columns stored); import path checked against Postgres in a test; import page and message toasts at phone width with a faked API (action, remind, close, look-up, ticks, import)
-- [ ] 5.4 After deploy (user): run the load job against production, then check the message and an import
+- [x] 5.4 After deploy: the user loaded the old data into production with the job (2026-10-27) and imported their own wishes successfully
