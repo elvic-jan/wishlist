@@ -33,4 +33,4 @@
 - [x] 6.1 Tests: end-date rounding (2 Jan → 1 Aug, 31 Jan → 1 Aug, 1 Jan 07:00 → 1 Jul), expiry on read, reserve over an expired claim, keep (claimer only, not expired or bought), bought clears expiry, reminder sent once and not for bought or released claims, expiry email + delete (also when sending fails), owner responses contain no expiry
 - [x] 6.2 Build, tests, SPA lint and build, `az bicep build`
 - [x] 6.3 Local check: run the API with `--job reservations` against reservations dated back; reminder and expiry emails arrive (local SMTP); "Keep reservation" shows and works
-- [ ] 6.4 After deploy (user): run the infra workflow to create the job, start it once by hand, check its log
+- [x] 6.4 After deploy: infra workflow created the job (verified 2026-10-26: schedule `0 7 1 * *`, args `--job reservations`, same image as the app). Not started by hand; first scheduled run 1 Nov 2026.
