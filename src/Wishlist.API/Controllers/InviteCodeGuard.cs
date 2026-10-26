@@ -33,4 +33,29 @@ public sealed class InviteCodeGuard(IInviteCodeAttemptLimiter limiter)
             throw;
         }
     }
+
+    /// <summary>
+    /// For callers that must never reveal why a code didn't work (the link
+    /// preview): null when the client is blocked or the code is unknown or
+    /// expired. Unknown codes still count toward the client's limit.
+    /// </summary>
+    public async Task<T?> TryAsync<T>(HttpContext http, Func<Task<T>> attempt) where T : class
+    {
+        var ip = http.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
+        if (limiter.IsBlocked(ip)) return null;
+
+        try
+        {
+            return await attempt();
+        }
+        catch (InvitationNotFoundException)
+        {
+            limiter.RecordFailure(ip);
+            return null;
+        }
+        catch (GoneException)
+        {
+            return null;
+        }
+    }
 }

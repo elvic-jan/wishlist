@@ -8,6 +8,9 @@ namespace Wishlist.Infrastructure.Repositories;
 
 public class GroupRepository(WishlistDbContext db) : IGroupRepository
 {
+    public async Task<Group?> GetByIdAsync(Guid groupId, CancellationToken ct = default)
+        => await db.Groups.AsNoTracking().FirstOrDefaultAsync(g => g.Id == groupId, ct);
+
     public async Task<Group> CreateAsync(string name, Guid createdByUserId, CancellationToken ct = default)
     {
         var group = new Group

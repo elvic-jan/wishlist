@@ -365,6 +365,7 @@ public class ReservationExpiryTests
     {
         public Task<bool> SharesGroupAsync(Guid userId1, Guid userId2, CancellationToken ct = default) => Task.FromResult(true);
 
+        public Task<Group?> GetByIdAsync(Guid groupId, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<bool> IsMemberAsync(Guid groupId, Guid userId, CancellationToken ct = default) => throw new NotSupportedException();
         public Task AddMemberAsync(Guid groupId, Guid userId, GroupMemberRole role, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<Group> CreateAsync(string name, Guid createdByUserId, CancellationToken ct = default) => throw new NotSupportedException();

@@ -3,8 +3,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.IdentityModel.Tokens;
+using Wishlist.API;
 using Wishlist.Application;
+using Wishlist.Application.Interfaces;
 using Wishlist.Application.UseCases.GiftClaims;
+using Wishlist.Application.UseCases.Groups;
 using Wishlist.API.Controllers;
 using Wishlist.API.Middleware;
 using Wishlist.Infrastructure;
@@ -15,6 +18,7 @@ builder.Services.AddControllers();
 builder.Services.AddSingleton<InviteCodeGuard>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<PasskeyCeremonyCookie>();
+builder.Services.AddSingleton<ISpaTemplate, WebRootSpaTemplate>();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 
@@ -96,7 +100,29 @@ app.MapControllers();
 // depend on nor keep Postgres busy.
 app.MapGet("/healthz", () => Results.Ok()).AllowAnonymous();
 
-app.MapFallbackToFile("index.html");
+// Invite links get a personal link preview ("Jan invited you to Family…").
+// Unknown, expired or rate-limited codes get the generic one, so a preview
+// never confirms a guessed code. Personal, so never cached.
+app.MapGet("/join/{code}", async (
+    string code, HttpContext http, ISpaTemplate spa, InviteCodeGuard guard,
+    CheckInvitationUseCase checkInvitation, IAppUrlProvider urls, CancellationToken ct) =>
+{
+    if (spa.Html is not { } html) return Results.NotFound();
+
+    var invitation = await guard.TryAsync(http, () => checkInvitation.ExecuteAsync(code, ct));
+    var preview = invitation is null
+        ? null
+        : new SpaPage.Preview(
+            $"{invitation.InviterName} invited you to {invitation.CircleName} on GiftCircles",
+            "Join the circle to see each other's wishlists and coordinate gifts.");
+    return SpaPage.Html(SpaPage.Render(html, urls.PublicBaseUrl, http.Request.Path, preview), noStore: true);
+}).AllowAnonymous();
+
+// Every other page: the SPA, with absolute link-preview image and URL.
+app.MapFallback((HttpContext http, ISpaTemplate spa, IAppUrlProvider urls) =>
+    spa.Html is { } html
+        ? SpaPage.Html(SpaPage.Render(html, urls.PublicBaseUrl, http.Request.Path, null), noStore: false)
+        : Results.NotFound()).AllowAnonymous();
 
 app.Run();
 

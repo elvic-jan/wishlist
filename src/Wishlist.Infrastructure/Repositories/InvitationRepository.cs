@@ -15,7 +15,7 @@ public class InvitationRepository(WishlistDbContext db) : IInvitationRepository
             GroupId = groupId,
             InviteCode = Guid.NewGuid().ToString("N"),
             CreatedByUserId = createdByUserId,
-            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            ExpiresAt = DateTime.UtcNow.Add(GroupInvitation.Lifetime),
             CreatedAt = DateTime.UtcNow
         };
         db.GroupInvitations.Add(invitation);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, ChevronRight, Copy, LogOut, Users } from 'lucide-react'
+import { ChevronRight, LogOut, Users } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
@@ -22,7 +22,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { BackButton } from '@/components/BackButton'
-import { useToast } from '@/hooks/use-toast'
+import { InviteMenu } from '@/components/InviteMenu'
 import client from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
 
@@ -54,11 +54,9 @@ export function GroupDetailPage() {
   const { groupId } = useParams<{ groupId: string }>()
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { toast } = useToast()
   const [members, setMembers] = useState<Member[] | null>(null)
   const [circles, setCircles] = useState<Circle[] | null>(null)
   const [inviteUrl, setInviteUrl] = useState('')
-  const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
   const [confirmLeave, setConfirmLeave] = useState(false)
 
@@ -83,21 +81,6 @@ export function GroupDetailPage() {
     ? [...members.filter(m => m.userId === user?.id), ...members.filter(m => m.userId !== user?.id)]
     : null
 
-  const generateInvite = async () => {
-    try {
-      const { data } = await client.post(`/groups/${groupId}/invitations`)
-      setInviteUrl(data.inviteUrl)
-      await navigator.clipboard.writeText(data.inviteUrl)
-      setCopied(true)
-      toast({
-        title: 'Invite link copied',
-        description: 'Send it to whoever you want to add.',
-      })
-      setTimeout(() => setCopied(false), 3000)
-    } catch {
-      setError('Failed to generate invitation link.')
-    }
-  }
 
   const leaveGroup = async () => {
     try {
@@ -182,14 +165,16 @@ export function GroupDetailPage() {
       <Separator />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button onClick={generateInvite} variant="outline">
-          {copied ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <Copy className="h-4 w-4" />
-          )}
-          {copied ? 'Copied!' : 'Generate invite link'}
-        </Button>
+        {circleName ? (
+          <InviteMenu
+            groupId={groupId!}
+            circleName={circleName}
+            inviterName={user?.displayName ?? 'Someone'}
+            onLinkCreated={setInviteUrl}
+          />
+        ) : (
+          <Skeleton className="h-10 w-36" aria-label="Loading" />
+        )}
         <Button
           onClick={() => setConfirmLeave(true)}
           variant="ghost"

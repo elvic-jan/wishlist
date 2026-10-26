@@ -56,7 +56,9 @@ export function JoinGroupPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>You&rsquo;ve been invited</CardTitle>
+          <CardTitle>
+            {invitation.inviterName} invited you to {invitation.circleName}
+          </CardTitle>
           <CardDescription>
             Create an account to join the circle, or sign in if you already have one.
           </CardDescription>
