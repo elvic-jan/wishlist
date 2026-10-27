@@ -12,7 +12,22 @@ public record WishlistItemDto(
     string? Description,
     IReadOnlyList<string> Urls,
     DateTime CreatedAt,
-    GiftClaimDto? Claim);
+    GiftClaimDto? Claim,
+    AddedByDto? AddedBy = null)
+{
+    public static WishlistItemDto From(Wishlist.Domain.Entities.WishlistItem item, GiftClaimDto? claim) => new(
+        item.Id,
+        item.OwnerId,
+        item.Title,
+        item.Description,
+        item.Urls.OrderBy(u => u.DisplayOrder).Select(u => u.Url).ToList(),
+        item.CreatedAt,
+        claim,
+        item.AddedById is { } id ? new AddedByDto(id, item.AddedByName ?? string.Empty) : null);
+}
+
+/// <summary>The buddy who added a wish.</summary>
+public record AddedByDto(Guid UserId, string DisplayName);
 
 /// <param name="ExpiresAt">When the reservation ends; only sent to the claimer.</param>
 public record GiftClaimDto(Guid Id, Guid ClaimedByUserId, GiftClaimStatus Status, bool IsClaimedByMe, DateTime? ExpiresAt)
@@ -25,3 +40,6 @@ public record GiftClaimDto(Guid Id, Guid ClaimedByUserId, GiftClaimStatus Status
 }
 
 public record GroupWishlistEntryDto(Guid UserId, string DisplayName);
+
+public record BuddyDto(Guid UserId, string DisplayName);
+public record AddBuddyRequest(Guid UserId);

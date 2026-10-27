@@ -9,14 +9,7 @@ public class GetOwnWishlistUseCase(IWishlistRepository wishlists)
     {
         var items = await wishlists.GetByOwnerAsync(userId, includeClaims: false, ct);
         return items
-            .Select(i => new WishlistItemDto(
-                i.Id,
-                i.OwnerId,
-                i.Title,
-                i.Description,
-                i.Urls.OrderBy(u => u.DisplayOrder).Select(u => u.Url).ToList(),
-                i.CreatedAt,
-                Claim: null))
+            .Select(i => WishlistItemDto.From(i, null))
             .ToList();
     }
 }

@@ -13,7 +13,9 @@ public class WishlistRepository(WishlistDbContext db) : IWishlistRepository
         query = query.Include(w => w.Urls.OrderBy(u => u.DisplayOrder));
         if (includeClaims)
             query = query.Include(w => w.GiftClaim);
-        return await query.OrderBy(w => w.CreatedAt).ToListAsync(ct);
+        var items = await query.OrderBy(w => w.CreatedAt).ToListAsync(ct);
+        await FillAddedByNamesAsync(items, ct);
+        return items;
     }
 
     public async Task<WishlistItem?> GetByIdAsync(Guid itemId, bool includeClaim, CancellationToken ct = default)
@@ -22,15 +24,19 @@ public class WishlistRepository(WishlistDbContext db) : IWishlistRepository
         query = query.Include(w => w.Urls.OrderBy(u => u.DisplayOrder));
         if (includeClaim)
             query = query.Include(w => w.GiftClaim);
-        return await query.FirstOrDefaultAsync(ct);
+        var item = await query.FirstOrDefaultAsync(ct);
+        if (item is not null)
+            await FillAddedByNamesAsync([item], ct);
+        return item;
     }
 
-    public async Task<WishlistItem> CreateAsync(Guid ownerId, string title, string? description, IReadOnlyList<string> urls, CancellationToken ct = default)
+    public async Task<WishlistItem> CreateAsync(Guid ownerId, string title, string? description, IReadOnlyList<string> urls, CancellationToken ct = default, Guid? addedById = null)
     {
         var item = new WishlistItem
         {
             Id = Guid.NewGuid(),
             OwnerId = ownerId,
+            AddedById = addedById,
             Title = title,
             Description = description,
             CreatedAt = DateTime.UtcNow,
@@ -50,6 +56,7 @@ public class WishlistRepository(WishlistDbContext db) : IWishlistRepository
 
         db.WishlistItems.Add(item);
         await db.SaveChangesAsync(ct);
+        await FillAddedByNamesAsync([item], ct);
         return item;
     }
 
@@ -114,5 +121,18 @@ public class WishlistRepository(WishlistDbContext db) : IWishlistRepository
             .ToListAsync(ct);
 
         return results.Select(r => (r.Id, r.DisplayName)).ToList();
+    }
+
+    private async Task FillAddedByNamesAsync(IReadOnlyCollection<WishlistItem> items, CancellationToken ct)
+    {
+        var ids = items.Where(i => i.AddedById is not null).Select(i => i.AddedById!.Value).Distinct().ToList();
+        if (ids.Count == 0) return;
+
+        var names = await db.Users
+            .Where(u => ids.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.DisplayName, ct);
+        foreach (var item in items)
+            if (item.AddedById is { } id)
+                item.AddedByName = names.GetValueOrDefault(id);
     }
 }

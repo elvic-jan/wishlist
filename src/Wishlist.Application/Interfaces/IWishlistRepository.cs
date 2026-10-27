@@ -6,7 +6,8 @@ public interface IWishlistRepository
 {
     Task<IReadOnlyList<WishlistItem>> GetByOwnerAsync(Guid ownerId, bool includeClaims, CancellationToken ct = default);
     Task<WishlistItem?> GetByIdAsync(Guid itemId, bool includeClaim, CancellationToken ct = default);
-    Task<WishlistItem> CreateAsync(Guid ownerId, string title, string? description, IReadOnlyList<string> urls, CancellationToken ct = default);
+    /// <param name="addedById">The buddy who adds the wish; null when the owner adds it.</param>
+    Task<WishlistItem> CreateAsync(Guid ownerId, string title, string? description, IReadOnlyList<string> urls, CancellationToken ct = default, Guid? addedById = null);
     Task UpdateAsync(WishlistItem item, CancellationToken ct = default);
     Task ReplaceUrlsAsync(WishlistItem item, IReadOnlyList<string> urls, CancellationToken ct = default);
     Task DeleteAsync(Guid itemId, CancellationToken ct = default);

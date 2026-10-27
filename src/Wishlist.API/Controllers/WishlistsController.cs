@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Wishlist.Application.DTOs;
+using Wishlist.Application.UseCases.Buddies;
 using Wishlist.Application.UseCases.GiftClaims;
 using Wishlist.Application.UseCases.Wishlists;
 
@@ -20,7 +21,8 @@ public class WishlistsController(
     ReserveGiftUseCase reserve,
     MarkGiftAsBoughtUseCase markBought,
     ReleaseGiftClaimUseCase release,
-    KeepReservationUseCase keep) : ControllerBase
+    KeepReservationUseCase keep,
+    ManageBuddiesUseCase buddies) : ControllerBase
 {
     [HttpGet("groups/{groupId:guid}/wishlists")]
     public async Task<IActionResult> ListGroupWishlists(Guid groupId, CancellationToken ct)
@@ -54,6 +56,49 @@ public class WishlistsController(
     public async Task<IActionResult> DeleteItem(Guid itemId, CancellationToken ct)
     {
         await deleteItem.ExecuteAsync(GetUserId(), itemId, ct);
+        return NoContent();
+    }
+
+    // --- Buddies: people with full control over my wishlist ---
+
+    [HttpGet("wishlists/me/buddies")]
+    public async Task<IActionResult> GetBuddies(CancellationToken ct) =>
+        Ok(await buddies.GetBuddiesAsync(GetUserId(), ct));
+
+    [HttpGet("wishlists/me/buddy-candidates")]
+    public async Task<IActionResult> GetBuddyCandidates(CancellationToken ct) =>
+        Ok(await buddies.GetCandidatesAsync(GetUserId(), ct));
+
+    /// <summary>The wishlists I am a buddy for.</summary>
+    [HttpGet("wishlists/me/buddy-of")]
+    public async Task<IActionResult> GetBuddyOf(CancellationToken ct) =>
+        Ok(await buddies.GetBuddyOfAsync(GetUserId(), ct));
+
+    [HttpPost("wishlists/me/buddies")]
+    public async Task<IActionResult> AddBuddy([FromBody] AddBuddyRequest request, CancellationToken ct) =>
+        Ok(await buddies.AddAsync(GetUserId(), request.UserId, ct));
+
+    [HttpDelete("wishlists/me/buddies/{buddyId:guid}")]
+    public async Task<IActionResult> RemoveBuddy(Guid buddyId, CancellationToken ct)
+    {
+        await buddies.RemoveAsync(GetUserId(), buddyId, ct);
+        return NoContent();
+    }
+
+    // --- A buddy changes the owner's wishlist ---
+
+    [HttpPost("wishlists/{userId:guid}/items")]
+    public async Task<IActionResult> AddItemAsBuddy(Guid userId, [FromBody] AddWishlistItemRequest request, CancellationToken ct) =>
+        Ok(await addItem.ExecuteAsBuddyAsync(GetUserId(), userId, request, ct));
+
+    [HttpPatch("wishlists/{userId:guid}/items/{itemId:guid}")]
+    public async Task<IActionResult> EditItemAsBuddy(Guid userId, Guid itemId, [FromBody] EditWishlistItemRequest request, CancellationToken ct) =>
+        Ok(await editItem.ExecuteAsBuddyAsync(GetUserId(), userId, itemId, request, ct));
+
+    [HttpDelete("wishlists/{userId:guid}/items/{itemId:guid}")]
+    public async Task<IActionResult> DeleteItemAsBuddy(Guid userId, Guid itemId, CancellationToken ct)
+    {
+        await deleteItem.ExecuteAsBuddyAsync(GetUserId(), userId, itemId, ct);
         return NoContent();
     }
 

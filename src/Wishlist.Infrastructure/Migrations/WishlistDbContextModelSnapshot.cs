@@ -406,10 +406,31 @@ namespace Wishlist.Infrastructure.Migrations
                     b.ToTable("UserMessageStates");
                 });
 
+            modelBuilder.Entity("Wishlist.Domain.Entities.WishlistBuddy", b =>
+                {
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BuddyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("OwnerId", "BuddyId");
+
+                    b.HasIndex("BuddyId");
+
+                    b.ToTable("WishlistBuddies");
+                });
+
             modelBuilder.Entity("Wishlist.Domain.Entities.WishlistItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AddedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -430,6 +451,8 @@ namespace Wishlist.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AddedById");
 
                     b.ToTable("WishlistItems");
                 });
@@ -684,6 +707,29 @@ namespace Wishlist.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.WishlistBuddy", b =>
+                {
+                    b.HasOne("Wishlist.Infrastructure.Persistence.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("BuddyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Wishlist.Infrastructure.Persistence.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.WishlistItem", b =>
+                {
+                    b.HasOne("Wishlist.Infrastructure.Persistence.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("AddedById")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Wishlist.Domain.Entities.WishlistItemUrl", b =>
