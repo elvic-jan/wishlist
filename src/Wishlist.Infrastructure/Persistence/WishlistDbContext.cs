@@ -22,6 +22,7 @@ public class WishlistDbContext(DbContextOptions<WishlistDbContext> options)
     public DbSet<LegacyItem> LegacyItems => Set<LegacyItem>();
     public DbSet<UserMessageState> UserMessageStates => Set<UserMessageState>();
     public DbSet<WishlistBuddy> WishlistBuddies => Set<WishlistBuddy>();
+    public DbSet<CircleInvitation> CircleInvitations => Set<CircleInvitation>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -113,6 +114,17 @@ public class WishlistDbContext(DbContextOptions<WishlistDbContext> options)
             e.HasKey(s => new { s.UserId, s.MessageId });
             e.Property(s => s.MessageId).HasMaxLength(100);
             e.HasOne<ApplicationUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // An open invitation to join a circle, addressed to one existing user.
+        builder.Entity<CircleInvitation>(e =>
+        {
+            e.HasKey(i => i.Id);
+            e.HasIndex(i => new { i.GroupId, i.InviteeId }).IsUnique();
+            e.HasIndex(i => i.InviteeId);
+            e.HasOne<Group>().WithMany().HasForeignKey(i => i.GroupId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(i => i.InviteeId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(i => i.InvitedById).OnDelete(DeleteBehavior.SetNull);
         });
 
         builder.Entity<WishlistBuddy>(e =>

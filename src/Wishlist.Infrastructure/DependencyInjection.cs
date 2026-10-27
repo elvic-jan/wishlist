@@ -68,6 +68,7 @@ public static class DependencyInjection
         services.AddScoped<ILegacyRepository, LegacyRepository>();
         services.AddScoped<IUserMessageStateRepository, UserMessageStateRepository>();
         services.AddScoped<IWishlistBuddyRepository, WishlistBuddyRepository>();
+        services.AddScoped<ICircleInvitationRepository, CircleInvitationRepository>();
         services.AddSingleton<ISpreadsheetReader, XlsxReader>();
         services.AddSingleton<ILegacyUserNameAttemptLimiter, LegacyUserNameAttemptLimiter>();
         services.AddScoped<ITokenService, TokenService>();
