@@ -12,6 +12,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CircleInvitationsCard } from '@/components/CircleInvitationsCard'
 import client from '@/api/client'
 
 interface Group {
@@ -26,7 +27,7 @@ export function HomePage() {
   const [showCreate, setShowCreate] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
+  const loadGroups = () =>
     client
       .get('/groups/me')
       .then(r => setGroups(r.data))
@@ -34,6 +35,9 @@ export function HomePage() {
         const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
         setError(msg ?? 'Failed to load circles.')
       })
+
+  useEffect(() => {
+    loadGroups()
   }, [])
 
   const createGroup = async (e: React.FormEvent) => {
@@ -68,6 +72,8 @@ export function HomePage() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+
+      <CircleInvitationsCard onJoined={loadGroups} />
 
       {!groups ? (
         // Still loading: never show "No circles yet" before the circles arrive.

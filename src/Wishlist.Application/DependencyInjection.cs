@@ -37,6 +37,11 @@ public static class DependencyInjection
         services.AddScoped<JoinGroupViaInvitationUseCase>();
         services.AddScoped<ListGroupMembersUseCase>();
         services.AddScoped<LeaveGroupUseCase>();
+        services.AddScoped<GetInviteCandidatesUseCase>();
+        services.AddScoped<InviteFromCirclesUseCase>();
+        services.AddScoped<GetMyCircleInvitationsUseCase>();
+        services.AddScoped<AnswerCircleInvitationUseCase>();
+        services.AddScoped<CircleInvitationEmails>();
 
         services.AddScoped<AddWishlistItemUseCase>();
         services.AddScoped<EditWishlistItemUseCase>();

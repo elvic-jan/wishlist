@@ -191,6 +191,36 @@ namespace Wishlist.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Wishlist.Domain.Entities.CircleInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("InvitedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("InviteeId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvitedById");
+
+                    b.HasIndex("InviteeId");
+
+                    b.HasIndex("GroupId", "InviteeId")
+                        .IsUnique();
+
+                    b.ToTable("CircleInvitations");
+                });
+
             modelBuilder.Entity("Wishlist.Domain.Entities.GiftClaim", b =>
                 {
                     b.Property<Guid>("Id")
@@ -652,6 +682,26 @@ namespace Wishlist.Infrastructure.Migrations
                     b.HasOne("Wishlist.Infrastructure.Persistence.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.CircleInvitation", b =>
+                {
+                    b.HasOne("Wishlist.Domain.Entities.Group", null)
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Wishlist.Infrastructure.Persistence.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("InvitedById")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Wishlist.Infrastructure.Persistence.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("InviteeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

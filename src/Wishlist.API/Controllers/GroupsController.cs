@@ -18,7 +18,11 @@ public class GroupsController(
     JoinGroupViaInvitationUseCase joinGroup,
     InviteCodeGuard inviteCodeGuard,
     ListGroupMembersUseCase listMembers,
-    LeaveGroupUseCase leaveGroup) : ControllerBase
+    LeaveGroupUseCase leaveGroup,
+    GetInviteCandidatesUseCase inviteCandidates,
+    InviteFromCirclesUseCase inviteFromCircles,
+    GetMyCircleInvitationsUseCase myCircleInvitations,
+    AnswerCircleInvitationUseCase answerCircleInvitation) : ControllerBase
 {
     [HttpGet("groups/me")]
     public async Task<IActionResult> MyGroups(CancellationToken ct)
@@ -66,6 +70,31 @@ public class GroupsController(
     public async Task<IActionResult> Leave(Guid groupId, CancellationToken ct)
     {
         await leaveGroup.ExecuteAsync(GetUserId(), groupId, ct);
+        return NoContent();
+    }
+
+    // --- Inviting people you know from your other circles ---
+
+    [HttpGet("groups/{groupId:guid}/invite-candidates")]
+    public async Task<IActionResult> InviteCandidates(Guid groupId, CancellationToken ct) =>
+        Ok(await inviteCandidates.ExecuteAsync(GetUserId(), groupId, ct));
+
+    [HttpPost("groups/{groupId:guid}/circle-invitations")]
+    public async Task<IActionResult> InviteFromCircles(Guid groupId, [FromBody] InviteFromCirclesRequest request, CancellationToken ct) =>
+        Ok(await inviteFromCircles.ExecuteAsync(GetUserId(), groupId, request, ct));
+
+    [HttpGet("circle-invitations/me")]
+    public async Task<IActionResult> MyCircleInvitations(CancellationToken ct) =>
+        Ok(await myCircleInvitations.ExecuteAsync(GetUserId(), ct));
+
+    [HttpPost("circle-invitations/{invitationId:guid}/accept")]
+    public async Task<IActionResult> AcceptCircleInvitation(Guid invitationId, CancellationToken ct) =>
+        Ok(new { groupId = await answerCircleInvitation.JoinAsync(GetUserId(), invitationId, ct) });
+
+    [HttpPost("circle-invitations/{invitationId:guid}/decline")]
+    public async Task<IActionResult> DeclineCircleInvitation(Guid invitationId, CancellationToken ct)
+    {
+        await answerCircleInvitation.DeclineAsync(GetUserId(), invitationId, ct);
         return NoContent();
     }
 

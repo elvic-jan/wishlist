@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Copy, Loader2, Mail, MessageCircle, Share2, UserPlus } from 'lucide-react'
+import { Copy, Loader2, Mail, MessageCircle, Share2, UserPlus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -12,6 +12,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import client from '@/api/client'
 import { buildInviteMessage } from '@/lib/inviteMessage'
+import { InviteFromCirclesDialog } from '@/components/InviteFromCirclesDialog'
 
 interface Invitation {
   inviteUrl: string
@@ -38,6 +39,7 @@ export function InviteMenu({
 }) {
   const { toast } = useToast()
   const [invitation, setInvitation] = useState<Invitation | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   const createLink = async () => {
     setInvitation(null)
@@ -78,52 +80,65 @@ export function InviteMenu({
   const ready = invitation !== null
 
   return (
-    <DropdownMenu onOpenChange={open => open && createLink()}>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline">
-          <UserPlus className="h-4 w-4" />
-          Invite people
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56">
-        <DropdownMenuLabel className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
-          {ready ? (
-            'Send a new invite link'
-          ) : (
-            <>
-              <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-              Creating invite link…
-            </>
-          )}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {canShareNatively && (
-          <DropdownMenuItem disabled={!ready} onSelect={share}>
-            <Share2 className="h-4 w-4" />
-            Share…
+    <>
+      <DropdownMenu onOpenChange={open => open && createLink()}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline">
+            <UserPlus className="h-4 w-4" />
+            Invite people
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56">
+          <DropdownMenuItem onSelect={() => setPickerOpen(true)}>
+            <Users className="h-4 w-4" />
+            People from my circles
           </DropdownMenuItem>
-        )}
-        <DropdownMenuItem
-          disabled={!ready}
-          onSelect={() => message && window.open(message.whatsAppUrl, '_blank', 'noopener')}
-        >
-          <MessageCircle className="h-4 w-4" />
-          WhatsApp
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          disabled={!ready}
-          onSelect={() => {
-            if (message) window.location.href = message.mailtoUrl
-          }}
-        >
-          <Mail className="h-4 w-4" />
-          Email
-        </DropdownMenuItem>
-        <DropdownMenuItem disabled={!ready} onSelect={copy}>
-          <Copy className="h-4 w-4" />
-          Copy link
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
+            {ready ? (
+              'Send a new invite link'
+            ) : (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                Creating invite link…
+              </>
+            )}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {canShareNatively && (
+            <DropdownMenuItem disabled={!ready} onSelect={share}>
+              <Share2 className="h-4 w-4" />
+              Share…
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem
+            disabled={!ready}
+            onSelect={() => message && window.open(message.whatsAppUrl, '_blank', 'noopener')}
+          >
+            <MessageCircle className="h-4 w-4" />
+            WhatsApp
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={!ready}
+            onSelect={() => {
+              if (message) window.location.href = message.mailtoUrl
+            }}
+          >
+            <Mail className="h-4 w-4" />
+            Email
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={!ready} onSelect={copy}>
+            <Copy className="h-4 w-4" />
+            Copy link
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <InviteFromCirclesDialog
+        groupId={groupId}
+        circleName={circleName}
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+      />
+    </>
   )
 }
