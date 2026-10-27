@@ -307,7 +307,7 @@ public class ReservationExpiryTests
         public Task<WishlistItem?> GetByIdAsync(Guid itemId, bool includeClaim, CancellationToken ct = default) =>
             Task.FromResult(All.FirstOrDefault(i => i.Id == itemId));
 
-        public Task<WishlistItem> CreateAsync(Guid ownerId, string title, string? description, IReadOnlyList<string> urls, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<WishlistItem> CreateAsync(Guid ownerId, string title, string? description, IReadOnlyList<string> urls, CancellationToken ct = default, Guid? addedById = null) => throw new NotSupportedException();
         public Task UpdateAsync(WishlistItem item, CancellationToken ct = default) => throw new NotSupportedException();
         public Task ReplaceUrlsAsync(WishlistItem item, IReadOnlyList<string> urls, CancellationToken ct = default) => throw new NotSupportedException();
         public Task DeleteAsync(Guid itemId, CancellationToken ct = default) => throw new NotSupportedException();

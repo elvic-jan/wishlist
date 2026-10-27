@@ -1,17 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Check, ExternalLink, Gift, Lock } from 'lucide-react'
+import { Check, Gift, Lock, Users } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
+import { CardContent } from '@/components/ui/card'
 import { BackButton } from '@/components/BackButton'
+import { WishlistEditor, type EditableItem } from '@/components/WishlistEditor'
+import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import client from '@/api/client'
 
@@ -24,22 +20,14 @@ interface GiftClaim {
   expiresAt?: string | null
 }
 
-interface WishlistItem {
-  id: string
+interface WishlistItem extends EditableItem {
   ownerId: string
-  title: string
-  description?: string
-  urls: string[]
   claim: GiftClaim | null
 }
 
-function hostFor(rawUrl: string): string {
-  try {
-    const parsed = new URL(rawUrl)
-    return parsed.host.replace(/^www\./, '')
-  } catch {
-    return rawUrl
-  }
+interface Person {
+  userId: string
+  displayName: string
 }
 
 function formatDate(iso: string): string {
@@ -93,11 +81,14 @@ function StatusBadge({ claim }: { claim: GiftClaim | null }) {
 
 export function MemberWishlistPage() {
   const { userId } = useParams<{ userId: string }>()
+  const { user } = useAuth()
   const { toast } = useToast()
   const [items, setItems] = useState<WishlistItem[]>([])
   const [error, setError] = useState('')
   // Until the first load finishes, show a placeholder rather than "Nothing here yet".
   const [loaded, setLoaded] = useState(false)
+  // Set when the viewer is this person's buddy: they can add, edit and delete wishes.
+  const [buddyOf, setBuddyOf] = useState<Person | null>(null)
 
   const load = useCallback(
     () =>
@@ -112,6 +103,13 @@ export function MemberWishlistPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  useEffect(() => {
+    client
+      .get<Person[]>('/wishlists/me/buddy-of')
+      .then(r => setBuddyOf(r.data.find(p => p.userId === userId) ?? null))
+      .catch(() => setBuddyOf(null))
+  }, [userId])
 
   const handleErr = (err: unknown, fallback: string) => {
     const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
@@ -160,14 +158,66 @@ export function MemberWishlistPage() {
     }
   }
 
+  const renderActions = (item: WishlistItem) => (
+    <CardContent className="flex flex-wrap gap-2 pt-0">
+      {item.claim?.isClaimedByMe &&
+        item.claim.status === 'Reserved' &&
+        item.claim.expiresAt && (
+          <p className="w-full text-xs text-muted-foreground">
+            Your reservation ends on {formatDate(item.claim.expiresAt)}.
+          </p>
+        )}
+      {!item.claim && (
+        <Button size="sm" onClick={() => reserve(item.id)}>
+          Reserve
+        </Button>
+      )}
+      {item.claim?.isClaimedByMe && item.claim.status === 'Reserved' && (
+        <Button size="sm" onClick={() => markBought(item.id)}>
+          <Check className="h-4 w-4" />
+          Mark as bought
+        </Button>
+      )}
+      {item.claim && canKeep(item.claim) && (
+        <Button size="sm" variant="outline" onClick={() => keepReservation(item.id)}>
+          Keep reservation
+        </Button>
+      )}
+      {item.claim?.isClaimedByMe && (
+        <Button size="sm" variant="outline" onClick={() => releaseClaim(item.id)}>
+          Release claim
+        </Button>
+      )}
+    </CardContent>
+  )
+
+  const deleteDescription = (item: WishlistItem) => {
+    const name = buddyOf?.displayName ?? 'their'
+    const base = `This removes the item from ${buddyOf ? `${name}’s` : 'the'} wishlist for everyone. It can’t be undone.`
+    if (!item.claim || item.claim.isClaimedByMe) return base
+    const what = item.claim.status === 'Bought' ? 'already bought' : 'reserved'
+    return `Someone has ${what} this gift. ${base}`
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <BackButton />
         <div className="flex items-center gap-2">
           <Gift className="h-5 w-5 text-primary" aria-hidden />
-          <h1 className="text-2xl font-semibold tracking-tight">Wishlist</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {buddyOf ? `${buddyOf.displayName}’s wishlist` : 'Wishlist'}
+          </h1>
         </div>
+        {buddyOf && (
+          <p className="mt-1.5 flex items-start gap-1.5 text-sm text-muted-foreground">
+            <Users className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            <span>
+              You&rsquo;re {buddyOf.displayName}&rsquo;s buddy, so you can add, change and remove
+              wishes here. {buddyOf.displayName} won&rsquo;t see what&rsquo;s reserved.
+            </span>
+          </p>
+        )}
       </div>
 
       {error && (
@@ -176,108 +226,20 @@ export function MemberWishlistPage() {
         </Alert>
       )}
 
-      {!loaded ? (
-        <div className="space-y-3" aria-label="Loading wishlist">
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
-        </div>
-      ) : items.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Gift className="h-6 w-6" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Nothing here yet</p>
-              <p className="text-sm text-muted-foreground">
-                This person hasn&rsquo;t added any items.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <ul className="space-y-3">
-          {items.map(item => (
-            <li key={item.id}>
-              <Card>
-                <CardHeader className="space-y-2">
-                  <div className="flex items-start justify-between gap-3">
-                    <CardTitle className="text-base font-medium">
-                      {item.title}
-                    </CardTitle>
-                    <StatusBadge claim={item.claim} />
-                  </div>
-                  {item.description && (
-                    <p className="text-sm text-muted-foreground">
-                      {item.description}
-                    </p>
-                  )}
-                </CardHeader>
-                {item.urls.length > 0 && (
-                  <CardContent className="pb-3">
-                    <div className="flex flex-wrap gap-2">
-                      {item.urls.map((u, i) => (
-                        <a
-                          key={i}
-                          href={u}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs text-foreground transition-colors hover:bg-accent"
-                        >
-                          {hostFor(u)}
-                          <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                        </a>
-                      ))}
-                    </div>
-                  </CardContent>
-                )}
-                <CardContent className="flex flex-wrap gap-2 pt-0">
-                  {item.claim?.isClaimedByMe &&
-                    item.claim.status === 'Reserved' &&
-                    item.claim.expiresAt && (
-                      <p className="w-full text-xs text-muted-foreground">
-                        Your reservation ends on {formatDate(item.claim.expiresAt)}.
-                      </p>
-                    )}
-                  {!item.claim && (
-                    <Button size="sm" onClick={() => reserve(item.id)}>
-                      Reserve
-                    </Button>
-                  )}
-                  {item.claim?.isClaimedByMe &&
-                    item.claim.status === 'Reserved' && (
-                      <Button
-                        size="sm"
-                        onClick={() => markBought(item.id)}
-                      >
-                        <Check className="h-4 w-4" />
-                        Mark as bought
-                      </Button>
-                    )}
-                  {item.claim && canKeep(item.claim) && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => keepReservation(item.id)}
-                    >
-                      Keep reservation
-                    </Button>
-                  )}
-                  {item.claim?.isClaimedByMe && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => releaseClaim(item.id)}
-                    >
-                      Release claim
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            </li>
-          ))}
-        </ul>
-      )}
+      <WishlistEditor
+        items={items}
+        loaded={loaded}
+        onChanged={load}
+        itemsPath={`/wishlists/${userId}/items`}
+        canEdit={buddyOf !== null}
+        addLabel={buddyOf ? `Add a wish for ${buddyOf.displayName}` : 'Add item'}
+        emptyTitle="Nothing here yet"
+        emptyText="This person hasn’t added any items."
+        currentUserId={user?.id}
+        renderBadge={item => <StatusBadge claim={item.claim} />}
+        renderActions={renderActions}
+        deleteDescription={deleteDescription}
+      />
     </div>
   )
 }

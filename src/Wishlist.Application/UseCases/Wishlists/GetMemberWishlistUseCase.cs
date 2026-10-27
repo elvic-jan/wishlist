@@ -17,14 +17,7 @@ public class GetMemberWishlistUseCase(IWishlistRepository wishlists, IGroupRepos
         {
             var claim = i.GetClaimVisibleTo(requestingUserId, now);
             var claimDto = claim is null ? null : GiftClaimDto.For(claim, requestingUserId);
-            return new WishlistItemDto(
-                i.Id,
-                i.OwnerId,
-                i.Title,
-                i.Description,
-                i.Urls.OrderBy(u => u.DisplayOrder).Select(u => u.Url).ToList(),
-                i.CreatedAt,
-                claimDto);
+            return WishlistItemDto.From(i, claimDto);
         }).ToList();
     }
 }

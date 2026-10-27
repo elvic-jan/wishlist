@@ -34,16 +34,20 @@ public class ReservationPostgresTests
         var users = services.GetRequiredService<IUserRepository>();
         var owner = await users.CreateAsync("owner@example.test", "Owner", "Passw0rd!long");
         var giver = await users.CreateAsync("giver@example.test", "Giver", "Passw0rd!long");
-        var items = services.GetRequiredService<IWishlistRepository>();
-        var reservedItem = await items.CreateAsync(owner.Id, "Red bike", null, []);
-        var boughtItem = await items.CreateAsync(owner.Id, "Book", null, []);
-
+        // Plain SQL: today's repository writes columns this old schema doesn't have yet.
+        var reservedItemId = Guid.NewGuid();
+        var boughtItemId = Guid.NewGuid();
         var reservedId = Guid.NewGuid();
         var boughtId = Guid.NewGuid();
         await db.Database.ExecuteSqlAsync($"""
+            INSERT INTO "WishlistItems" ("Id", "OwnerId", "Title", "CreatedAt", "UpdatedAt") VALUES
+                ({reservedItemId}, {owner.Id}, 'Red bike', {Utc(2027, 1, 1)}, {Utc(2027, 1, 1)}),
+                ({boughtItemId}, {owner.Id}, 'Book', {Utc(2027, 1, 1)}, {Utc(2027, 1, 1)})
+            """);
+        await db.Database.ExecuteSqlAsync($"""
             INSERT INTO "GiftClaims" ("Id", "WishlistItemId", "ClaimedByUserId", "Status", "ClaimedAt") VALUES
-                ({reservedId}, {reservedItem.Id}, {giver.Id}, 'Reserved', {Utc(2027, 1, 2, 10)}),
-                ({boughtId}, {boughtItem.Id}, {giver.Id}, 'Bought', {Utc(2027, 1, 2, 10)})
+                ({reservedId}, {reservedItemId}, {giver.Id}, 'Reserved', {Utc(2027, 1, 2, 10)}),
+                ({boughtId}, {boughtItemId}, {giver.Id}, 'Bought', {Utc(2027, 1, 2, 10)})
             """);
 
         await db.Database.MigrateAsync();

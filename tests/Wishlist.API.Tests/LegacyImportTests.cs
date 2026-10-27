@@ -281,7 +281,7 @@ public class LegacyImportTests
     {
         public List<(string Title, string? Description, IReadOnlyList<string> Urls)> Created { get; } = [];
 
-        public Task<WishlistItem> CreateAsync(Guid ownerId, string title, string? description, IReadOnlyList<string> urls, CancellationToken ct = default)
+        public Task<WishlistItem> CreateAsync(Guid ownerId, string title, string? description, IReadOnlyList<string> urls, CancellationToken ct = default, Guid? addedById = null)
         {
             Created.Add((title, description, urls));
             return Task.FromResult(new WishlistItem { Id = Guid.NewGuid(), OwnerId = ownerId, Title = title, Description = description });

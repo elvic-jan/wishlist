@@ -21,13 +21,6 @@ public class KeepReservationUseCase(IWishlistRepository wishlists, IGiftClaimRep
         claim.Keep(requestingUserId, time.GetUtcNow().UtcDateTime);
         await claims.UpdateAsync(claim, ct);
 
-        return new WishlistItemDto(
-            item.Id,
-            item.OwnerId,
-            item.Title,
-            item.Description,
-            item.Urls.OrderBy(u => u.DisplayOrder).Select(u => u.Url).ToList(),
-            item.CreatedAt,
-            GiftClaimDto.For(claim, requestingUserId));
+        return WishlistItemDto.From(item, GiftClaimDto.For(claim, requestingUserId));
     }
 }

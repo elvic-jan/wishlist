@@ -4,6 +4,12 @@ public class WishlistItem
 {
     public Guid Id { get; set; }
     public Guid OwnerId { get; set; }
+
+    /// <summary>The buddy who added this wish; null when the owner added it.</summary>
+    public Guid? AddedById { get; set; }
+
+    /// <summary>Display name of <see cref="AddedById"/>; filled by the repository, not stored.</summary>
+    public string? AddedByName { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public DateTime CreatedAt { get; set; }

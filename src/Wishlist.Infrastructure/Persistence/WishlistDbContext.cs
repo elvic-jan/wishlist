@@ -21,6 +21,7 @@ public class WishlistDbContext(DbContextOptions<WishlistDbContext> options)
     public DbSet<LegacyUser> LegacyUsers => Set<LegacyUser>();
     public DbSet<LegacyItem> LegacyItems => Set<LegacyItem>();
     public DbSet<UserMessageState> UserMessageStates => Set<UserMessageState>();
+    public DbSet<WishlistBuddy> WishlistBuddies => Set<WishlistBuddy>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -52,6 +53,9 @@ public class WishlistDbContext(DbContextOptions<WishlistDbContext> options)
         {
             e.HasKey(w => w.Id);
             e.Property(w => w.Title).IsRequired().HasMaxLength(300);
+            e.Ignore(w => w.AddedByName);
+            // The buddy who added the wish; the wish stays when their account goes.
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(w => w.AddedById).OnDelete(DeleteBehavior.SetNull);
             e.HasOne(w => w.GiftClaim).WithOne().HasForeignKey<GiftClaim>(c => c.WishlistItemId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(w => w.Urls)
                 .WithOne()
@@ -109,6 +113,14 @@ public class WishlistDbContext(DbContextOptions<WishlistDbContext> options)
             e.HasKey(s => new { s.UserId, s.MessageId });
             e.Property(s => s.MessageId).HasMaxLength(100);
             e.HasOne<ApplicationUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<WishlistBuddy>(e =>
+        {
+            e.HasKey(b => new { b.OwnerId, b.BuddyId });
+            e.HasIndex(b => b.BuddyId);
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(b => b.OwnerId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(b => b.BuddyId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

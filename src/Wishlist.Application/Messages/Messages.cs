@@ -75,6 +75,21 @@ public class LegacyImportMessage(ILegacyRepository legacy) : IMessageDefinition
         await legacy.AnyAsync(ct) && await legacy.GetClaimedByAsync(userId, ct) is null;
 }
 
+/// <summary>Announces wishlist buddies.</summary>
+public class WhatsNewBuddiesMessage : IMessageDefinition
+{
+    public string Id => "whats-new-buddies";
+    public string Title => "New: wishlist buddies";
+    public string Text =>
+        "Let someone you trust keep your wishlist up to date. Pick your buddies on My wishlist: " +
+        "they can add, change and remove wishes for you. Handy for kids, grandparents, or a partner who knows what you like.";
+    public MessageAction? Action => new("Pick my buddies", "/wishlist/me?buddies=1");
+    public DateTime? ShowFrom => null;
+    public DateTime? ShowUntil => new DateTime(2027, 3, 1, 0, 0, 0, DateTimeKind.Utc);
+
+    public Task<bool> AppliesToAsync(Guid userId, CancellationToken ct = default) => Task.FromResult(true);
+}
+
 public class WhatsNewNovember2026Message : IMessageDefinition
 {
     public string Id => "whats-new-2026-11";

@@ -31,13 +31,6 @@ public class ReserveGiftUseCase(IWishlistRepository wishlists, IGiftClaimReposit
 
         var claim = await claims.CreateAsync(itemId, requestingUserId, now, ReservationSchedule.EndDateFrom(now), ct);
         var claimDto = GiftClaimDto.For(claim, requestingUserId);
-        return new WishlistItemDto(
-            item.Id,
-            item.OwnerId,
-            item.Title,
-            item.Description,
-            item.Urls.OrderBy(u => u.DisplayOrder).Select(u => u.Url).ToList(),
-            item.CreatedAt,
-            claimDto);
+        return WishlistItemDto.From(item, claimDto);
     }
 }

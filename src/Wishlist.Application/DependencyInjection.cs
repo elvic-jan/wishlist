@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Wishlist.Application.UseCases.Auth;
+using Wishlist.Application.UseCases.Buddies;
 using Wishlist.Application.UseCases.GiftClaims;
 using Wishlist.Application.Messages;
 using Wishlist.Application.UseCases.Groups;
@@ -43,6 +44,9 @@ public static class DependencyInjection
         services.AddScoped<GetOwnWishlistUseCase>();
         services.AddScoped<GetMemberWishlistUseCase>();
         services.AddScoped<ListGroupWishlistsUseCase>();
+        services.AddScoped<WishlistAccess>();
+        services.AddScoped<ManageBuddiesUseCase>();
+        services.AddScoped<BuddyEmails>();
 
         services.AddScoped<ReserveGiftUseCase>();
         services.AddScoped<MarkGiftAsBoughtUseCase>();
@@ -59,6 +63,7 @@ public static class DependencyInjection
         // Messages, shown in this order. Add new ones at the end.
         services.AddScoped<IMessageDefinition, LegacyImportMessage>();
         services.AddScoped<IMessageDefinition, WhatsNewNovember2026Message>();
+        services.AddScoped<IMessageDefinition, WhatsNewBuddiesMessage>();
         services.AddScoped<GetMyMessagesUseCase>();
         services.AddScoped<DismissMessageUseCase>();
 
