@@ -1,3 +1,4 @@
+import { safeRedirect } from '@/lib/safeRedirect'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Fingerprint } from 'lucide-react'
@@ -28,11 +29,6 @@ import {
 function isPasskeyRejected(err: unknown): boolean {
   const e = err as { response?: { status?: number }; config?: { url?: string } }
   return e?.response?.status === 400 && (e.config?.url ?? '').endsWith('/auth/passkey/login')
-}
-
-/** Only same-site paths, so a crafted link can't send people elsewhere after sign-in. */
-function safeRedirect(value: string | null): string {
-  return value && value.startsWith('/') && !value.startsWith('//') ? value : '/'
 }
 
 export function LoginPage() {
@@ -128,8 +124,10 @@ export function LoginPage() {
     try {
       await login(email, password)
       navigate(redirect)
-    } catch {
-      setError('Invalid email or password.')
+    } catch (err) {
+      // Too many wrong passwords: the server explains how to get in another way.
+      const res = (err as { response?: { status?: number; data?: { error?: string } } })?.response
+      setError(res?.status === 429 && res.data?.error ? res.data.error : 'Invalid email or password.')
     } finally {
       setSubmitting(false)
     }

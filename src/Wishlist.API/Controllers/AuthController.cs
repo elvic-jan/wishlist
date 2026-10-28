@@ -46,7 +46,8 @@ public class AuthController(
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
     {
-        var (response, refreshToken) = await login.ExecuteAsync(request, ct);
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
+        var (response, refreshToken) = await login.ExecuteAsync(request, ip, ct);
         RefreshTokenCookie.Set(Response, refreshToken);
         return Ok(response);
     }

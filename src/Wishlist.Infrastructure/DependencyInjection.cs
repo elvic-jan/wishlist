@@ -76,6 +76,7 @@ public static class DependencyInjection
         services.AddScoped<IAppUrlProvider, AppUrlProvider>();
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
         services.AddSingleton<IForgotPasswordRateLimiter, ForgotPasswordRateLimiter>();
+        services.AddSingleton<ILoginAttemptLimiter, LoginAttemptLimiter>();
         services.AddSingleton<IInviteCodeAttemptLimiter, InviteCodeAttemptLimiter>();
 
         return services;
