@@ -14,6 +14,6 @@
 
 ## 4. Rollout
 
-- [ ] 4.1 User adds `POSTGRES_APP_PASSWORD` to the production environment
-- [ ] 4.2 Merge; the deploy creates the login
-- [ ] 4.3 Run **infra**; check the app and the reservation job against production
+- [x] 4.1 User adds `POSTGRES_APP_PASSWORD` to the production environment
+- [x] 4.2 Merge; the deploy creates the login
+- [x] 4.3 Run **infra**, then restart the app revision (a secret change alone doesn't restart running replicas); checked the app against production (the reservation job picks up the login on its next run)
