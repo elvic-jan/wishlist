@@ -22,7 +22,7 @@
 
 ## 5. Tests
 
-- [x] 5.1 API tests: limits (400 not 500), forged Host, JWT key check, unknown-email sign-in still 401
+- [x] 5.1 API tests: limits (400 not 500), forged Host, JWT key check, unknown email refused like a wrong password
 - [x] 5.2 Postgres tests: stored value is a hash, old plain token survives the migration, concurrent refresh gives one winner, cleanup
 
 ## 6. Release
