@@ -100,7 +100,15 @@ app.UseMiddleware<ErrorHandlingMiddleware>();
 // map it explicitly so static files never refuse the extension.
 var contentTypes = new FileExtensionContentTypeProvider();
 contentTypes.Mappings[".webmanifest"] = "application/manifest+json";
-app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = contentTypes });
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = contentTypes,
+    OnPrepareResponse = ctx =>
+    {
+        if (SpaPage.CacheControlFor(ctx.Context.Request.Path) is { } cacheControl)
+            ctx.Context.Response.Headers.CacheControl = cacheControl;
+    },
+});
 
 app.UseRouting();
 app.UseAuthentication();
@@ -127,13 +135,13 @@ app.MapGet("/join/{code}", async (
         : new SpaPage.Preview(
             $"{invitation.InviterName} invited you to {invitation.CircleName} on GiftCircles",
             "Join the circle to see each other's wishlists and coordinate gifts.");
-    return SpaPage.Html(SpaPage.Render(html, urls.PublicBaseUrl, http.Request.Path, preview), noStore: true);
+    return SpaPage.Html(SpaPage.Render(html, urls.PublicBaseUrl, http.Request.Path, preview), SpaPage.Caching.NoStore);
 }).AllowAnonymous();
 
 // Every other page: the SPA, with absolute link-preview image and URL.
 app.MapFallback((HttpContext http, ISpaTemplate spa, IAppUrlProvider urls) =>
     spa.Html is { } html
-        ? SpaPage.Html(SpaPage.Render(html, urls.PublicBaseUrl, http.Request.Path, null), noStore: false)
+        ? SpaPage.Html(SpaPage.Render(html, urls.PublicBaseUrl, http.Request.Path, null), SpaPage.Caching.Revalidate)
         : Results.NotFound()).AllowAnonymous();
 
 app.Run();

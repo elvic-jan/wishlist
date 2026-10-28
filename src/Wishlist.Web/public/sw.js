@@ -40,6 +40,23 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// The app found a newer version and wants it cached before it reloads, so the
+// reload doesn't get the old shell again. Always answers, even on failure.
+self.addEventListener('message', (event) => {
+  if (event.data?.type !== 'refresh-shell') return;
+  const port = event.ports[0];
+  event.waitUntil(
+    (async () => {
+      try {
+        await refreshShell(await caches.open(CACHE));
+      } catch {
+        // Offline or server down: the app reloads anyway.
+      }
+      port?.postMessage('done');
+    })(),
+  );
+});
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
