@@ -15,4 +15,7 @@ public interface IGroupRepository
     Task<GroupMemberRole?> GetMemberRoleAsync(Guid groupId, Guid userId, CancellationToken ct = default);
     Task<bool> SharesGroupAsync(Guid userId1, Guid userId2, CancellationToken ct = default);
     Task<IReadOnlyList<Group>> GetUserGroupsAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>The other members of the user's circles: one row per person and circle they share with the user.</summary>
+    Task<IReadOnlyList<(Guid UserId, string DisplayName, Guid GroupId, string GroupName)>> GetCircleMatesAsync(Guid userId, CancellationToken ct = default);
 }

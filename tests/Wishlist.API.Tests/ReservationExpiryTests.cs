@@ -374,5 +374,6 @@ public class ReservationExpiryTests
         public Task<int> GetMemberCountAsync(Guid groupId, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<GroupMemberRole?> GetMemberRoleAsync(Guid groupId, Guid userId, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<Group>> GetUserGroupsAsync(Guid userId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<(Guid UserId, string DisplayName, Guid GroupId, string GroupName)>> GetCircleMatesAsync(Guid userId, CancellationToken ct = default) => throw new NotSupportedException();
     }
 }

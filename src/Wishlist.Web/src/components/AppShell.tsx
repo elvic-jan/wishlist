@@ -1,5 +1,5 @@
 import { Download, Gift, LogOut, ShieldCheck } from 'lucide-react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -36,6 +36,8 @@ function navLinkClasses(isActive: boolean): string {
 export function AppShell() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const inWishlists = pathname === '/wishlists' || pathname.startsWith('/wishlist/')
   const [showIosInstallHelp, setShowIosInstallHelp] = useState(false)
 
   const handleLogout = async () => {
@@ -63,12 +65,14 @@ export function AppShell() {
               >
                 Circles
               </NavLink>
-              <NavLink
-                to="/wishlist/me"
-                className={({ isActive }) => navLinkClasses(isActive)}
+              {/* Highlighted on the overview and on every wishlist, mine or someone else's. */}
+              <Link
+                to="/wishlists"
+                aria-current={inWishlists ? 'page' : undefined}
+                className={navLinkClasses(inWishlists)}
               >
-                My wishlist
-              </NavLink>
+                Wishlists
+              </Link>
             </nav>
           </div>
 

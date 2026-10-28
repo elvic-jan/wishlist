@@ -248,6 +248,16 @@ internal sealed class InMemoryGroups(InMemoryStore store) : IGroupRepository
     public Task<GroupMemberRole?> GetMemberRoleAsync(Guid groupId, Guid userId, CancellationToken ct = default) => throw new NotSupportedException();
     public Task<bool> SharesGroupAsync(Guid userId1, Guid userId2, CancellationToken ct = default) => throw new NotSupportedException();
     public Task<IReadOnlyList<Group>> GetUserGroupsAsync(Guid userId, CancellationToken ct = default) => throw new NotSupportedException();
+
+    public Task<IReadOnlyList<(Guid UserId, string DisplayName, Guid GroupId, string GroupName)>> GetCircleMatesAsync(Guid userId, CancellationToken ct = default)
+    {
+        var mine = store.Members.Keys.Where(k => k.UserId == userId).Select(k => k.GroupId).ToHashSet();
+        IReadOnlyList<(Guid, string, Guid, string)> rows = store.Members.Keys
+            .Where(k => mine.Contains(k.GroupId) && k.UserId != userId)
+            .Select(k => (k.UserId, store.Users[k.UserId].DisplayName, k.GroupId, store.Groups[k.GroupId].Name))
+            .ToList();
+        return Task.FromResult(rows);
+    }
 }
 
 internal sealed class InMemoryInvitations(InMemoryStore store) : IInvitationRepository

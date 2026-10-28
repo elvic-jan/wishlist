@@ -18,6 +18,7 @@ public class WishlistsController(
     DeleteWishlistItemUseCase deleteItem,
     GetMemberWishlistUseCase getMember,
     ListGroupWishlistsUseCase listGroup,
+    ListConnectedPeopleUseCase listPeople,
     ReserveGiftUseCase reserve,
     MarkGiftAsBoughtUseCase markBought,
     ReleaseGiftClaimUseCase release,
@@ -30,6 +31,11 @@ public class WishlistsController(
         var result = await listGroup.ExecuteAsync(GetUserId(), groupId, ct);
         return Ok(result);
     }
+
+    /// <summary>Everyone I share a circle with, each once, with the circles we share.</summary>
+    [HttpGet("wishlists/people")]
+    public async Task<IActionResult> ListPeople(CancellationToken ct) =>
+        Ok(await listPeople.ExecuteAsync(GetUserId(), ct));
 
     [HttpGet("wishlists/me")]
     public async Task<IActionResult> GetOwn(CancellationToken ct)

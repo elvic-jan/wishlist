@@ -89,6 +89,9 @@ export function MemberWishlistPage() {
   const [loaded, setLoaded] = useState(false)
   // Set when the viewer is this person's buddy: they can add, edit and delete wishes.
   const [buddyOf, setBuddyOf] = useState<Person | null>(null)
+  // Everyone the viewer shares a circle with; only used for the owner's name.
+  const [people, setPeople] = useState<Person[]>([])
+  const name = buddyOf?.displayName ?? people.find(p => p.userId === userId)?.displayName
 
   const load = useCallback(
     () =>
@@ -103,6 +106,14 @@ export function MemberWishlistPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  // The owner's name for the title; the items themselves don't carry it.
+  useEffect(() => {
+    client
+      .get<Person[]>('/wishlists/people')
+      .then(r => setPeople(r.data))
+      .catch(() => setPeople([]))
+  }, [])
 
   useEffect(() => {
     client
@@ -206,7 +217,7 @@ export function MemberWishlistPage() {
         <div className="flex items-center gap-2">
           <Gift className="h-5 w-5 text-primary" aria-hidden />
           <h1 className="text-2xl font-semibold tracking-tight">
-            {buddyOf ? `${buddyOf.displayName}’s wishlist` : 'Wishlist'}
+            {name ? `${name}’s wishlist` : 'Wishlist'}
           </h1>
         </div>
         {buddyOf && (
