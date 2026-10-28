@@ -1,13 +1,13 @@
+import { apiErrorMessage, apiErrorStatus } from '@/api/errors'
+
 /**
  * Turns an API error from an invite-code request (register or join) into a
  * message the invitee can act on.
  */
 export function inviteErrorMessage(err: unknown, fallback: string): string {
-  const response = (err as { response?: { status?: number; data?: { error?: string } } })
-    ?.response
-  const message = response?.data?.error ?? fallback
+  const message = apiErrorMessage(err) ?? fallback
 
-  switch (response?.status) {
+  switch (apiErrorStatus(err)) {
     case 404:
     case 410:
       return `${message} Ask the person who invited you for a new link.`

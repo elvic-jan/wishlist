@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { AccountBanners } from '@/components/AccountBanners'
 import { InstallAppMenuItem, IosInstallHelp } from '@/components/InstallApp'
 import { MessageToaster } from '@/components/MessageToaster'
@@ -126,7 +126,9 @@ export function AppShell() {
 
       <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 md:py-12">
         <AccountBanners />
-        <Outlet />
+        <Suspense fallback={null}>
+          <Outlet />
+        </Suspense>
         <IosInstallHelp open={showIosInstallHelp} onOpenChange={setShowIosInstallHelp} />
       </main>
       <MessageToaster hiddenOn={['/import']} />

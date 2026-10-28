@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Wishlist.Application.Messages;
@@ -13,17 +12,12 @@ public class MessagesController(GetMyMessagesUseCase getMessages, DismissMessage
 {
     [HttpGet]
     public async Task<IActionResult> Mine(CancellationToken ct) =>
-        Ok(await getMessages.ExecuteAsync(GetUserId(), ct));
+        Ok(await getMessages.ExecuteAsync(User.GetUserId(), ct));
 
     [HttpPost("{id}/dismiss")]
     public async Task<IActionResult> Dismiss(string id, CancellationToken ct)
     {
-        await dismiss.ExecuteAsync(GetUserId(), id, ct);
+        await dismiss.ExecuteAsync(User.GetUserId(), id, ct);
         return NoContent();
     }
-
-    private Guid GetUserId() =>
-        Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue("sub")
-            ?? throw new InvalidOperationException("User ID claim missing."));
 }

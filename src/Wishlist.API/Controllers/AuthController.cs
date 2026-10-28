@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Wishlist.Application.DTOs;
@@ -130,7 +129,7 @@ public class AuthController(
     [HttpGet("me")]
     public async Task<IActionResult> Me(CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = User.GetUserId();
         var user = await users.GetByIdAsync(userId, ct);
         if (user is null) return NotFound();
         return Ok(new UserDto(user.Id, user.Email, user.DisplayName));
@@ -139,10 +138,5 @@ public class AuthController(
     [Authorize]
     [HttpPatch("me")]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request, CancellationToken ct)
-        => Ok(await updateProfile.ExecuteAsync(GetUserId(), request, ct));
-
-    private Guid GetUserId() =>
-        Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue("sub")
-            ?? throw new InvalidOperationException("User ID claim missing."));
+        => Ok(await updateProfile.ExecuteAsync(User.GetUserId(), request, ct));
 }

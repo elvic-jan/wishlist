@@ -25,6 +25,7 @@ import { BackButton } from '@/components/BackButton'
 import { InviteMenu } from '@/components/InviteMenu'
 import client from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
+import { apiErrorMessage } from '@/api/errors'
 
 interface Member {
   userId: string
@@ -87,7 +88,7 @@ export function GroupDetailPage() {
       await client.delete(`/groups/${groupId}/members/me`)
       navigate('/')
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      const msg = apiErrorMessage(err)
       setError(msg ?? 'Failed to leave circle.')
     }
   }

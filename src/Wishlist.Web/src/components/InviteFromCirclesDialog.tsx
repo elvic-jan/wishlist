@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import client from '@/api/client'
+import { apiErrorMessage } from '@/api/errors'
 
 interface Candidate {
   userId: string
@@ -154,7 +155,7 @@ export function InviteFromCirclesDialog({
       })
       onOpenChange(false)
     } catch (err) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      const msg = apiErrorMessage(err)
       toast({ title: 'Couldn’t send the invitations', description: msg, variant: 'destructive' })
     } finally {
       setSending(false)

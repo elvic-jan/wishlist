@@ -10,6 +10,7 @@ import { WishlistEditor, type EditableItem } from '@/components/WishlistEditor'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import client from '@/api/client'
+import { apiErrorMessage } from '@/api/errors'
 
 interface GiftClaim {
   id: string
@@ -123,7 +124,7 @@ export function MemberWishlistPage() {
   }, [userId])
 
   const handleErr = (err: unknown, fallback: string) => {
-    const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+    const msg = apiErrorMessage(err)
     toast({
       title: fallback,
       description: msg,

@@ -97,7 +97,4 @@ export async function confirmEmail(userId: string, token: string) {
   await client.post('/auth/confirm-email', { userId, token })
 }
 
-/** The API's error message, if it sent one. */
-export function apiErrorMessage(err: unknown): string | undefined {
-  return (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-}
+export { apiErrorMessage } from './errors'

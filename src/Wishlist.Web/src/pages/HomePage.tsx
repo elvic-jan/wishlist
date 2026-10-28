@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CircleInvitationsCard } from '@/components/CircleInvitationsCard'
 import client from '@/api/client'
 import { MAX_CIRCLE_NAME } from '@/lib/inputLimits'
+import { apiErrorMessage } from '@/api/errors'
 
 interface Group {
   id: string
@@ -33,7 +34,7 @@ export function HomePage() {
       .get('/groups/me')
       .then(r => setGroups(r.data))
       .catch((err: unknown) => {
-        const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        const msg = apiErrorMessage(err)
         setError(msg ?? 'Failed to load circles.')
       })
 
@@ -50,7 +51,7 @@ export function HomePage() {
       setNewGroupName('')
       setShowCreate(false)
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      const msg = apiErrorMessage(err)
       setError(msg ?? 'Failed to create circle.')
     }
   }
