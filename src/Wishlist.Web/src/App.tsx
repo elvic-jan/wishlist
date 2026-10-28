@@ -16,6 +16,7 @@ import { SecurityPage } from '@/pages/SecurityPage'
 import { HomePage } from '@/pages/HomePage'
 import { GroupDetailPage } from '@/pages/GroupDetailPage'
 import { MyWishlistPage } from '@/pages/MyWishlistPage'
+import { WishlistsPage } from '@/pages/WishlistsPage'
 import { MemberWishlistPage } from '@/pages/MemberWishlistPage'
 import { JoinGroupPage } from '@/pages/JoinGroupPage'
 import { ImportPage } from '@/pages/ImportPage'
@@ -58,6 +59,7 @@ export default function App() {
                 <Route path="/groups/:groupId" element={<LegacyGroupRedirect />} />
                 <Route path="/settings/security" element={<SecurityPage />} />
                 <Route path="/import" element={<ImportPage />} />
+                <Route path="/wishlists" element={<WishlistsPage />} />
                 <Route path="/wishlist/me" element={<MyWishlistPage />} />
                 <Route path="/wishlist/:userId" element={<MemberWishlistPage />} />
               </Route>

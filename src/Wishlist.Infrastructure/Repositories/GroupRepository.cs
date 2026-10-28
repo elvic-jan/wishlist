@@ -86,4 +86,16 @@ public class GroupRepository(WishlistDbContext db) : IGroupRepository
             .Where(m => m.UserId == userId)
             .Join(db.Groups, m => m.GroupId, g => g.Id, (m, g) => g)
             .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<(Guid UserId, string DisplayName, Guid GroupId, string GroupName)>> GetCircleMatesAsync(Guid userId, CancellationToken ct = default)
+    {
+        var rows = await db.GroupMembers
+            .Where(mine => mine.UserId == userId)
+            .Join(db.GroupMembers, mine => mine.GroupId, other => other.GroupId, (mine, other) => other)
+            .Where(other => other.UserId != userId)
+            .Join(db.Users, m => m.UserId, u => u.Id, (m, u) => new { m.GroupId, u.Id, u.DisplayName })
+            .Join(db.Groups, r => r.GroupId, g => g.Id, (r, g) => new { r.Id, r.DisplayName, GroupId = g.Id, g.Name })
+            .ToListAsync(ct);
+        return rows.Select(r => (r.Id, r.DisplayName, r.GroupId, r.Name)).ToList();
+    }
 }

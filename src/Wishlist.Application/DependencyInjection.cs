@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<GetOwnWishlistUseCase>();
         services.AddScoped<GetMemberWishlistUseCase>();
         services.AddScoped<ListGroupWishlistsUseCase>();
+        services.AddScoped<ListConnectedPeopleUseCase>();
         services.AddScoped<WishlistAccess>();
         services.AddScoped<ManageBuddiesUseCase>();
         services.AddScoped<BuddyEmails>();

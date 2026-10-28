@@ -41,5 +41,9 @@ public record GiftClaimDto(Guid Id, Guid ClaimedByUserId, GiftClaimStatus Status
 
 public record GroupWishlistEntryDto(Guid UserId, string DisplayName);
 
+/// <summary>Someone the user shares at least one circle with, and the circles they share.</summary>
+public record ConnectedPersonDto(Guid UserId, string DisplayName, IReadOnlyList<SharedCircleDto> Circles);
+public record SharedCircleDto(Guid Id, string Name);
+
 public record BuddyDto(Guid UserId, string DisplayName);
 public record AddBuddyRequest(Guid UserId);
