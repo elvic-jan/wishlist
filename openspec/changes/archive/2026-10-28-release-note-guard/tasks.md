@@ -10,4 +10,4 @@
 
 ## 3. Rollout
 
-- [ ] 3.1 First deploy after merging: the deploy log shows the guard's notice
+- [x] 3.1 First deploy after merging: the deploy log shows the guard's notice (#64: "unchanged since the live version (Performance fixes)")
