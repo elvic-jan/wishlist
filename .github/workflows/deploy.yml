@@ -99,6 +99,11 @@ jobs:
       RESERVATION_JOB: caj-wishlist-reservations
       IMAGE: ${{ needs.build.outputs.image }}
     steps:
+      # Before the download: checkout cleans the workspace.
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: infra/sql
+
       - uses: actions/download-artifact@v5
         with:
           name: efbundle
@@ -134,6 +139,27 @@ jobs:
         run: |
           chmod +x efbundle
           ./efbundle --connection "Host=${PG_FQDN};Port=5432;Database=wishlist;Username=${PG_LOGIN};Password=${PG_PASSWORD};SSL Mode=VerifyFull"
+
+      # The app logs in as wishlist_app, which can only read and write rows
+      # (infra/sql/app-role.sql). Created or updated here, after migrations, so
+      # new tables are covered before the new image starts.
+      - name: Set up the app's database login
+        env:
+          PGHOST: ${{ steps.pg.outputs.fqdn }}
+          PGUSER: ${{ vars.POSTGRES_ADMIN_LOGIN || 'wishlistadmin' }}
+          PGPASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+          PGDATABASE: wishlist
+          PGSSLMODE: verify-full
+          PGSSLROOTCERT: system
+          APP_PASSWORD: ${{ secrets.POSTGRES_APP_PASSWORD }}
+        run: |
+          if [ -z "$APP_PASSWORD" ]; then
+            echo "::error::Secret POSTGRES_APP_PASSWORD is missing in the production environment (see infra/README.md)."
+            exit 1
+          fi
+          psql -v ON_ERROR_STOP=1 -f infra/sql/app-role.sql
+          # Through stdin so the password is a psql variable, not part of a command line.
+          echo "ALTER ROLE wishlist_app PASSWORD :'app_password';" | psql -v ON_ERROR_STOP=1 -v app_password="$APP_PASSWORD"
 
       - name: Close database firewall
         if: always() && steps.pg.outputs.name != ''

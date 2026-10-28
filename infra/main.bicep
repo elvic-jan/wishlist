@@ -31,6 +31,10 @@ param postgresAdministratorLogin string = 'wishlistadmin'
 @secure()
 param postgresAdministratorPassword string
 
+@description('Password of wishlist_app, the login the app uses (rows only; see infra/sql/app-role.sql). The deploy workflow sets it on the server.')
+@secure()
+param postgresAppPassword string
+
 @secure()
 param jwtKey string
 
@@ -99,8 +103,7 @@ module app 'modules/containerapp.bicep' = {
     customDomainCertificateReady: customDomainCertificateReady
     postgresFqdn: postgres.outputs.fqdn
     postgresDatabaseName: postgres.outputs.databaseName
-    postgresAdministratorLogin: postgresAdministratorLogin
-    postgresAdministratorPassword: postgresAdministratorPassword
+    postgresAppPassword: postgresAppPassword
     jwtKey: jwtKey
     smtpFromAddress: email.outputs.senderAddress
     smtpUser: smtpUser

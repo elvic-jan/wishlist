@@ -32,10 +32,11 @@ param publicBaseUrl string = ''
 
 param postgresFqdn string
 param postgresDatabaseName string
-param postgresAdministratorLogin string
+@description('Login the app uses: it can read and write rows but not change the schema (infra/sql/app-role.sql).')
+param postgresAppLogin string = 'wishlist_app'
 
 @secure()
-param postgresAdministratorPassword string
+param postgresAppPassword string
 
 @secure()
 param jwtKey string
@@ -95,7 +96,7 @@ var effectivePublicBaseUrl = !empty(publicBaseUrl)
   ? publicBaseUrl
   : (bindCertificate ? 'https://${customDomainName}' : 'https://${appName}.${environment.properties.defaultDomain}')
 
-var connectionString = 'Host=${postgresFqdn};Port=5432;Database=${postgresDatabaseName};Username=${postgresAdministratorLogin};Password=${postgresAdministratorPassword};SSL Mode=VerifyFull'
+var connectionString = 'Host=${postgresFqdn};Port=5432;Database=${postgresDatabaseName};Username=${postgresAppLogin};Password=${postgresAppPassword};SSL Mode=VerifyFull'
 
 var usePrivateRegistry = !empty(ghcrToken)
 

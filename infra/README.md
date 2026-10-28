@@ -98,6 +98,7 @@ gh variable set BUDGET_CONTACT_EMAIL  --env production --body "you@example.com" 
 
 # Postgres requires 3 of: upper, lower, digit, symbol. Avoid ; and quotes (it goes in a connection string).
 gh secret set POSTGRES_ADMIN_PASSWORD --env production --body "$(openssl rand -base64 32 | tr -d '/+=')" -R $REPO
+gh secret set POSTGRES_APP_PASSWORD   --env production --body "$(openssl rand -base64 32 | tr -d '/+=')" -R $REPO
 gh secret set JWT_KEY                 --env production --body "$(openssl rand -base64 48)" -R $REPO
 gh secret set SMTP_PASSWORD           --env production --body "$SMTP_PASSWORD" -R $REPO
 gh secret set SMTP_USER               --env production --body "pending" -R $REPO   # real value in step 6
@@ -212,8 +213,14 @@ it's `noreply@<domain>` with the display name GiftCircles. Same two-phase patter
   migrations bundle are kept for 30 days), or
   `az containerapp update -g $RG -n ca-wishlist --image ghcr.io/<owner>/wishlist:sha-<old>`.
   Migrations are not rolled back, so keep them additive.
+- **Database logins**: migrations run as the admin; the app and its jobs log in as
+  `wishlist_app`, which can only read and write rows (`infra/sql/app-role.sql`). Every
+  deploy runs that script after the migrations and sets the login's password from
+  `POSTGRES_APP_PASSWORD`.
 - **Rotate a secret**: update the GitHub environment secret, run **infra**. For the
-  Postgres password, also run `az postgres flexible-server update -g $RG -n <server> --admin-password ...` first.
+  Postgres admin password, also run `az postgres flexible-server update -g $RG -n <server> --admin-password ...` first.
+  For `POSTGRES_APP_PASSWORD`, run **deploy** (sets the new password) and then **infra** right after:
+  in between, the app can't reach the database.
 - **Connect to the database**: add a firewall rule for your IP
   (`az postgres flexible-server firewall-rule create ...`), connect with `sslmode=require`,
   then delete the rule.
