@@ -27,5 +27,5 @@
 
 ## 6. Release
 
-- [ ] 6.1 Release note confirmed with the user: "Security fixes"
+- [x] 6.1 Release note confirmed with the user: "Security fixes"
 - [x] 6.2 Tests (with Postgres), lint, build
