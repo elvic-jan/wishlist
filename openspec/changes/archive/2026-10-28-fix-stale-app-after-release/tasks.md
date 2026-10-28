@@ -28,4 +28,4 @@
 
 - [x] 6.1 API tests, SPA lint and build
 - [x] 6.2 Browser check with a production build: notice appears after a simulated release (also on the sign-in page), Refresh loads the new version even when the service worker had cached an older one; two releases in a row (old files removed, no visit in between, also right after a fresh install) still open the app and Refresh loads the newest; a cache broken by the old worker is repaired by the new one; headers covered by API tests. Message action path not exercised in the browser (needs a signed-in session with the API)
-- [ ] 6.3 After the next release (user): the notice appears on the phone and Refresh shows the new version
+- [x] 6.3 After the next release (user): the notice appears on the phone and Refresh shows the new version
