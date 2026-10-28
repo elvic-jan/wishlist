@@ -10,7 +10,7 @@
 
 ## 3. Release note
 
-- [ ] 3.1 Release note for this change confirmed with the user: "Updates now tell you what's new"
+- [x] 3.1 Release note for this change confirmed with the user: "Updates now tell you what's new"
 
 ## 4. Check
 
