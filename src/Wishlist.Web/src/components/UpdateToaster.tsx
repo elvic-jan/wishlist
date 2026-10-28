@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LastingToast } from '@/components/LastingToast'
-import { applyUpdate, useUpdateAvailable } from '@/lib/appUpdate'
+import { applyUpdate, useUpdateAvailable, useUpdateNote } from '@/lib/appUpdate'
 
 /**
  * "New version available": shown once a newer release is deployed. It can't be
@@ -10,11 +10,12 @@ import { applyUpdate, useUpdateAvailable } from '@/lib/appUpdate'
  */
 export function UpdateToaster() {
   const available = useUpdateAvailable()
+  const note = useUpdateNote()
   const [refreshing, setRefreshing] = useState(false)
   if (!available) return null
 
   return (
-    <LastingToast icon={Sparkles} title="New version available" text="Refresh to get the latest GiftCircles.">
+    <LastingToast icon={Sparkles} title="New version available" text={note ?? 'Refresh to get the latest GiftCircles.'}>
       <Button
         size="sm"
         disabled={refreshing}

@@ -7,15 +7,30 @@ import { useSyncExternalStore } from 'react'
 const MIN_INTERVAL_MS = 60_000
 const SW_TIMEOUT_MS = 5_000
 
+const MAX_NOTE_LENGTH = 200
+
 let available = false
+/** What the newer version brings (its release note), once one is known. */
+let note: string | null = null
 let lastCheck = 0
 let running: Promise<boolean> | null = null
 const listeners = new Set<() => void>()
 
-function setAvailable() {
+function setAvailable(releaseNote: string | null) {
   if (available) return
   available = true
+  note = releaseNote
   listeners.forEach(l => l())
+}
+
+/** The page's <meta name="release-note">, trimmed; null when missing or empty. */
+export function releaseNoteOf(html: string): string | null {
+  const content = new DOMParser()
+    .parseFromString(html, 'text/html')
+    .querySelector('meta[name="release-note"]')
+    ?.getAttribute('content')
+    ?.trim()
+  return content ? content.slice(0, MAX_NOTE_LENGTH) : null
 }
 
 function runningEntry(): string | null {
@@ -37,8 +52,9 @@ export function checkForUpdate(): Promise<boolean> {
       if (!current) return false
       const response = await fetch('/index.html', { cache: 'no-cache' })
       if (!response.ok) return false
-      const deployed = (await response.text()).match(/\/assets\/index-[^"'\s]+\.js/)?.[0]
-      if (deployed && deployed !== current) setAvailable()
+      const html = await response.text()
+      const deployed = html.match(/\/assets\/index-[^"'\s]+\.js/)?.[0]
+      if (deployed && deployed !== current) setAvailable(releaseNoteOf(html))
     } catch {
       // Unreachable or slow server: keep the version we have, try again later.
     } finally {
@@ -92,13 +108,19 @@ export function startUpdateChecks() {
   })
 }
 
+function subscribe(listener: () => void) {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
 /** True once a newer version is known to be deployed. */
 export function useUpdateAvailable(): boolean {
-  return useSyncExternalStore(
-    l => {
-      listeners.add(l)
-      return () => listeners.delete(l)
-    },
-    () => available,
-  )
+  return useSyncExternalStore(subscribe, () => available)
+}
+
+/** What the newer version brings, from its release note; null without one. */
+export function useUpdateNote(): string | null {
+  return useSyncExternalStore(subscribe, () => note)
 }
