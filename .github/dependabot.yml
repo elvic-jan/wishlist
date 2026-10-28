@@ -25,6 +25,16 @@ updates:
     groups:
       web:
         update-types: [minor, patch]
+    # Major versions we upgrade on purpose, as their own change:
+    # TypeScript 7 (native compiler) once ESLint and Vite support it;
+    # Tailwind 4 (configuration moves to CSS); @types/node with the Node runtime (24).
+    ignore:
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+      - dependency-name: tailwindcss
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: "deps(web)"
 
