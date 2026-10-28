@@ -1,0 +1,66 @@
+# Checks every pull request before it's merged: API tests (with a throwaway
+# Postgres, so the database tests run too), and lint plus a build of the web
+# app. Uses no secrets and touches nothing in Azure.
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: wishlist
+          POSTGRES_PASSWORD: wishlist
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U wishlist"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # The Postgres tests drop and recreate this database.
+      GIFTCIRCLES_TEST_DB: Host=localhost;Port=5432;Database=giftcircles_e2e;Username=wishlist;Password=wishlist
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test
+        run: dotnet test Wishlist.sln --configuration Release
+
+  web:
+    name: Web lint and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: src/Wishlist.Web
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/Wishlist.Web/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
