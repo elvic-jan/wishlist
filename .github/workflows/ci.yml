@@ -16,8 +16,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # PRs that only touch openspec/ (archives, proposals) change nothing that
+  # runs. The checks below are then skipped, and GitHub counts a skipped
+  # required check as passed, so the PR can still be merged.
+  changes:
+    name: What changed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # The PR's merge commit and its first parent (main).
+          fetch-depth: 2
+
+      - id: diff
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          other=$(git diff --name-only HEAD^1 HEAD -- . ':(exclude)openspec/**')
+          if [ -n "$other" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Only openspec/ changed; skipping tests and build."
+          fi
+
   api:
     name: API tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -48,6 +78,8 @@ jobs:
 
   web:
     name: Web lint and build
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
