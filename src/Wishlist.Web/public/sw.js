@@ -10,6 +10,9 @@
 
 const CACHE = 'wishlist-shell-v1';
 const SHELL = '/index.html';
+// Cached files are the same for every request, so a Vary header (some servers
+// send Vary: Origin) must not make a cached copy miss.
+const MATCH = { ignoreVary: true };
 
 // The first page load happens before this worker controls anything, so fetch
 // the shell and the assets it names up front; otherwise the second visit would
@@ -21,9 +24,10 @@ self.addEventListener('install', (event) => {
       const response = await fetch(SHELL, { cache: 'no-cache' });
       if (!response.ok) return;
       const html = await response.clone().text();
+      // Assets first, so the cached shell never names files that aren't cached.
+      // This also repairs caches left inconsistent by earlier versions.
+      await cache.addAll(assetsIn(html));
       await cache.put(SHELL, response);
-      const assets = [...new Set(html.match(/\/assets\/[^"'\s)]+/g) ?? [])];
-      await cache.addAll(assets);
       await self.skipWaiting();
     })(),
   );
@@ -74,7 +78,7 @@ self.addEventListener('fetch', (event) => {
 
 async function serveShell(event) {
   const cache = await caches.open(CACHE);
-  const cached = await cache.match(SHELL);
+  const cached = await cache.match(SHELL, MATCH);
   const refresh = refreshShell(cache);
 
   if (cached) {
@@ -87,23 +91,46 @@ async function serveShell(event) {
 async function refreshShell(cache) {
   const response = await fetch(SHELL, { cache: 'no-cache' });
   if (response.ok) {
+    const html = await response.clone().text();
+    // Cache the new shell's assets before the shell itself. A cached shell
+    // without them would come up blank once a later deploy removes them from
+    // the server. If they can't be fetched, keep the old shell for now.
+    try {
+      await cacheMissing(cache, assetsIn(html));
+    } catch {
+      return response;
+    }
     // The page being served right now may still be the previous shell, so keep
     // its assets too; only shells older than that lose theirs.
-    const previous = await cache.match(SHELL);
-    const keep = (await response.clone().text()) + (previous ? await previous.text() : '');
+    const previous = await cache.match(SHELL, MATCH);
+    const keep = html + (previous ? await previous.text() : '');
     await cache.put(SHELL, response.clone());
     await pruneAssets(cache, keep);
   }
   return response;
 }
 
+function assetsIn(html) {
+  return [...new Set(html.match(/\/assets\/[^"'\s)]+/g) ?? [])];
+}
+
+async function cacheMissing(cache, paths) {
+  const missing = [];
+  for (const path of paths) {
+    if (!(await cache.match(path, MATCH))) missing.push(path);
+  }
+  await cache.addAll(missing);
+}
+
 async function cacheFirst(request) {
   const cache = await caches.open(CACHE);
-  const cached = await cache.match(request);
+  const cached = await cache.match(request, MATCH);
   if (cached) return cached;
 
   const response = await fetch(request);
-  if (response.ok) await cache.put(request, response.clone());
+  // Never keep an HTML page (a server's fallback for a missing file) as an asset.
+  const isHtml = response.headers.get('content-type')?.includes('text/html');
+  if (response.ok && !isHtml) await cache.put(request, response.clone());
   return response;
 }
 
@@ -111,7 +138,7 @@ async function cacheFirst(request) {
 // old deploys don't pile up. A lazily imported chunk (none today) would just be
 // refetched on demand.
 async function pruneAssets(cache, html) {
-  const referenced = new Set(html.match(/\/assets\/[^"'\s)]+/g) ?? []);
+  const referenced = new Set(assetsIn(html));
   for (const request of await cache.keys()) {
     const path = new URL(request.url).pathname;
     if (path.startsWith('/assets/') && !referenced.has(path)) {

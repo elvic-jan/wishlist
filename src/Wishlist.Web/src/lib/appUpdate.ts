@@ -8,19 +8,14 @@ const MIN_INTERVAL_MS = 60_000
 const SW_TIMEOUT_MS = 5_000
 
 let available = false
-let putOff = false
 let lastCheck = 0
 let running: Promise<boolean> | null = null
 const listeners = new Set<() => void>()
 
-function notify() {
-  listeners.forEach(l => l())
-}
-
 function setAvailable() {
   if (available) return
   available = true
-  notify()
+  listeners.forEach(l => l())
 }
 
 function runningEntry(): string | null {
@@ -97,22 +92,13 @@ export function startUpdateChecks() {
   })
 }
 
-/**
- * "Not now" on the notice: hides it until the app is next opened (kept in
- * memory, so a reload or a new launch shows it again).
- */
-export function putOffUpdateNotice() {
-  putOff = true
-  notify()
-}
-
-/** True while the new-version notice should be on screen. */
-export function useUpdateNoticeShown(): boolean {
+/** True once a newer version is known to be deployed. */
+export function useUpdateAvailable(): boolean {
   return useSyncExternalStore(
     l => {
       listeners.add(l)
       return () => listeners.delete(l)
     },
-    () => available && !putOff,
+    () => available,
   )
 }

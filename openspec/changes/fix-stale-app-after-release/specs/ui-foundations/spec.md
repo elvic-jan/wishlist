@@ -1,19 +1,19 @@
 ## ADDED Requirements
 
 ### Requirement: The app picks up new versions after a release
-The application SHALL check whether a newer version is deployed when it starts and when it returns to the foreground, and when there is one SHALL show a lasting "New version available" notice with Refresh and Not now, in the style of the message toasts. Refresh SHALL load the new version, not the previously cached one. The application SHALL NOT reload by itself.
+The application SHALL check whether a newer version is deployed when it starts and when it returns to the foreground, and when there is one SHALL show a lasting "New version available" notice with a Refresh button, in the style of the message toasts. The notice SHALL NOT offer a way to put it off or close it. Refresh SHALL load the new version, not the previously cached one. The application SHALL NOT reload by itself.
 
 #### Scenario: Notice after a release
 - **WHEN** a user opens the app, or returns to it, after a new version was deployed
-- **THEN** a "New version available" notice appears with Refresh and Not now
+- **THEN** a "New version available" notice appears with a Refresh button and no Not now or close button
 
 #### Scenario: Refresh loads the new version
 - **WHEN** the user chooses Refresh
 - **THEN** the page reloads and runs the newly deployed version, even when the service worker had cached the previous one
 
-#### Scenario: Not now
-- **WHEN** the user chooses Not now or closes the notice
-- **THEN** the notice is hidden for the rest of this app session and the app keeps running the current version
+#### Scenario: Several releases between visits
+- **WHEN** two or more versions were deployed since the user last opened the app, and the files of the version they last saw are gone from the server
+- **THEN** the app still opens (never a blank page) and shows the notice, and Refresh loads the newest version
 
 #### Scenario: No notice when up to date
 - **WHEN** the deployed version is the one running
@@ -29,4 +29,4 @@ The application SHALL check whether a newer version is deployed when it starts a
 
 #### Scenario: Messages wait for the notice
 - **WHEN** the update notice is shown
-- **THEN** message toasts are not shown at the same time
+- **THEN** message toasts are not shown until the new version is loaded

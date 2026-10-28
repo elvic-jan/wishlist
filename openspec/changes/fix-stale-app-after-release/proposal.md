@@ -4,9 +4,10 @@ After a release, people keep using the previous version of the app until they re
 
 ## What Changes
 
-- **New version notice:** the app checks whether a newer version is deployed when it starts and whenever it comes back to the foreground. If there is one, it shows a lasting toast in the same style as the what's-new messages: "New version available" with **Refresh** and **Not now**. Refresh loads the new version. The app never reloads by itself.
+- **New version notice:** the app checks whether a newer version is deployed when it starts and whenever it comes back to the foreground. If there is one, it shows a lasting toast in the same style as the what's-new messages: "New version available" with a **Refresh** button. It can't be put off or closed, so nobody keeps running an outdated version; a reload only takes a moment. The app never reloads by itself.
 - **Message actions land in the new version:** when a message's action is used while a newer version is deployed, the app loads the new version straight onto the action's page instead of navigating inside the old one.
 - **Refresh really gets the new version:** before reloading, the app asks the service worker to fetch the new page first, so the reload doesn't show the old cached page again.
+- **No blank app after two quick releases:** the service worker cached a new page in the background without its script files. If a second release landed before the next visit, that page pointed at files the server no longer had, and the app came up blank. It now caches a page's files before the page itself, and never stores an HTML response as a script.
 - **Cache headers:** the page itself (`index.html` and every SPA route) and `sw.js` are sent with `Cache-Control: no-cache` (always check with the server). The content-hashed files under `/assets/` are sent as cacheable for a year and immutable. The personal `/join/{code}` page stays `no-store`.
 
 ## Capabilities

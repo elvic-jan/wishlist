@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import client from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
 import { LastingToast } from '@/components/LastingToast'
-import { applyUpdate, checkForUpdateWithin, useUpdateNoticeShown } from '@/lib/appUpdate'
+import { applyUpdate, checkForUpdateWithin, useUpdateAvailable } from '@/lib/appUpdate'
 
 interface Message {
   id: string
@@ -46,9 +46,8 @@ export function MessageToaster({ hiddenOn = [] }: { hiddenOn?: string[] }) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [queue, setQueue] = useState<Message[]>([])
-  // Messages are about the newest version, so they wait while the
-  // new-version notice is up.
-  const updateNoticeShown = useUpdateNoticeShown()
+  // Messages are about the newest version, so they wait until it's loaded.
+  const updateAvailable = useUpdateAvailable()
 
   useEffect(() => {
     if (!user) return
@@ -67,7 +66,7 @@ export function MessageToaster({ hiddenOn = [] }: { hiddenOn?: string[] }) {
   }, [user])
 
   const current = queue[0]
-  if (!current || updateNoticeShown || hiddenOn.includes(pathname)) return null
+  if (!current || updateAvailable || hiddenOn.includes(pathname)) return null
 
   const next = () => setQueue(q => q.slice(1))
   const dismiss = (m: Message) => {
