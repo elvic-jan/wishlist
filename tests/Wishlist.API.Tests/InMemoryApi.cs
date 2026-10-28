@@ -99,6 +99,8 @@ public sealed class InMemoryStore
 
     /// <summary>Changes whenever reset/confirmation tokens must stop working (like Identity's security stamp).</summary>
     public ConcurrentDictionary<Guid, int> SecurityStamps { get; } = new();
+    /// <summary>Passwords set through CreateAsync; users added any other way accept any password.</summary>
+    public ConcurrentDictionary<Guid, string> Passwords { get; } = new();
 
     public IEnumerable<EmailMessage> EmailsTo(string address) => SentEmails.Where(m => m.To == address);
 
@@ -167,6 +169,7 @@ internal sealed class InMemoryUsers(InMemoryStore store) : IUserRepository
             Id = Guid.NewGuid(), Email = email, DisplayName = displayName, CreatedAt = DateTime.UtcNow, HasPassword = true,
         };
         store.Users[user.Id] = user;
+        store.Passwords[user.Id] = password;
         return Task.FromResult(user);
     }
 
@@ -208,7 +211,8 @@ internal sealed class InMemoryUsers(InMemoryStore store) : IUserRepository
     }
 
     public Task UpdateDisplayNameAsync(Guid userId, string displayName, CancellationToken ct = default) => Task.CompletedTask;
-    public Task<bool> CheckPasswordAsync(Guid userId, string password, CancellationToken ct = default) => Task.FromResult(true);
+    public Task<bool> CheckPasswordAsync(Guid userId, string password, CancellationToken ct = default) =>
+        Task.FromResult(!store.Passwords.TryGetValue(userId, out var expected) || expected == password);
     public Task<string> GeneratePasswordResetTokenAsync(Guid userId, CancellationToken ct = default) =>
         Task.FromResult($"reset-{userId:N}-{Stamp(userId)}");
 
@@ -216,6 +220,7 @@ internal sealed class InMemoryUsers(InMemoryStore store) : IUserRepository
     {
         if (!await VerifyPasswordResetTokenAsync(userId, token, ct)) return false;
         store.Users[userId].HasPassword = true;
+        store.Passwords[userId] = newPassword;
         await InvalidateSecurityTokensAsync(userId, ct);
         return true;
     }

@@ -83,6 +83,9 @@ if (job is not null)
     return;
 }
 
+// First, so every response (static files, the page, API answers, errors) gets the headers.
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
