@@ -5,7 +5,13 @@ import { useSyncExternalStore } from 'react'
 // (/assets/index-<hash>.js), so a different name there means a new release.
 
 const MIN_INTERVAL_MS = 60_000
+/** While the app is open, look again this often. */
+const PERIODIC_MS = 15 * 60_000
+/** After a failed check (offline, server waking up), retry after these delays, then every last one. */
+const RETRY_DELAYS_MS = [10_000, 30_000, 60_000, 5 * 60_000]
 const SW_TIMEOUT_MS = 5_000
+/** A server waking from zero takes ~20 s; don't wait forever on one request. */
+const FETCH_TIMEOUT_MS = 45_000
 
 const MAX_NOTE_LENGTH = 200
 
@@ -13,6 +19,8 @@ let available = false
 /** What the newer version brings (its release note), once one is known. */
 let note: string | null = null
 let lastCheck = 0
+/** Whether the last check got no answer from the server. */
+let lastFailed = false
 let running: Promise<boolean> | null = null
 const listeners = new Set<() => void>()
 
@@ -47,16 +55,22 @@ export function checkForUpdate(): Promise<boolean> {
 
   lastCheck = Date.now()
   running = (async () => {
+    lastFailed = true
     try {
       const current = runningEntry()
-      if (!current) return false
-      const response = await fetch('/index.html', { cache: 'no-cache' })
+      if (!current) {
+        lastFailed = false // nothing to compare against; retrying won't help
+        return false
+      }
+      const response = await fetch('/index.html', { cache: 'no-cache', signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
       if (!response.ok) return false
       const html = await response.text()
+      lastFailed = false
       const deployed = html.match(/\/assets\/index-[^"'\s]+\.js/)?.[0]
       if (deployed && deployed !== current) setAvailable(releaseNoteOf(html))
     } catch {
-      // Unreachable or slow server: keep the version we have, try again later.
+      // Offline, or the server is slow or waking up: keep the version we have;
+      // startUpdateChecks tries again.
     } finally {
       running = null
     }
@@ -91,20 +105,43 @@ export async function applyUpdate(url?: string) {
   else window.location.reload()
 }
 
-/** Checks now and whenever the app comes back to the foreground. */
+/**
+ * Checks now, whenever the app comes back to the foreground or online, and
+ * every so often while it's open. A check that got no answer (an installed app
+ * resumed before its network is back, or a server still waking up) is retried
+ * soon, not only on the next return to the foreground.
+ */
 export function startUpdateChecks() {
   if (!import.meta.env.PROD) return
-  const check = () => {
-    if (Date.now() - lastCheck < MIN_INTERVAL_MS) return
-    void checkForUpdate()
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let retries = 0
+
+  const schedule = () => {
+    clearTimeout(timer)
+    if (available || document.visibilityState !== 'visible') return
+    const delay = lastFailed ? RETRY_DELAYS_MS[Math.min(retries++, RETRY_DELAYS_MS.length - 1)] : PERIODIC_MS
+    if (!lastFailed) retries = 0
+    timer = setTimeout(() => check(true), delay)
+  }
+
+  const check = (force = false) => {
+    if (!force && !lastFailed && Date.now() - lastCheck < MIN_INTERVAL_MS) return schedule()
+    void checkForUpdate().then(schedule)
     navigator.serviceWorker
       ?.getRegistration()
       .then(r => r?.update())
       .catch(() => undefined)
   }
+
   check()
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') check()
+    else clearTimeout(timer)
+  })
+  window.addEventListener('online', () => check(true))
+  // Back from the browser's page cache (e.g. Android restoring the app).
+  window.addEventListener('pageshow', e => {
+    if (e.persisted) check()
   })
 }
 
