@@ -1,0 +1,40 @@
+# Keeps dependencies current with PRs that the ci workflow checks.
+# Minor and patch updates come grouped (one PR per ecosystem); major versions
+# come one PR each, as they may need code changes. Security fixes don't wait for
+# the schedule (Dependabot security updates).
+version: 2
+updates:
+  # Workflows pin actions to a commit; Dependabot moves the pin and its
+  # "# vX.Y.Z" comment to new releases.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "deps(actions)"
+
+  - package-ecosystem: npm
+    directory: /src/Wishlist.Web
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      web:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "deps(web)"
+
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      dotnet:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "deps(api)"
