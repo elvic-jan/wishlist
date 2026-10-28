@@ -4,6 +4,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { startUpdateChecks } from './lib/appUpdate'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -20,3 +21,6 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     })
   })
 }
+
+// Production only (it's a no-op in dev): tell people when a new release is out.
+window.addEventListener('load', startUpdateChecks)

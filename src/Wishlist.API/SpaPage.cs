@@ -47,11 +47,31 @@ public static partial class SpaPage
         return html;
     }
 
-    public static IResult Html(string html, bool noStore)
+    public enum Caching
     {
-        var page = Results.Text(html, "text/html; charset=utf-8");
-        return noStore ? new NoStore(page) : page;
+        /// <summary>The browser may keep it but must check for a new release first.</summary>
+        Revalidate,
+        /// <summary>Personal: never stored.</summary>
+        NoStore,
     }
+
+    private const string NoCache = "no-cache";
+    private const string ForGood = "public, max-age=31536000, immutable";
+
+    public static IResult Html(string html, Caching caching) =>
+        new WithCacheControl(
+            Results.Text(html, "text/html; charset=utf-8"),
+            caching == Caching.NoStore ? "no-store" : NoCache);
+
+    /// <summary>
+    /// Cache-Control for a static file, or null to leave it alone. The page and
+    /// the service worker are always revalidated so a release reaches people;
+    /// Vite's content-hashed /assets/ files never change, so they're kept for good.
+    /// </summary>
+    public static string? CacheControlFor(PathString path) =>
+        path.StartsWithSegments("/assets") ? ForGood
+        : path == "/index.html" || path == "/sw.js" ? NoCache
+        : null;
 
     // Replaces the content of <meta property|name="key" content="...">.
     private static string SetMeta(string html, string key, string value) =>
@@ -61,11 +81,11 @@ public static partial class SpaPage
     [GeneratedRegex("""(<meta\s+(?:property|name)="(?:og|twitter):image"\s+content=")(/[^"]*)(")""")]
     private static partial Regex AbsoluteImage();
 
-    private sealed class NoStore(IResult inner) : IResult
+    private sealed class WithCacheControl(IResult inner, string cacheControl) : IResult
     {
         public Task ExecuteAsync(HttpContext http)
         {
-            http.Response.Headers.CacheControl = "no-store";
+            http.Response.Headers.CacheControl = cacheControl;
             return inner.ExecuteAsync(http);
         }
     }

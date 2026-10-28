@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppShell } from '@/components/AppShell'
 import { AuthLayout } from '@/components/AuthLayout'
 import { Toaster } from '@/components/ui/toaster'
+import { UpdateToaster } from '@/components/UpdateToaster'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { LoginPage } from '@/pages/LoginPage'
 import { RegisterPage } from '@/pages/RegisterPage'
@@ -64,6 +65,7 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <Toaster />
+            <UpdateToaster />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>
