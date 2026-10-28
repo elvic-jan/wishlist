@@ -64,3 +64,29 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+
+  # A reminder, not a failure: Dependabot PRs change app code without a note,
+  # and the deploy then shows the generic text on purpose.
+  release-note:
+    name: Release note
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # The PR's merge commit and its first parent (main).
+          fetch-depth: 2
+
+      - name: Check the release note
+        run: |
+          page=src/Wishlist.Web/index.html
+          note() { grep -o '<meta name="release-note" content="[^"]*"' || true; }
+          app_changes=$(git diff --name-only HEAD^1 HEAD -- src/ ':(exclude)src/**/*.md' | head -n 20)
+          if [ -z "$app_changes" ]; then
+            echo "No app code changes; no new version to announce."
+          elif [ "$(git show HEAD^1:$page | note)" = "$(note < $page)" ]; then
+            echo "::warning title=Release note unchanged::This PR changes the app but not the release note in $page, so its release will show \"Refresh to get the latest GiftCircles.\" Set a note if this release deserves one."
+          else
+            echo "::notice title=Release note::$(note < $page | sed 's/.*content="//; s/"$//')"
+          fi
