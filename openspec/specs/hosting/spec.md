@@ -200,7 +200,7 @@ In deployed environments the app and its jobs SHALL connect to the database as `
 - **THEN** it fails before deploying the new image
 
 ### Requirement: Pull requests are checked before merging
-Every pull request to `main` SHALL run the API tests, including the Postgres tests against a throwaway database, plus lint and a build of the web app. The checks SHALL use no secrets and no cloud resources.
+Every pull request to `main` SHALL run the API tests, including the Postgres tests against a throwaway database, plus lint and a build of the web app. The checks SHALL use no secrets and no cloud resources. A pull request that only changes `openspec/` SHALL skip the tests and build, and still be mergeable when they are required checks.
 
 #### Scenario: A change breaks a test
 - **WHEN** a pull request makes an API test, a Postgres test, lint or the web build fail
@@ -209,6 +209,10 @@ Every pull request to `main` SHALL run the API tests, including the Postgres tes
 #### Scenario: Checks can't reach production
 - **WHEN** the checks run
 - **THEN** they have a read-only repository token and no Azure login or production secrets
+
+#### Scenario: OpenSpec-only pull request
+- **WHEN** a pull request only changes files under `openspec/` (an archive or a proposal)
+- **THEN** the tests and build are skipped, the required checks count as passed, and the pull request can be merged
 
 ### Requirement: Workflow actions are pinned and kept current
 Workflows SHALL reference every third-party action by full commit SHA, with the release version as a comment. Dependabot SHALL propose updates as pull requests: weekly for actions, and monthly for the web app's npm packages and the API's NuGet packages. Minor and patch updates SHALL be grouped per ecosystem.
