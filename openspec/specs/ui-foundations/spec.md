@@ -211,7 +211,7 @@ Pages that load a list SHALL show a loading placeholder until the data has arriv
 - **THEN** a loading placeholder is shown, not "No circles yet" or the "New circle" button
 
 ### Requirement: The app picks up new versions after a release
-The application SHALL check whether a newer version is deployed when it starts and when it returns to the foreground, and when there is one SHALL show a lasting "New version available" notice with a Refresh button, in the style of the message toasts. The notice SHALL say what the new version brings, using the release note of the deployed version; when that version has no release note, it SHALL say "Refresh to get the latest GiftCircles." The notice SHALL NOT offer a way to put it off or close it. Refresh SHALL load the new version, not the previously cached one. The application SHALL NOT reload by itself.
+The application SHALL check whether a newer version is deployed when it starts, when it returns to the foreground or comes back online, and every 15 minutes while it is open; a check that gets no answer SHALL be retried after 10 s, 30 s, 1 min and then every 5 min while the app is open, and when there is one SHALL show a lasting "New version available" notice with a Refresh button, in the style of the message toasts. The notice SHALL say what the new version brings, using the release note of the deployed version. A release note SHALL only be shown with the release it was written for: when a version has no release note, or kept the note of the version before it, the notice SHALL say "Refresh to get the latest GiftCircles." The notice SHALL NOT offer a way to put it off or close it. Refresh SHALL load the new version, not the previously cached one. The application SHALL NOT reload by itself.
 
 #### Scenario: Notice after a release
 - **WHEN** a user opens the app, or returns to it, after a new version was deployed
@@ -248,4 +248,35 @@ The application SHALL check whether a newer version is deployed when it starts a
 #### Scenario: Messages wait for the notice
 - **WHEN** the update notice is shown
 - **THEN** message toasts are not shown until the new version is loaded
+
+#### Scenario: Release that didn't write a note
+- **WHEN** a version is deployed whose release note is the same as the live version's (for example a dependency update)
+- **THEN** its notice shows "Refresh to get the latest GiftCircles.", not the previous release's note
+
+#### Scenario: Reminder on pull requests
+- **WHEN** a pull request changes the app but not the release note
+- **THEN** its checks show a warning (not a failure) saying the release will show the generic text
+
+#### Scenario: First check gets no answer
+- **WHEN** the installed app opens before its network is back, or while the server is still waking up, so the first check fails
+- **THEN** the app checks again by itself within seconds and shows the notice once the server answers, without the user leaving or reloading the app
+
+#### Scenario: App left open
+- **WHEN** a new version is deployed while the app stays open in the foreground
+- **THEN** the notice appears within 15 minutes
+
+### Requirement: Pages load on demand
+The SPA SHALL load each page's code the first time that page is opened, not with the app's first download. The service worker SHALL cache the code of every page of the current version ahead of time, as it does for the app shell, so pages open without a network round trip on later visits and keep working after the previous version's files are gone from the server. If a page's code can't be loaded (for example in a tab opened before a release), the SPA SHALL load the new version once instead of showing a broken page.
+
+#### Scenario: First visit downloads less
+- **WHEN** someone opens the app for the first time
+- **THEN** the first download holds the app frame and shared code, and each page's own code arrives when that page is opened
+
+#### Scenario: Pages are cached ahead
+- **WHEN** the service worker caches a version of the app
+- **THEN** it also caches every page's code that version can load later, and removes page code no kept version needs
+
+#### Scenario: Old tab after a release
+- **WHEN** a tab running the previous version opens a page whose code is no longer on the server or in the cache
+- **THEN** the SPA loads the new version once, and opens the page there
 

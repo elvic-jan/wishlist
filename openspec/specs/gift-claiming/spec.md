@@ -22,6 +22,10 @@ The system SHALL allow an authenticated group member to mark an unclaimed wishli
 - **WHEN** an authenticated user who shares no group with the wishlist owner attempts to reserve an item
 - **THEN** the system returns a 403 Forbidden error
 
+#### Scenario: Two people reserve at the same moment
+- **WHEN** two members reserve the same unclaimed item at the same time
+- **THEN** exactly one of them gets the reservation, and the other gets a 409 Conflict saying someone else just reserved it (never a server error)
+
 ### Requirement: Mark a gift as bought
 The system SHALL allow the claimer of a reserved gift to update its status to "Bought".
 
