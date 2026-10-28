@@ -2,7 +2,6 @@
 
 ## Purpose
 Shows signed-in users messages that stay until handled (what's new, offers such as the old-site import), defined in code with a rule for who sees each one.
-
 ## Requirements
 ### Requirement: Messages defined in code
 The system SHALL support messages defined in application code, each with a stable id, title, text, an optional action (label and in-app link), an optional date window, and a rule deciding which users it applies to. The system SHALL return to a signed-in user the messages that are within their date window, apply to them, and that they haven't dismissed.
@@ -35,7 +34,7 @@ The system SHALL let a user dismiss a message, or act on it, so that it is never
 - **THEN** the system returns 404 Not Found
 
 ### Requirement: Messages shown as lasting toasts
-The application SHALL show a signed-in user's messages as toasts that stay until handled, one at a time, each offering its action (if any), "Remind me next time", and a close button. "Remind me next time" SHALL hide the message until the app is next opened, without dismissing it.
+The application SHALL show a signed-in user's messages as toasts that stay until handled, one at a time, each offering its action (if any), "Remind me next time", and a close button. "Remind me next time" SHALL hide the message until the app is next opened, without dismissing it. A message's action SHALL open its page in the newest deployed version of the app.
 
 #### Scenario: One at a time
 - **WHEN** a user has several messages
@@ -48,6 +47,10 @@ The application SHALL show a signed-in user's messages as toasts that stay until
 #### Scenario: Action
 - **WHEN** a user chooses a message's action
 - **THEN** the app goes to the action's page and the message is dismissed for good
+
+#### Scenario: Action while a newer version is deployed
+- **WHEN** a user chooses a message's action and a newer version of the app is deployed than the one running
+- **THEN** the new version loads directly on the action's page, so the feature the message is about is there
 
 ### Requirement: Import and what's-new messages
 The system SHALL include a message inviting users who haven't imported (when old data is loaded) to bring their wishes from the old site, with an action to the import page, and a "What's new" message for everyone describing recent features.
