@@ -211,11 +211,19 @@ Pages that load a list SHALL show a loading placeholder until the data has arriv
 - **THEN** a loading placeholder is shown, not "No circles yet" or the "New circle" button
 
 ### Requirement: The app picks up new versions after a release
-The application SHALL check whether a newer version is deployed when it starts and when it returns to the foreground, and when there is one SHALL show a lasting "New version available" notice with a Refresh button, in the style of the message toasts. The notice SHALL NOT offer a way to put it off or close it. Refresh SHALL load the new version, not the previously cached one. The application SHALL NOT reload by itself.
+The application SHALL check whether a newer version is deployed when it starts and when it returns to the foreground, and when there is one SHALL show a lasting "New version available" notice with a Refresh button, in the style of the message toasts. The notice SHALL say what the new version brings, using the release note of the deployed version; when that version has no release note, it SHALL say "Refresh to get the latest GiftCircles." The notice SHALL NOT offer a way to put it off or close it. Refresh SHALL load the new version, not the previously cached one. The application SHALL NOT reload by itself.
 
 #### Scenario: Notice after a release
 - **WHEN** a user opens the app, or returns to it, after a new version was deployed
 - **THEN** a "New version available" notice appears with a Refresh button and no Not now or close button
+
+#### Scenario: Notice says what's new
+- **WHEN** the deployed version has the release note "Security fixes"
+- **THEN** the notice shows "Security fixes" under its title
+
+#### Scenario: Release without a note
+- **WHEN** the deployed version has no release note
+- **THEN** the notice shows "Refresh to get the latest GiftCircles."
 
 #### Scenario: Refresh loads the new version
 - **WHEN** the user chooses Refresh
@@ -223,7 +231,7 @@ The application SHALL check whether a newer version is deployed when it starts a
 
 #### Scenario: Several releases between visits
 - **WHEN** two or more versions were deployed since the user last opened the app, and the files of the version they last saw are gone from the server
-- **THEN** the app still opens (never a blank page) and shows the notice, and Refresh loads the newest version
+- **THEN** the app still opens (never a blank page) and shows the notice with the newest version's release note, and Refresh loads the newest version
 
 #### Scenario: No notice when up to date
 - **WHEN** the deployed version is the one running
