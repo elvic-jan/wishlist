@@ -13,6 +13,6 @@ public class AuthSessionFactory(ITokenService tokens)
         var accessToken = tokens.GenerateAccessToken(user);
         var refreshToken = await tokens.CreateRefreshTokenAsync(user.Id, ct);
         return (new AuthResponse(accessToken, new UserDto(user.Id, user.Email, user.DisplayName), joinedGroupId),
-            refreshToken.Token);
+            refreshToken);
     }
 }

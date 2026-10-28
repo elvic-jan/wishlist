@@ -18,6 +18,7 @@ public class AuthController(
     LoginUserUseCase login,
     RefreshTokenUseCase refresh,
     LogoutUserUseCase logout,
+    UpdateProfileUseCase updateProfile,
     RequestPasswordResetUseCase requestPasswordReset,
     ResetPasswordUseCase resetPassword,
     IForgotPasswordRateLimiter forgotPasswordRateLimiter,
@@ -138,12 +139,7 @@ public class AuthController(
     [Authorize]
     [HttpPatch("me")]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request, CancellationToken ct)
-    {
-        var userId = GetUserId();
-        await users.UpdateDisplayNameAsync(userId, request.DisplayName, ct);
-        var user = await users.GetByIdAsync(userId, ct);
-        return Ok(new UserDto(user!.Id, user.Email, user.DisplayName));
-    }
+        => Ok(await updateProfile.ExecuteAsync(GetUserId(), request, ct));
 
     private Guid GetUserId() =>
         Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)

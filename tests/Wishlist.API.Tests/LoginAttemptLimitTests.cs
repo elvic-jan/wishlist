@@ -87,9 +87,8 @@ public class LoginAttemptLimitTests
     private sealed class NoTokens : Application.Interfaces.ITokenService
     {
         public string GenerateAccessToken(User user) => "access";
-        public Task<RefreshToken> CreateRefreshTokenAsync(Guid userId, CancellationToken ct = default) =>
-            Task.FromResult(new RefreshToken { Token = "refresh", UserId = userId });
-        public Task<RefreshToken?> GetActiveRefreshTokenAsync(string token, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<string> CreateRefreshTokenAsync(Guid userId, CancellationToken ct = default) => Task.FromResult("refresh");
+        public Task<Guid?> ConsumeRefreshTokenAsync(string token, CancellationToken ct = default) => throw new NotSupportedException();
         public Task RevokeRefreshTokenAsync(string token, CancellationToken ct = default) => throw new NotSupportedException();
         public Task RevokeAllUserRefreshTokensAsync(Guid userId, CancellationToken ct = default) => throw new NotSupportedException();
         public Task RevokeOtherUserRefreshTokensAsync(Guid userId, string? keepToken, CancellationToken ct = default) => throw new NotSupportedException();

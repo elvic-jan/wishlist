@@ -19,6 +19,7 @@ public class RegisterUserUseCase(
     {
         if (request.Password is null || request.Password.Length < 8)
             throw new DomainException("Invalid registration data.");
+        InputLimits.Check(request.Password, InputLimits.Password, "Password");
 
         var invitation = await gate.CheckAsync(request.Email, request.DisplayName, request.InviteCode, ct);
 

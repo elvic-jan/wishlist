@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import client from '@/api/client'
+import { MAX_ITEM_DESCRIPTION, MAX_ITEM_TITLE, MAX_URL } from '@/lib/inputLimits'
 
 export interface AddedBy {
   userId: string
@@ -217,6 +218,7 @@ export function WishlistEditor<T extends EditableItem>({
               <Input
                 value={u}
                 onChange={e => setUrl(i, e.target.value)}
+                maxLength={MAX_URL}
                 placeholder="https://…"
               />
               <Button
@@ -281,6 +283,7 @@ export function WishlistEditor<T extends EditableItem>({
                         id={`title-${item.id}`}
                         value={form.title}
                         onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                        maxLength={MAX_ITEM_TITLE}
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -289,6 +292,7 @@ export function WishlistEditor<T extends EditableItem>({
                         id={`desc-${item.id}`}
                         value={form.description}
                         onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                        maxLength={MAX_ITEM_DESCRIPTION}
                         rows={2}
                       />
                     </div>
@@ -386,6 +390,7 @@ export function WishlistEditor<T extends EditableItem>({
                     id="new-item-title"
                     value={form.title}
                     onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                    maxLength={MAX_ITEM_TITLE}
                     required
                     autoFocus
                   />
@@ -396,6 +401,7 @@ export function WishlistEditor<T extends EditableItem>({
                     id="new-item-description"
                     value={form.description}
                     onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                    maxLength={MAX_ITEM_DESCRIPTION}
                     placeholder="Optional notes for whoever picks this up."
                     rows={2}
                   />

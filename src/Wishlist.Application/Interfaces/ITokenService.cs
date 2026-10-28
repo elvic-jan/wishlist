@@ -5,8 +5,16 @@ namespace Wishlist.Application.Interfaces;
 public interface ITokenService
 {
     string GenerateAccessToken(User user);
-    Task<RefreshToken> CreateRefreshTokenAsync(Guid userId, CancellationToken ct = default);
-    Task<RefreshToken?> GetActiveRefreshTokenAsync(string token, CancellationToken ct = default);
+
+    /// <summary>Issues a new refresh token and returns it; only its hash is stored.</summary>
+    Task<string> CreateRefreshTokenAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Revokes the token if it is still active and returns its user. Only one
+    /// caller can consume a token, even when several present it at once.
+    /// </summary>
+    Task<Guid?> ConsumeRefreshTokenAsync(string token, CancellationToken ct = default);
+
     Task RevokeRefreshTokenAsync(string token, CancellationToken ct = default);
     Task RevokeAllUserRefreshTokensAsync(Guid userId, CancellationToken ct = default);
 

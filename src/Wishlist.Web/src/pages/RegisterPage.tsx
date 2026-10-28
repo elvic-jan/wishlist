@@ -21,6 +21,7 @@ import { useAuth } from '@/context/AuthContext'
 import { inviteErrorMessage } from '@/lib/inviteErrors'
 import { useInvitationCheck } from '@/lib/useInvitationCheck'
 import { isPasskeyCancelled, passkeyErrorMessage, passkeysSupported } from '@/lib/webauthn'
+import { MAX_DISPLAY_NAME, MAX_EMAIL, MAX_PASSWORD } from '@/lib/inputLimits'
 
 export function RegisterPage() {
   const [searchParams] = useSearchParams()
@@ -136,6 +137,7 @@ function RegisterForm({ inviteCode }: { inviteCode?: string }) {
               autoComplete="name"
               value={displayName}
               onChange={e => setDisplayName(e.target.value)}
+              maxLength={MAX_DISPLAY_NAME}
               required
             />
           </div>
@@ -147,6 +149,7 @@ function RegisterForm({ inviteCode }: { inviteCode?: string }) {
               autoComplete="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
+              maxLength={MAX_EMAIL}
               required
             />
           </div>
@@ -160,6 +163,7 @@ function RegisterForm({ inviteCode }: { inviteCode?: string }) {
                   autoComplete="new-password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
+                  maxLength={MAX_PASSWORD}
                   required
                   minLength={8}
                 />

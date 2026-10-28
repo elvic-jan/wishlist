@@ -41,8 +41,7 @@ public class GroupsController(
     [HttpPost("groups/{groupId:guid}/invitations")]
     public async Task<IActionResult> GenerateInvitation(Guid groupId, CancellationToken ct)
     {
-        var baseUrl = $"{Request.Scheme}://{Request.Host}";
-        var result = await generateInvitation.ExecuteAsync(GetUserId(), groupId, baseUrl, ct);
+        var result = await generateInvitation.ExecuteAsync(GetUserId(), groupId, ct);
         return Ok(result);
     }
 

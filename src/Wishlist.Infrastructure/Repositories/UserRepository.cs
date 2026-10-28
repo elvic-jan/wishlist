@@ -133,9 +133,25 @@ public class UserRepository(UserManager<ApplicationUser> userManager) : IUserRep
 
     public async Task<bool> CheckPasswordAsync(Guid userId, string password, CancellationToken ct = default)
     {
-        var user = await userManager.FindByIdAsync(userId.ToString());
-        if (user is null) return false;
+        var user = userId == Guid.Empty ? null : await userManager.FindByIdAsync(userId.ToString());
+        if (user?.PasswordHash is null)
+        {
+            // No account, or one without a password: hash anyway, so the answer
+            // takes as long as a wrong password and doesn't reveal the account.
+            VerifyDummyPassword(password);
+            return false;
+        }
         return await userManager.CheckPasswordAsync(user, password);
+    }
+
+    private static readonly ApplicationUser DummyUser = new();
+    private static string? _dummyHash;
+
+    private void VerifyDummyPassword(string password)
+    {
+        var hasher = userManager.PasswordHasher;
+        _dummyHash ??= hasher.HashPassword(DummyUser, Guid.NewGuid().ToString());
+        hasher.VerifyHashedPassword(DummyUser, _dummyHash, password);
     }
 
     public async Task<string> GeneratePasswordResetTokenAsync(Guid userId, CancellationToken ct = default)

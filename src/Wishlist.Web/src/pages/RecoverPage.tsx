@@ -17,6 +17,7 @@ import { resetPassword } from '@/api/auth'
 import { apiErrorMessage, recoverWithPasskey } from '@/api/passkeys'
 import { useAuth } from '@/context/AuthContext'
 import { isPasskeyCancelled, passkeyErrorMessage, passkeysSupported } from '@/lib/webauthn'
+import { MAX_PASSWORD } from '@/lib/inputLimits'
 
 /**
  * Where the "Can't sign in?" email leads (`/recover`, and old `/reset-password`
@@ -188,6 +189,7 @@ function NewPasswordForm({ email, token }: { email: string; token: string }) {
             autoComplete="new-password"
             value={newPassword}
             onChange={e => setNewPassword(e.target.value)}
+            maxLength={MAX_PASSWORD}
             required
             minLength={8}
           />
@@ -200,6 +202,7 @@ function NewPasswordForm({ email, token }: { email: string; token: string }) {
             autoComplete="new-password"
             value={confirmPassword}
             onChange={e => setConfirmPassword(e.target.value)}
+            maxLength={MAX_PASSWORD}
             required
             minLength={8}
           />

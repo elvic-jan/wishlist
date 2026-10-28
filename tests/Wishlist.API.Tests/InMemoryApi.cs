@@ -210,7 +210,11 @@ internal sealed class InMemoryUsers(InMemoryStore store) : IUserRepository
         return Task.CompletedTask;
     }
 
-    public Task UpdateDisplayNameAsync(Guid userId, string displayName, CancellationToken ct = default) => Task.CompletedTask;
+    public Task UpdateDisplayNameAsync(Guid userId, string displayName, CancellationToken ct = default)
+    {
+        store.Users[userId].DisplayName = displayName;
+        return Task.CompletedTask;
+    }
     public Task<bool> CheckPasswordAsync(Guid userId, string password, CancellationToken ct = default) =>
         Task.FromResult(!store.Passwords.TryGetValue(userId, out var expected) || expected == password);
     public Task<string> GeneratePasswordResetTokenAsync(Guid userId, CancellationToken ct = default) =>
@@ -268,7 +272,7 @@ internal sealed class InMemoryGroups(InMemoryStore store) : IGroupRepository
 internal sealed class InMemoryInvitations(InMemoryStore store) : IInvitationRepository
 {
     public Task<GroupInvitation> CreateAsync(Guid groupId, Guid createdByUserId, CancellationToken ct = default) =>
-        throw new NotSupportedException();
+        Task.FromResult(store.AddInvitation(DateTime.UtcNow.AddDays(3), groupId, createdByUserId));
 
     public Task<GroupInvitation?> GetByCodeAsync(string code, CancellationToken ct = default) =>
         Task.FromResult(store.Invitations.GetValueOrDefault(code));
@@ -320,19 +324,28 @@ internal sealed class InMemoryTokens(IConfiguration config, InMemoryStore store)
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public Task<RefreshToken> CreateRefreshTokenAsync(Guid userId, CancellationToken ct = default)
+    // Keyed by the token itself; the real service stores only hashes.
+    public Task<string> CreateRefreshTokenAsync(Guid userId, CancellationToken ct = default)
     {
-        var token = new RefreshToken
+        var token = Guid.NewGuid().ToString("N");
+        _tokens[token] = new RefreshToken
         {
-            Id = Guid.NewGuid(), UserId = userId, Token = Guid.NewGuid().ToString("N"),
+            Id = Guid.NewGuid(), UserId = userId, TokenHash = token,
             CreatedAt = DateTime.UtcNow, ExpiresAt = DateTime.UtcNow.AddDays(30),
         };
-        _tokens[token.Token] = token;
         return Task.FromResult(token);
     }
 
-    public Task<RefreshToken?> GetActiveRefreshTokenAsync(string token, CancellationToken ct = default) =>
-        Task.FromResult(_tokens.TryGetValue(token, out var t) && t.IsActive ? t : null);
+    public Task<Guid?> ConsumeRefreshTokenAsync(string token, CancellationToken ct = default)
+    {
+        if (!_tokens.TryGetValue(token, out var t)) return Task.FromResult<Guid?>(null);
+        lock (t)
+        {
+            if (!t.IsActive) return Task.FromResult<Guid?>(null);
+            t.RevokedAt = DateTime.UtcNow;
+            return Task.FromResult<Guid?>(t.UserId);
+        }
+    }
 
     public Task RevokeRefreshTokenAsync(string token, CancellationToken ct = default)
     {
@@ -348,7 +361,7 @@ internal sealed class InMemoryTokens(IConfiguration config, InMemoryStore store)
 
     public Task RevokeOtherUserRefreshTokensAsync(Guid userId, string? keepToken, CancellationToken ct = default)
     {
-        foreach (var t in _tokens.Values.Where(t => t.UserId == userId && t.Token != keepToken)) t.RevokedAt = DateTime.UtcNow;
+        foreach (var t in _tokens.Values.Where(t => t.UserId == userId && t.TokenHash != keepToken)) t.RevokedAt = DateTime.UtcNow;
         return Task.CompletedTask;
     }
 }

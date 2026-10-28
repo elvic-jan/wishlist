@@ -485,7 +485,7 @@ public class PasskeyTests : IClassFixture<InMemoryApi>
     private async Task<string> RefreshTokenFor(User user)
     {
         var tokens = _api.Services.GetRequiredService<Wishlist.Application.Interfaces.ITokenService>();
-        return (await tokens.CreateRefreshTokenAsync(user.Id)).Token;
+        return await tokens.CreateRefreshTokenAsync(user.Id);
     }
 
     private string Token(User user) =>

@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -141,6 +142,24 @@ public static class DependencyInjection
             throw new InvalidOperationException(
                 $"Configuration error: 'App:PublicBaseUrl' must use HTTPS in '{environment.EnvironmentName}' " +
                 "environments. Refusing to start so reset links cannot be sent over an insecure origin.");
+        }
+
+        if (!environment.IsDevelopment())
+            ValidateJwtKey(config["Jwt:Key"]);
+    }
+
+    /// <summary>The key in appsettings.json is public: never sign tokens with it.</summary>
+    public const string PlaceholderJwtKey = "change-this-to-a-long-random-secret-in-production";
+    public const int MinJwtKeyBytes = 32;
+
+    public static void ValidateJwtKey(string? key)
+    {
+        if (string.IsNullOrEmpty(key) || key == PlaceholderJwtKey || Encoding.UTF8.GetByteCount(key) < MinJwtKeyBytes)
+        {
+            throw new InvalidOperationException(
+                "Configuration error: 'Jwt:Key' must be a secret of at least " +
+                $"{MinJwtKeyBytes} bytes, not the placeholder from appsettings.json. " +
+                "Set it from a platform secret (Jwt__Key).");
         }
     }
 }

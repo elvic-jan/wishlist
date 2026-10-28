@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CircleInvitationsCard } from '@/components/CircleInvitationsCard'
 import client from '@/api/client'
+import { MAX_CIRCLE_NAME } from '@/lib/inputLimits'
 
 interface Group {
   id: string
@@ -135,6 +136,7 @@ export function HomePage() {
                   id="new-group-name"
                   value={newGroupName}
                   onChange={e => setNewGroupName(e.target.value)}
+                  maxLength={MAX_CIRCLE_NAME}
                   placeholder="Family, Friends, Work Secret Santa…"
                   required
                   autoFocus

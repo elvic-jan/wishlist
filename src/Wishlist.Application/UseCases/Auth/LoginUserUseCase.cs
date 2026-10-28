@@ -16,7 +16,9 @@ public class LoginUserUseCase(IUserRepository users, ITokenService tokens, ILogi
             throw new TooManyRequestsException(TooManyAttempts);
 
         var user = await users.GetByEmailAsync(request.Email, ct);
-        if (user is null || !await users.CheckPasswordAsync(user.Id, request.Password, ct))
+        // Checked for unknown emails too, so timing doesn't reveal who has an account.
+        var passwordOk = await users.CheckPasswordAsync(user?.Id ?? Guid.Empty, request.Password, ct);
+        if (user is null || !passwordOk)
         {
             limiter.RecordFailure(request.Email, ipAddress);
             throw new DomainException("Invalid credentials.");
@@ -25,6 +27,6 @@ public class LoginUserUseCase(IUserRepository users, ITokenService tokens, ILogi
         var accessToken = tokens.GenerateAccessToken(user);
         var refreshToken = await tokens.CreateRefreshTokenAsync(user.Id, ct);
 
-        return (new AuthResponse(accessToken, new UserDto(user.Id, user.Email, user.DisplayName)), refreshToken.Token);
+        return (new AuthResponse(accessToken, new UserDto(user.Id, user.Email, user.DisplayName)), refreshToken);
     }
 }
