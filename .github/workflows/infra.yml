@@ -50,6 +50,7 @@ jobs:
           BUDGET_CONTACT_EMAIL: ${{ vars.BUDGET_CONTACT_EMAIL }}
           GHCR_USERNAME: ${{ github.repository_owner }}
           POSTGRES_ADMIN_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+          POSTGRES_APP_PASSWORD: ${{ secrets.POSTGRES_APP_PASSWORD }}
           JWT_KEY: ${{ secrets.JWT_KEY }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
@@ -69,7 +70,7 @@ jobs:
               emailCustomDomainVerified="$EMAIL_DOMAIN_VERIFIED" \
               budgetContactEmails="[\"$BUDGET_CONTACT_EMAIL\"]" \
               ghcrUsername="$GHCR_USERNAME" \
-              postgresAdministratorPassword="$POSTGRES_ADMIN_PASSWORD" \
+              postgresAdministratorPassword="$POSTGRES_ADMIN_PASSWORD"               postgresAppPassword="$POSTGRES_APP_PASSWORD" \
               jwtKey="$JWT_KEY" \
               smtpUser="$SMTP_USER" \
               smtpPassword="$SMTP_PASSWORD" \
