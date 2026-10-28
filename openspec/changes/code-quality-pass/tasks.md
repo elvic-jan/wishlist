@@ -17,5 +17,5 @@
 
 ## 4. Release
 
-- [ ] 4.1 Release note confirmed with the user: "The app loads faster"
+- [x] 4.1 Release note confirmed with the user: "Performance fixes"
 - [x] 4.2 Tests (with Postgres), lint, build
