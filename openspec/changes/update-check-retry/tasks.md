@@ -6,5 +6,5 @@
 
 ## 2. Release
 
-- [ ] 2.1 Release note confirmed with the user: "More reliable update notices"
+- [x] 2.1 Release note confirmed with the user: "More reliable update notices"
 - [x] 2.2 Lint, build, tests
