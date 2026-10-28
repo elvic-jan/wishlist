@@ -63,6 +63,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # A release that doesn't write a new note shows the generic text, not the
+      # previous release's note (scripts/release-note-guard.sh).
+      - name: Release note
+        run: scripts/release-note-guard.sh "${{ vars.PUBLIC_SITE_URL || 'https://www.giftcircles.app' }}"
+
       - name: Build and push image
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
