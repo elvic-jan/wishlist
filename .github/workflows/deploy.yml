@@ -81,7 +81,7 @@ jobs:
 
       - name: Build migrations bundle
         run: |
-          dotnet tool install --global dotnet-ef --version 10.0.13
+          dotnet tool install --global dotnet-ef --version 10.0.14
           dotnet ef migrations bundle \
             --project src/Wishlist.Infrastructure \
             --startup-project src/Wishlist.API \
