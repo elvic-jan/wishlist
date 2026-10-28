@@ -6,6 +6,11 @@ name: deploy
 on:
   push:
     branches: [main]
+    # OpenSpec docs (proposals, specs, archived changes) don't affect the app,
+    # so a push that only touches them builds and deploys nothing. A push that
+    # also changes other files still deploys. Run it by hand if ever needed.
+    paths-ignore:
+      - 'openspec/**'
   workflow_dispatch:
 
 permissions:
