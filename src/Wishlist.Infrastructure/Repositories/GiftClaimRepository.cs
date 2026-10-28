@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Wishlist.Application.Interfaces;
 using Wishlist.Domain.Entities;
 using Wishlist.Domain.Enums;
+using Wishlist.Domain.Exceptions;
 using Wishlist.Infrastructure.Persistence;
 
 namespace Wishlist.Infrastructure.Repositories;
@@ -23,9 +25,20 @@ public class GiftClaimRepository(WishlistDbContext db) : IGiftClaimRepository
             ExpiresAt = expiresAt,
         };
         db.GiftClaims.Add(claim);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            // Someone else reserved it a moment earlier (one claim per item).
+            db.Entry(claim).State = EntityState.Detached;
+            throw new ConflictException(AlreadyClaimed);
+        }
         return claim;
     }
+
+    public const string AlreadyClaimed = "Someone else just reserved this gift.";
 
     public async Task UpdateAsync(GiftClaim claim, CancellationToken ct = default)
     {

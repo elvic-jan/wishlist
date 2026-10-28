@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Wishlist.Application.DTOs;
@@ -17,18 +16,13 @@ public class LegacyImportController(
 {
     [HttpGet]
     public async Task<IActionResult> Status(CancellationToken ct) =>
-        Ok(await getStatus.ExecuteAsync(GetUserId(), ct));
+        Ok(await getStatus.ExecuteAsync(User.GetUserId(), ct));
 
     [HttpPost("preview")]
     public async Task<IActionResult> Preview([FromBody] LegacyPreviewRequest request, CancellationToken ct) =>
-        Ok(await preview.ExecuteAsync(GetUserId(), request.UserName, ct));
+        Ok(await preview.ExecuteAsync(User.GetUserId(), request.UserName, ct));
 
     [HttpPost]
     public async Task<IActionResult> Import([FromBody] LegacyImportRequest request, CancellationToken ct) =>
-        Ok(await import.ExecuteAsync(GetUserId(), request, ct));
-
-    private Guid GetUserId() =>
-        Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue("sub")
-            ?? throw new InvalidOperationException("User ID claim missing."));
+        Ok(await import.ExecuteAsync(User.GetUserId(), request, ct));
 }

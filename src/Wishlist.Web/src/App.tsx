@@ -7,19 +7,22 @@ import { AuthLayout } from '@/components/AuthLayout'
 import { Toaster } from '@/components/ui/toaster'
 import { UpdateToaster } from '@/components/UpdateToaster'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { LoginPage } from '@/pages/LoginPage'
-import { RegisterPage } from '@/pages/RegisterPage'
-import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
-import { RecoverPage } from '@/pages/RecoverPage'
-import { ConfirmEmailPage } from '@/pages/ConfirmEmailPage'
-import { SecurityPage } from '@/pages/SecurityPage'
-import { HomePage } from '@/pages/HomePage'
-import { GroupDetailPage } from '@/pages/GroupDetailPage'
-import { MyWishlistPage } from '@/pages/MyWishlistPage'
-import { WishlistsPage } from '@/pages/WishlistsPage'
-import { MemberWishlistPage } from '@/pages/MemberWishlistPage'
-import { JoinGroupPage } from '@/pages/JoinGroupPage'
-import { ImportPage } from '@/pages/ImportPage'
+import { lazyPage } from '@/lib/lazyPage'
+
+// Each page loads when first opened (the service worker caches them all ahead).
+const LoginPage = lazyPage(() => import('@/pages/LoginPage'), 'LoginPage')
+const HomePage = lazyPage(() => import('@/pages/HomePage'), 'HomePage')
+const RegisterPage = lazyPage(() => import('@/pages/RegisterPage'), 'RegisterPage')
+const ForgotPasswordPage = lazyPage(() => import('@/pages/ForgotPasswordPage'), 'ForgotPasswordPage')
+const RecoverPage = lazyPage(() => import('@/pages/RecoverPage'), 'RecoverPage')
+const ConfirmEmailPage = lazyPage(() => import('@/pages/ConfirmEmailPage'), 'ConfirmEmailPage')
+const SecurityPage = lazyPage(() => import('@/pages/SecurityPage'), 'SecurityPage')
+const GroupDetailPage = lazyPage(() => import('@/pages/GroupDetailPage'), 'GroupDetailPage')
+const MyWishlistPage = lazyPage(() => import('@/pages/MyWishlistPage'), 'MyWishlistPage')
+const WishlistsPage = lazyPage(() => import('@/pages/WishlistsPage'), 'WishlistsPage')
+const MemberWishlistPage = lazyPage(() => import('@/pages/MemberWishlistPage'), 'MemberWishlistPage')
+const JoinGroupPage = lazyPage(() => import('@/pages/JoinGroupPage'), 'JoinGroupPage')
+const ImportPage = lazyPage(() => import('@/pages/ImportPage'), 'ImportPage')
 
 function LegacyGroupRedirect() {
   const { groupId } = useParams()

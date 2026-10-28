@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { BackButton } from '@/components/BackButton'
 import client from '@/api/client'
+import { apiErrorMessage } from '@/api/errors'
 
 interface Status {
   available: boolean
@@ -44,9 +45,6 @@ interface Preview {
 
 const OLD_SITE = 'verlanglijstje.shorturl.com'
 
-function errorMessage(err: unknown, fallback: string): string {
-  return (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? fallback
-}
 
 function formatDate(iso?: string | null): string {
   return iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
@@ -86,7 +84,7 @@ export function ImportPage() {
       setPreview(data)
       setTicked(new Set(data.items.filter(i => i.suggested).map(i => i.legacyId)))
     } catch (err) {
-      setError(errorMessage(err, 'Couldn’t look up that username.'))
+      setError(apiErrorMessage(err) ?? 'Couldn’t look up that username.')
     } finally {
       setBusy(false)
     }
@@ -112,7 +110,7 @@ export function ImportPage() {
       setStatus(data)
       setPreview(null)
     } catch (err) {
-      setError(errorMessage(err, 'The import didn’t work. Please try again.'))
+      setError(apiErrorMessage(err) ?? 'The import didn’t work. Please try again.')
     } finally {
       setBusy(false)
       setConfirmEmpty(false)

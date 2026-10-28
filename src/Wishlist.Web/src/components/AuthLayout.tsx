@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { Gift } from 'lucide-react'
 import { Link, Outlet } from 'react-router-dom'
 
@@ -15,7 +16,9 @@ export function AuthLayout() {
       </header>
       <main className="flex min-h-[calc(100svh-3.5rem)] flex-col items-center px-4 py-8 sm:py-12">
         <div className="w-full max-w-sm">
-          <Outlet />
+          <Suspense fallback={null}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
     </div>

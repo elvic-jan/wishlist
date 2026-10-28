@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import client from '@/api/client'
 import { MAX_ITEM_DESCRIPTION, MAX_ITEM_TITLE, MAX_URL } from '@/lib/inputLimits'
+import { apiErrorMessage } from '@/api/errors'
 
 export interface AddedBy {
   userId: string
@@ -64,9 +65,6 @@ function hostFor(rawUrl: string): string {
   }
 }
 
-function apiError(err: unknown): string | undefined {
-  return (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-}
 
 /**
  * A wishlist's items, with add/edit/delete when `canEdit`. Used by the owner on
@@ -146,7 +144,7 @@ export function WishlistEditor<T extends EditableItem>({
       setAdding(false)
       onChanged()
     } catch (err: unknown) {
-      setError(apiError(err) ?? 'Failed to add item.')
+      setError(apiErrorMessage(err) ?? 'Failed to add item.')
     }
   }
 
@@ -164,7 +162,7 @@ export function WishlistEditor<T extends EditableItem>({
       setForm(emptyForm)
       onChanged()
     } catch (err: unknown) {
-      setError(apiError(err) ?? 'Failed to save.')
+      setError(apiErrorMessage(err) ?? 'Failed to save.')
     }
   }
 
@@ -173,7 +171,7 @@ export function WishlistEditor<T extends EditableItem>({
     try {
       await client.delete(`${itemsPath}/${id}`)
     } catch (err: unknown) {
-      setError(apiError(err) ?? 'Failed to delete.')
+      setError(apiErrorMessage(err) ?? 'Failed to delete.')
     }
     setPendingDeleteId(null)
     onChanged()

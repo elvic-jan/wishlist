@@ -4,8 +4,10 @@
 //
 // - Navigations: serve the cached index.html at once and refresh it in the
 //   background (stale-while-revalidate). First visit falls through to network.
-// - /assets/*: Vite content-hashes these, so cache-first is safe. Each fresh
-//   index.html prunes assets it no longer references.
+// - /assets/*: Vite content-hashes these, so cache-first is safe. A shell's
+//   assets are the files index.html names plus the page chunks its scripts
+//   load later; both are cached up front, and each fresh index.html prunes
+//   assets no longer needed.
 // - /api/*, /healthz and anything cross-origin: never intercepted.
 
 const CACHE = 'wishlist-shell-v1';
@@ -25,8 +27,8 @@ self.addEventListener('install', (event) => {
       if (!response.ok) return;
       const html = await response.clone().text();
       // Assets first, so the cached shell never names files that aren't cached.
-      // This also repairs caches left inconsistent by earlier versions.
-      await cache.addAll(assetsIn(html));
+      // Fetching them all again also repairs caches left inconsistent by earlier versions.
+      await cacheShellAssets(cache, html, { refetch: true });
       await cache.put(SHELL, response);
       await self.skipWaiting();
     })(),
@@ -95,23 +97,72 @@ async function refreshShell(cache) {
     // Cache the new shell's assets before the shell itself. A cached shell
     // without them would come up blank once a later deploy removes them from
     // the server. If they can't be fetched, keep the old shell for now.
+    let keep;
     try {
-      await cacheMissing(cache, assetsIn(html));
+      keep = await cacheShellAssets(cache, html);
     } catch {
       return response;
     }
     // The page being served right now may still be the previous shell, so keep
     // its assets too; only shells older than that lose theirs.
     const previous = await cache.match(SHELL, MATCH);
-    const keep = html + (previous ? await previous.text() : '');
+    if (previous) {
+      for (const path of await cachedAssetsOf(cache, await previous.text())) keep.add(path);
+    }
     await cache.put(SHELL, response.clone());
     await pruneAssets(cache, keep);
   }
   return response;
 }
 
-function assetsIn(html) {
-  return [...new Set(html.match(/\/assets\/[^"'\s)]+/g) ?? [])];
+// "/assets/x" in index.html and CSS; "assets/x" in Vite's list of the chunks
+// a script imports later.
+function assetsIn(text) {
+  const found = text.match(/(?<![\w.-])\/?assets\/[\w.-]+\.\w+/g) ?? [];
+  return [...new Set(found.map((path) => (path.startsWith('/') ? path : '/' + path)))];
+}
+
+// Caches everything a shell needs: the assets index.html names, then the
+// chunks those scripts name, and so on. Returns the set of paths.
+async function cacheShellAssets(cache, html, { refetch = false } = {}) {
+  const all = new Set();
+  let next = assetsIn(html);
+  while (next.length > 0) {
+    if (refetch) await cache.addAll(next);
+    else await cacheMissing(cache, next);
+    next.forEach((path) => all.add(path));
+    next = (await referencedByScripts(cache, next)).filter((path) => !all.has(path));
+  }
+  return all;
+}
+
+// The same set for a shell whose assets are already cached; fetches nothing.
+async function cachedAssetsOf(cache, html) {
+  const all = new Set();
+  let next = assetsIn(html);
+  while (next.length > 0) {
+    next.forEach((path) => all.add(path));
+    next = (await referencedByScripts(cache, next)).filter((path) => !all.has(path));
+  }
+  return all;
+}
+
+async function referencedByScripts(cache, paths) {
+  const found = new Set();
+  for (const path of paths) {
+    if (!path.endsWith('.js')) continue;
+    const cached = await cache.match(path, MATCH);
+    if (cached) for (const ref of scriptRefs(await cached.text())) found.add(ref);
+  }
+  return [...found];
+}
+
+// A script names other chunks as "assets/x.js" (Vite's dependency lists) or,
+// for chunks without dependencies, relative to itself: import("./x.js").
+// Every chunk lives in /assets/, so both resolve there.
+function scriptRefs(text) {
+  const relative = [...text.matchAll(/["'`]\.\/([\w.-]+\.js)["'`]/g)].map((m) => '/assets/' + m[1]);
+  return [...new Set([...assetsIn(text), ...relative])];
 }
 
 async function cacheMissing(cache, paths) {
@@ -134,11 +185,9 @@ async function cacheFirst(request) {
   return response;
 }
 
-// Drop cached /assets/* files the current index.html no longer references, so
-// old deploys don't pile up. A lazily imported chunk (none today) would just be
-// refetched on demand.
-async function pruneAssets(cache, html) {
-  const referenced = new Set(assetsIn(html));
+// Drop cached /assets/* files the kept shells don't need, so old deploys
+// don't pile up.
+async function pruneAssets(cache, referenced) {
   for (const request of await cache.keys()) {
     const path = new URL(request.url).pathname;
     if (path.startsWith('/assets/') && !referenced.has(path)) {
