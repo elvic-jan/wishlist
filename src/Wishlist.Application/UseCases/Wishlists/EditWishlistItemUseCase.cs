@@ -33,6 +33,9 @@ public class EditWishlistItemUseCase(IWishlistRepository wishlists, WishlistAcce
 
     private async Task<WishlistItemDto> EditAsync(WishlistItem item, EditWishlistItemRequest request, CancellationToken ct)
     {
+        InputLimits.Check(request.Title?.Trim(), InputLimits.ItemTitle, "Title");
+        InputLimits.Check(request.Description, InputLimits.ItemDescription, "Description");
+
         if (request.Title is not null)
             item.Title = string.IsNullOrWhiteSpace(request.Title) ? throw new DomainException("Title cannot be empty.") : request.Title.Trim();
 

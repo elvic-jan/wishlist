@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<LoginUserUseCase>();
         services.AddScoped<RefreshTokenUseCase>();
         services.AddScoped<LogoutUserUseCase>();
+        services.AddScoped<UpdateProfileUseCase>();
         services.AddScoped<RequestPasswordResetUseCase>();
         services.AddScoped<ResetPasswordUseCase>();
 

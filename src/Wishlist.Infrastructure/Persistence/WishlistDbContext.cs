@@ -83,8 +83,9 @@ public class WishlistDbContext(DbContextOptions<WishlistDbContext> options)
         builder.Entity<RefreshToken>(e =>
         {
             e.HasKey(r => r.Id);
-            e.Property(r => r.Token).IsRequired().HasMaxLength(512);
-            e.HasIndex(r => r.Token).IsUnique();
+            e.Property(r => r.TokenHash).IsRequired().HasMaxLength(64);
+            e.HasIndex(r => r.TokenHash).IsUnique();
+            e.HasIndex(r => r.UserId);
         });
 
         // The old wishlist site's usernames and live items, loaded once by the

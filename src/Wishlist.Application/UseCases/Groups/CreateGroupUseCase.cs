@@ -11,6 +11,7 @@ public class CreateGroupUseCase(IGroupRepository groups)
     {
         if (string.IsNullOrWhiteSpace(request.Name))
             throw new DomainException("Circle name cannot be empty.");
+        InputLimits.Check(request.Name.Trim(), InputLimits.CircleName, "Circle name");
 
         var group = await groups.CreateAsync(request.Name.Trim(), userId, ct);
         await groups.AddMemberAsync(group.Id, userId, GroupMemberRole.Owner, ct);

@@ -37,6 +37,10 @@ public interface IUserRepository
     /// <summary>Invalidates every outstanding reset and confirmation token of the user.</summary>
     Task InvalidateSecurityTokensAsync(Guid userId, CancellationToken ct = default);
     Task UpdateDisplayNameAsync(Guid userId, string displayName, CancellationToken ct = default);
+    /// <summary>
+    /// False for a wrong password, an unknown user (<see cref="Guid.Empty"/>) or an
+    /// account without a password; all take about as long as a real check.
+    /// </summary>
     Task<bool> CheckPasswordAsync(Guid userId, string password, CancellationToken ct = default);
 
     /// <summary>

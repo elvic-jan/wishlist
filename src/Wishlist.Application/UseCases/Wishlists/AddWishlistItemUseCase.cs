@@ -21,6 +21,8 @@ public class AddWishlistItemUseCase(IWishlistRepository wishlists, WishlistAcces
     {
         if (string.IsNullOrWhiteSpace(request.Title))
             throw new DomainException("Item title cannot be empty.");
+        InputLimits.Check(request.Title.Trim(), InputLimits.ItemTitle, "Title");
+        InputLimits.Check(request.Description, InputLimits.ItemDescription, "Description");
 
         var urls = WishlistItemUrlValidator.Validate(request.Urls);
 

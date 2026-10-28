@@ -26,6 +26,7 @@ internal static class WishlistItemUrlValidator
             var trimmed = raw?.Trim() ?? string.Empty;
             if (trimmed.Length == 0)
                 throw new DomainException("URL must be an absolute http or https URL.");
+            InputLimits.Check(trimmed, InputLimits.Url, "A link");
 
             if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)
                 || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))

@@ -26,6 +26,7 @@ public class ResetPasswordUseCase(
         {
             return false;
         }
+        InputLimits.Check(request.NewPassword, InputLimits.Password, "Password");
 
         var user = await users.GetByEmailAsync(request.Email, ct);
         if (user is null)

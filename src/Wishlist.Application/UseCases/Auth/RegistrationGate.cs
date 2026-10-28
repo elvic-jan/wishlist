@@ -19,6 +19,8 @@ public class RegistrationGate(IUserRepository users, InvitationResolver invitati
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(displayName))
             throw new DomainException("Invalid registration data.");
+        InputLimits.Check(email, InputLimits.Email, "Email address");
+        InputLimits.Check(displayName, InputLimits.DisplayName, "Name");
 
         var invitation = string.IsNullOrWhiteSpace(inviteCode)
             ? await RequireBootstrapAsync(ct)
