@@ -146,7 +146,9 @@ jobs:
           scanners: vuln
           format: sarif
           output: trivy.sarif
+          # Only what's worth an alert; the issue lists counts for the rest.
           severity: CRITICAL,HIGH
+          limit-severities-for-sarif: true
 
       - uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
@@ -223,8 +225,8 @@ jobs:
           title="Security scan: $month"
           if [ "$GITHUB_REF_NAME" != "main" ]; then title="$title (test run on $GITHUB_REF_NAME)"; fi
 
-          # Open code-scanning alerts on the scanned branch (CodeQL and Trivy).
-          gh api --paginate "repos/$GH_REPO/code-scanning/alerts?state=open&ref=$GITHUB_REF&per_page=100" > alerts.json || echo "[]" > alerts.json
+          # Open CodeQL alerts on the scanned branch (the image section covers Trivy).
+          gh api --paginate "repos/$GH_REPO/code-scanning/alerts?state=open&tool_name=CodeQL&ref=$GITHUB_REF&per_page=100" > alerts.json || echo "[]" > alerts.json
           alerts=$(jq -s 'add // []' alerts.json)
 
           {
@@ -235,16 +237,16 @@ jobs:
               echo "> Not every scan finished ($RESULTS). Check the run."
               echo
             fi
-            echo "### Code scanning (CodeQL and image)"
+            echo "### Code (CodeQL)"
             n=$(jq 'length' <<<"$alerts")
             if [ "$n" = "0" ]; then
               echo "No open alerts."
             else
               echo "$n open alerts — details in the [Security tab]($SECURITY_URL)."
               echo
-              echo "| Tool | Severity | Rule | Where |"
-              echo "|---|---|---|---|"
-              jq -r '.[] | "| \(.tool.name) | \(.rule.security_severity_level // .rule.severity) | [\(.rule.description)](\(.html_url)) | `\(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line)` |"' <<<"$alerts" | head -n 40
+              echo "| Severity | Rule | Where |"
+              echo "|---|---|---|"
+              jq -r '.[] | "| \(.rule.security_severity_level // .rule.severity) | [\(.rule.description)](\(.html_url)) | `\(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line)` |"' <<<"$alerts" | head -n 40
             fi
             echo
             cat nuget.md npm.md image.md 2>/dev/null || true
