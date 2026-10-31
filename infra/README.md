@@ -150,8 +150,10 @@ Run **infra** again so the app picks up the real username.
 ### 7. First deploy
 
 Run **Actions → deploy → Run workflow** (or push to `main`) and approve the
-`deploy` job. When it finishes, open `https://<appFqdn>`, register, and test a
-password reset.
+`deploy` job. When it finishes, create your account with the **owner-access** job (see
+[Owner access](#owner-access-first-account-or-getting-back-in)): sign-up always needs an
+invitation, so this is the only way to make the first one. Then create a circle, invite
+people, and test a password reset.
 
 ## Custom domain
 
@@ -245,6 +247,42 @@ it's `noreply@<domain>` with the display name Kadoozle. Same two-phase pattern:
   (`az postgres flexible-server firewall-rule create ...`), connect with `sslmode=require`,
   then delete the rule.
 - **Teardown**: `pg_dump` first, then `az group delete -n $RG`. Backups are deleted with the server.
+
+## Owner access (first account, or getting back in)
+
+Sign-up always needs an invitation. The `owner-access` job is the way around that for
+someone who can reach the database:
+
+- **No account has the email yet** (e.g. the first account on a fresh install): it creates
+  one with that email and `--name`, with no password and no circle, and marks the email
+  confirmed.
+- **The account exists** (e.g. you lost your passkey, your password, or access to your
+  mailbox): it leaves the account as it is.
+
+Either way it prints a sign-in link. Nothing is emailed. Open the link within 30 minutes
+on the device you want to use, then add a passkey or set a password. The link works once,
+and using it signs out every other session.
+
+Run from the repository root in PowerShell, with the Postgres admin password at hand. If
+you don't have it any more, set a new one first (see **Rotate a secret** above).
+
+```powershell
+$RG = "rg-wishlist-prod"
+$PG = az postgres flexible-server list -g $RG --query "[0].name" -o tsv
+$IP = Invoke-RestMethod https://api.ipify.org
+az postgres flexible-server firewall-rule create -g $RG -s $PG -n owner-access --start-ip-address $IP --end-ip-address $IP --output none
+
+New-Item -ItemType Directory -Force src/Wishlist.API/wwwroot | Out-Null  # the app won't start without it
+$env:ConnectionStrings__DefaultConnection = "Host=$PG.postgres.database.azure.com;Port=5432;Database=wishlist;Username=wishlistadmin;Password=<admin password>;SSL Mode=VerifyFull"
+dotnet run --project src/Wishlist.API --launch-profile https -- --job owner-access --email you@example.com --name "Your name" --App:PublicBaseUrl https://www.kadoozle.app
+Remove-Item Env:ConnectionStrings__DefaultConnection
+
+az postgres flexible-server firewall-rule delete -g $RG -s $PG -n owner-access --yes
+```
+
+`--name` is only needed when the account doesn't exist yet. Keep `--App:PublicBaseUrl`: without
+it the link points at your own machine. The job prints whether it created or found the
+account, then the link. Treat the link like a password until it has been used or has expired.
 
 ## Old wishlist site (one-time load)
 

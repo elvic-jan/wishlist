@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -15,7 +15,6 @@ import { Label } from '@/components/ui/label'
 import { InvalidInvitation } from '@/components/InvalidInvitation'
 import { WakingUp } from '@/components/WakingUp'
 import { Fingerprint } from 'lucide-react'
-import client from '@/api/client'
 import { signUpWithPasskey } from '@/api/passkeys'
 import { useAuth } from '@/context/AuthContext'
 import { inviteErrorMessage } from '@/lib/inviteErrors'
@@ -26,7 +25,8 @@ import { MAX_DISPLAY_NAME, MAX_EMAIL, MAX_PASSWORD } from '@/lib/inputLimits'
 export function RegisterPage() {
   const [searchParams] = useSearchParams()
   const inviteCode = searchParams.get('invite') ?? undefined
-  return inviteCode ? <InvitedRegistration inviteCode={inviteCode} /> : <CodelessRegistration />
+  // Sign-up always needs an invitation.
+  return inviteCode ? <InvitedRegistration inviteCode={inviteCode} /> : <InvitationOnly />
 }
 
 /** Checks the code before showing the form, so a dead link is reported up front. */
@@ -36,25 +36,6 @@ function InvitedRegistration({ inviteCode }: { inviteCode: string }) {
   if (invitation.state === 'checking') return <WakingUp fullScreen={false} />
   if (invitation.state === 'invalid') return <InvalidInvitation message={invitation.message} />
   return <RegisterForm inviteCode={inviteCode} />
-}
-
-/**
- * Without a code the form is only offered while the system has no accounts yet
- * (first-account bootstrap); otherwise sign-up is by invitation only.
- */
-function CodelessRegistration() {
-  const [inviteRequired, setInviteRequired] = useState<boolean | null>(null)
-
-  useEffect(() => {
-    client
-      .get<{ inviteRequired: boolean }>('/auth/registration')
-      .then(({ data }) => setInviteRequired(data.inviteRequired))
-      .catch(() => setInviteRequired(true))
-  }, [])
-
-  if (inviteRequired === null) return <WakingUp fullScreen={false} />
-  if (inviteRequired) return <InvitationOnly />
-  return <RegisterForm />
 }
 
 function InvitationOnly() {
@@ -76,7 +57,7 @@ function InvitationOnly() {
   )
 }
 
-function RegisterForm({ inviteCode }: { inviteCode?: string }) {
+function RegisterForm({ inviteCode }: { inviteCode: string }) {
   const { register, startSession } = useAuth()
   const navigate = useNavigate()
   const canUsePasskeys = passkeysSupported()
@@ -87,8 +68,7 @@ function RegisterForm({ inviteCode }: { inviteCode?: string }) {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  const goToCircle = (joinedGroupId?: string | null) =>
-    navigate(joinedGroupId ? `/circles/${joinedGroupId}` : '/')
+  const goToCircle = (joinedGroupId: string) => navigate(`/circles/${joinedGroupId}`)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -118,9 +98,7 @@ function RegisterForm({ inviteCode }: { inviteCode?: string }) {
       <CardHeader>
         <CardTitle>Create account</CardTitle>
         <CardDescription>
-          {inviteCode
-            ? 'You’ve been invited to join a circle. Create your account to accept.'
-            : 'Set up your account to share wishlists with friends and family.'}
+          You’ve been invited to join a circle. Create your account to accept.
         </CardDescription>
       </CardHeader>
       <CardContent>

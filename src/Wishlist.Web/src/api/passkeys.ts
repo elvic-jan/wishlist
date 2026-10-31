@@ -41,11 +41,12 @@ export async function signInWithPasskey(opts: { conditional?: boolean; signal?: 
   return data
 }
 
-export async function signUpWithPasskey(email: string, displayName: string, inviteCode?: string) {
+export async function signUpWithPasskey(email: string, displayName: string, inviteCode: string) {
   const details = { email, displayName, inviteCode }
   const creationOptions = await options('/auth/passkey/register/options', details)
   const credential = await createPasskey(creationOptions)
-  const { data } = await client.post<AuthResult>('/auth/passkey/register', {
+  // Sign-up always joins the invitation's circle.
+  const { data } = await client.post<AuthResult & { joinedGroupId: string }>('/auth/passkey/register', {
     ...details,
     credential,
     passkeyName: guessDeviceName(),

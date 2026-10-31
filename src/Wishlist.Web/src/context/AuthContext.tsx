@@ -12,13 +12,13 @@ interface AuthContextType {
   /** True until the refresh-token cookie has been tried on page load. */
   restoring: boolean;
   login: (email: string, password: string) => Promise<void>;
-  /** Resolves to the group joined via the invite, or null for a codeless (bootstrap) sign-up. */
+  /** Sign-up always needs an invite; resolves to the group it joined. */
   register: (
     email: string,
     displayName: string,
     password: string,
-    inviteCode?: string,
-  ) => Promise<string | null>;
+    inviteCode: string,
+  ) => Promise<string>;
   logout: () => Promise<void>;
   setUser: (user: User | null) => void;
   /** Takes over a session the server started another way (passkey sign-in or sign-up, recovery). */
@@ -58,11 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (email: string, displayName: string, password: string, inviteCode?: string) => {
+    async (email: string, displayName: string, password: string, inviteCode: string) => {
       const { data } = await client.post('/auth/register', { email, displayName, password, inviteCode });
       setAccessToken(data.accessToken);
       setUser(data.user);
-      return (data.joinedGroupId as string | null | undefined) ?? null;
+      return data.joinedGroupId as string;
     },
     [],
   );

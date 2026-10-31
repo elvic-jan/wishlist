@@ -29,14 +29,11 @@ public class RegisterUserUseCase(
         await unitOfWork.ExecuteInTransactionAsync(async innerCt =>
         {
             user = await users.CreateAsync(request.Email, request.DisplayName, request.Password, innerCt);
-            if (invitation is not null)
-            {
-                await groups.AddMemberAsync(invitation.GroupId, user.Id, GroupMemberRole.Member, innerCt);
-                await invitations.MarkUsedAsync(invitation.Id, innerCt);
-            }
+            await groups.AddMemberAsync(invitation.GroupId, user.Id, GroupMemberRole.Member, innerCt);
+            await invitations.MarkUsedAsync(invitation.Id, innerCt);
         }, ct);
 
         await emails.SendEmailConfirmationAsync(user, ct);
-        return await sessions.CreateAsync(user, invitation?.GroupId, ct);
+        return await sessions.CreateAsync(user, invitation.GroupId, ct);
     }
 }

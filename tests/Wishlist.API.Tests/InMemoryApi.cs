@@ -160,8 +160,6 @@ internal sealed class InMemoryUsers(InMemoryStore store) : IUserRepository
     public Task<bool> EmailExistsAsync(string email, CancellationToken ct = default) =>
         Task.FromResult(store.Users.Values.Any(u => u.Email == email));
 
-    public Task<bool> AnyAsync(CancellationToken ct = default) => Task.FromResult(!store.Users.IsEmpty);
-
     public Task<User> CreateAsync(string email, string displayName, string password, CancellationToken ct = default)
     {
         var user = new User

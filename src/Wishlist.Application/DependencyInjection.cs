@@ -22,7 +22,7 @@ public static class DependencyInjection
         services.AddScoped<AccountSecurityUseCase>();
         services.AddScoped<EmailConfirmationUseCase>();
         services.AddScoped<RegisterUserUseCase>();
-        services.AddScoped<GetRegistrationStatusUseCase>();
+        services.AddScoped<OwnerAccessUseCase>();
         services.AddScoped<LoginUserUseCase>();
         services.AddScoped<RefreshTokenUseCase>();
         services.AddScoped<LogoutUserUseCase>();

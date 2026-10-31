@@ -161,7 +161,7 @@ public class PasskeyTests : IClassFixture<InMemoryApi>
     }
 
     [Fact]
-    public async Task Passkey_sign_up_options_need_an_invite_once_accounts_exist()
+    public async Task Passkey_sign_up_options_need_an_invite()
     {
         _api.Store.AddUser();
 
@@ -451,6 +451,96 @@ public class PasskeyTests : IClassFixture<InMemoryApi>
         Assert.Equal(HttpStatusCode.Accepted, first.StatusCode);
         Assert.Equal(HttpStatusCode.Accepted, second.StatusCode);
         Assert.Single(_api.Store.EmailsTo(user.Email));
+    }
+
+    // ---- owner-access job --------------------------------------------------
+
+    [Fact]
+    public async Task Owner_access_creates_a_confirmed_passwordless_account_without_a_circle()
+    {
+        var email = NewEmail();
+
+        var result = await OwnerAccess(email, "Owner");
+
+        Assert.True(result.Created);
+        var user = _api.Store.Users[result.UserId];
+        Assert.Equal(email, user.Email);
+        Assert.Equal("Owner", user.DisplayName);
+        Assert.False(user.HasPassword);
+        Assert.True(user.EmailConfirmed);
+        Assert.DoesNotContain(_api.Store.Members.Keys, m => m.UserId == user.Id);
+        Assert.StartsWith($"https://wishlist.example.test/recover?email={Uri.EscapeDataString(email)}&token=", result.RecoveryUrl);
+        Assert.Empty(_api.Store.EmailsTo(email));
+    }
+
+    [Fact]
+    public async Task Owner_access_finds_an_existing_account_and_leaves_it_unchanged()
+    {
+        var user = _api.Store.AddUser();
+        var name = user.DisplayName;
+
+        var result = await OwnerAccess(user.Email, "Someone else");
+
+        Assert.False(result.Created);
+        Assert.Equal(user.Id, result.UserId);
+        Assert.Equal(name, user.DisplayName);
+        Assert.Empty(_api.Store.EmailsTo(user.Email));
+    }
+
+    [Fact]
+    public async Task Owner_access_needs_a_name_for_a_new_account_and_an_email_always()
+    {
+        var email = NewEmail();
+
+        var noName = await Assert.ThrowsAsync<Wishlist.Domain.Exceptions.DomainException>(() => OwnerAccess(email, null));
+        await Assert.ThrowsAsync<Wishlist.Domain.Exceptions.DomainException>(() => OwnerAccess(" ", "Owner"));
+
+        Assert.Contains("--name", noName.Message);
+        Assert.DoesNotContain(_api.Store.Users.Values, u => u.Email == email);
+    }
+
+    [Fact]
+    public async Task Owner_access_link_adds_a_passkey_once_and_signs_out_everywhere()
+    {
+        var user = _api.Store.AddUser();
+        var oldSession = await RefreshTokenFor(user);
+        var (email, token) = LinkParts((await OwnerAccess(user.Email, null)).RecoveryUrl);
+
+        var options = await Options("/api/auth/recovery/passkey/options", new { email, token });
+        var credentialId = Guid.NewGuid().ToString("N");
+        var response = await Post("/api/auth/recovery/passkey",
+            new { email, token, credential = Credential(credentialId, options) }, ceremony: options.Ceremony);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(user.Id, _api.Store.Passkeys[credentialId].UserId);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await Post("/api/auth/refresh", cookie: oldSession)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await Post("/api/auth/recovery/passkey/options", new { email, token })).StatusCode);
+    }
+
+    [Fact]
+    public async Task Owner_access_link_sets_a_password_on_a_new_account()
+    {
+        var created = await OwnerAccess(NewEmail(), "Owner");
+        var (email, token) = LinkParts(created.RecoveryUrl);
+
+        var response = await Post("/api/auth/reset-password", new { email, token, newPassword = "a-new-password" });
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.True(_api.Store.Users[created.UserId].HasPassword);
+    }
+
+    private async Task<Wishlist.Application.UseCases.Auth.OwnerAccessResult> OwnerAccess(string? email, string? name)
+    {
+        await using var scope = _api.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<Wishlist.Application.UseCases.Auth.OwnerAccessUseCase>()
+            .ExecuteAsync(email, name);
+    }
+
+    private static (string Email, string Token) LinkParts(string url)
+    {
+        var query = System.Web.HttpUtility.ParseQueryString(new Uri(url).Query);
+        return (query["email"]!, query["token"]!);
     }
 
     // ---- helpers -----------------------------------------------------------

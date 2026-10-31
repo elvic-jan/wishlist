@@ -49,7 +49,7 @@ public static class DependencyInjection
         // Identity's data-protected reset tokens use this lifespan.
         services.Configure<DataProtectionTokenProviderOptions>(opts =>
         {
-            opts.TokenLifespan = TimeSpan.FromMinutes(30);
+            opts.TokenLifespan = Wishlist.Application.UseCases.Auth.RecoveryLink.Lifespan;
         });
 
         // SMTP + App options, bound + validated at startup so a misconfigured
