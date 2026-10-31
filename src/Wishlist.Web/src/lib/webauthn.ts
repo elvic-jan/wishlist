@@ -69,7 +69,7 @@ export function passkeyErrorMessage(err: unknown): string | null {
     if (err.name === 'InvalidStateError')
       return 'This device already has a passkey for your account.'
     if (err.name === 'SecurityError')
-      return 'Face ID / fingerprint sign-in isn’t available on this web address. Open GiftCircles at giftcircles.app and try again.'
+      return 'Face ID / fingerprint sign-in isn’t available on this web address. Open Kadoozle at kadoozle.app and try again.'
     if (err.name === 'NotSupportedError')
       return 'This browser can’t use Face ID or fingerprint sign-in. Use your password instead.'
   }

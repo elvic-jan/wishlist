@@ -23,7 +23,7 @@ public partial class ReleaseNoteTests
     {
         var page = File.ReadAllText(IndexHtml());
 
-        var served = SpaPage.Render(page, "https://www.giftcircles.app", "/join/abc", new SpaPage.Preview("Ann invited you", "Join"));
+        var served = SpaPage.Render(page, "https://www.kadoozle.app", "/join/abc", new SpaPage.Preview("Ann invited you", "Join"));
 
         Assert.Equal(ReleaseNote().Match(page).Value, ReleaseNote().Match(served).Value);
     }

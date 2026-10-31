@@ -156,7 +156,7 @@ public class PasskeyTests : IClassFixture<InMemoryApi>
         Assert.NotNull(invitation.UsedAt);
         Assert.Equal("iPhone", _api.Store.Passkeys[credentialId].Name);
         Assert.Equal(user.Id, _api.Store.Passkeys[credentialId].UserId);
-        Assert.Contains(_api.Store.EmailsTo(email), m => m.Subject == "Confirm your GiftCircles email");
+        Assert.Contains(_api.Store.EmailsTo(email), m => m.Subject == "Confirm your Kadoozle email");
         Assert.NotNull(InMemoryApi.SetCookieValue(response, "refreshToken"));
     }
 
@@ -255,7 +255,7 @@ public class PasskeyTests : IClassFixture<InMemoryApi>
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Assert.Equal(user.Id, _api.Store.Passkeys[credentialId].UserId);
         Assert.Contains(_api.Store.EmailsTo(user.Email),
-            m => m.Subject == "A passkey was added to your GiftCircles account" && m.PlainTextBody.Contains("Laptop"));
+            m => m.Subject == "A passkey was added to your Kadoozle account" && m.PlainTextBody.Contains("Laptop"));
     }
 
     [Fact]
@@ -361,7 +361,7 @@ public class PasskeyTests : IClassFixture<InMemoryApi>
         foreach (var user in new[] { withPassword, confirmedPasskeyOnly })
         {
             var mail = Assert.Single(_api.Store.EmailsTo(user.Email));
-            Assert.Equal("Get back into your GiftCircles account", mail.Subject);
+            Assert.Equal("Get back into your Kadoozle account", mail.Subject);
             Assert.Contains("https://wishlist.example.test/recover?email=", mail.PlainTextBody);
         }
     }

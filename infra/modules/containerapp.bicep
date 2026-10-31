@@ -27,6 +27,9 @@ param customDomainName string = ''
 @description('Set to true once the DNS CNAME + asuid TXT records for customDomainName exist; issues the managed certificate and binds it.')
 param customDomainCertificateReady bool = false
 
+@description('Former custom domain (e.g. www.giftcircles.app) kept bound with its existing managed certificate while customDomainName is being set up. Empty = none.')
+param previousCustomDomainName string = ''
+
 @description('Public origin the SPA is served from; used in password-reset links. Empty = derived.')
 param publicBaseUrl string = ''
 
@@ -42,7 +45,7 @@ param postgresAppPassword string
 param jwtKey string
 
 param smtpFromAddress string
-param smtpFromName string = 'GiftCircles'
+param smtpFromName string = 'Kadoozle'
 
 @secure()
 param smtpUser string
@@ -92,9 +95,22 @@ resource managedCertificate 'Microsoft.App/managedEnvironments/managedCertificat
   }
 }
 
+// While moving to a new domain, the old one stays bound with the certificate it
+// already has, so the app keeps working there until the new certificate is ready.
+var hasPreviousCustomDomain = !empty(previousCustomDomainName)
+
+resource previousCertificate 'Microsoft.App/managedEnvironments/managedCertificates@2024-03-01' existing = if (hasPreviousCustomDomain) {
+  parent: environment
+  name: 'cert-${replace(previousCustomDomainName, '.', '-')}'
+}
+
 var effectivePublicBaseUrl = !empty(publicBaseUrl)
   ? publicBaseUrl
-  : (bindCertificate ? 'https://${customDomainName}' : 'https://${appName}.${environment.properties.defaultDomain}')
+  : (bindCertificate
+      ? 'https://${customDomainName}'
+      : (hasPreviousCustomDomain
+          ? 'https://${previousCustomDomainName}'
+          : 'https://${appName}.${environment.properties.defaultDomain}'))
 
 var connectionString = 'Host=${postgresFqdn};Port=5432;Database=${postgresDatabaseName};Username=${postgresAppLogin};Password=${postgresAppPassword};SSL Mode=VerifyFull'
 
@@ -148,15 +164,26 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
         transport: 'auto'
         // Plain HTTP from the internet is redirected to HTTPS at the edge.
         allowInsecure: false
-        customDomains: hasCustomDomain
-          ? [
-              {
-                name: customDomainName
-                bindingType: bindCertificate ? 'SniEnabled' : 'Disabled'
-                certificateId: bindCertificate ? managedCertificate.id : null
-              }
-            ]
-          : []
+        customDomains: concat(
+          hasCustomDomain
+            ? [
+                {
+                  name: customDomainName
+                  bindingType: bindCertificate ? 'SniEnabled' : 'Disabled'
+                  certificateId: bindCertificate ? managedCertificate.id : null
+                }
+              ]
+            : [],
+          hasPreviousCustomDomain
+            ? [
+                {
+                  name: previousCustomDomainName
+                  bindingType: 'SniEnabled'
+                  certificateId: previousCertificate.id
+                }
+              ]
+            : []
+        )
       }
       registries: registries
       secrets: appSecrets

@@ -123,15 +123,15 @@ public class CircleInvitationEmails(IEmailSender emailSender, IAppUrlProvider ap
             Subject: $"{inviter.DisplayName} invited you to join {circle.Name}",
             PlainTextBody:
                 $"Hi {invitee.DisplayName},\r\n\r\n" +
-                $"{inviter.DisplayName} invited you to join the circle \"{circle.Name}\" on GiftCircles. " +
-                "Open GiftCircles to join or decline:\r\n" +
+                $"{inviter.DisplayName} invited you to join the circle \"{circle.Name}\" on Kadoozle. " +
+                "Open Kadoozle to join or decline:\r\n" +
                 $"{link}\r\n\r\n" +
-                "Thanks,\r\nGiftCircles",
+                "Thanks,\r\nKadoozle",
             HtmlBody:
                 $"<p>Hi {Html(invitee.DisplayName)},</p>" +
-                $"<p>{Html(inviter.DisplayName)} invited you to join the circle <strong>{Html(circle.Name)}</strong> on GiftCircles.</p>" +
-                $"<p><a href=\"{link}\">Open GiftCircles to join or decline</a></p>" +
-                "<p>Thanks,<br/>GiftCircles</p>");
+                $"<p>{Html(inviter.DisplayName)} invited you to join the circle <strong>{Html(circle.Name)}</strong> on Kadoozle.</p>" +
+                $"<p><a href=\"{link}\">Open Kadoozle to join or decline</a></p>" +
+                "<p>Thanks,<br/>Kadoozle</p>");
 
         try
         {

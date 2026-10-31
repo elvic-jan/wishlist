@@ -2,7 +2,7 @@ namespace Wishlist.Domain.Entities;
 
 /// <summary>
 /// A username from the old wishlist site (verlanglijstje). Only the username is
-/// kept; the claim records which GiftCircles account imported it.
+/// kept; the claim records which Kadoozle account imported it.
 /// </summary>
 public class LegacyUser
 {

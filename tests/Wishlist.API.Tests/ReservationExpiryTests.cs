@@ -161,7 +161,7 @@ public class ReservationExpiryTests
         Assert.Equal(w.Giver.Email, email.To);
         Assert.Contains("Red bike", email.Subject);
         Assert.Contains("1 August 2027", email.Subject);
-        Assert.Contains($"https://giftcircles.test/wishlist/{w.Owner.Id}", email.PlainTextBody);
+        Assert.Contains($"https://kadoozle.test/wishlist/{w.Owner.Id}", email.PlainTextBody);
         Assert.Contains("keep your reservation", email.PlainTextBody);
         Assert.NotNull(item.GiftClaim!.ReminderSentAt);
 
@@ -288,7 +288,7 @@ public class ReservationExpiryTests
 
     private sealed class Urls : IAppUrlProvider
     {
-        public string PublicBaseUrl => "https://giftcircles.test/";
+        public string PublicBaseUrl => "https://kadoozle.test/";
     }
 
     private sealed class FailingSender : IEmailSender

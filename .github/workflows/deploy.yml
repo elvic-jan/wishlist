@@ -66,7 +66,7 @@ jobs:
       # A release that doesn't write a new note shows the generic text, not the
       # previous release's note (scripts/release-note-guard.sh).
       - name: Release note
-        run: scripts/release-note-guard.sh "${{ vars.PUBLIC_SITE_URL || 'https://www.giftcircles.app' }}"
+        run: scripts/release-note-guard.sh "${{ vars.PUBLIC_SITE_URL || 'https://www.kadoozle.app' }}"
 
       - name: Build and push image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0

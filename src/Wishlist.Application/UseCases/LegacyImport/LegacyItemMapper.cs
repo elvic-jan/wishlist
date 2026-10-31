@@ -5,7 +5,7 @@ using Wishlist.Application.UseCases.Wishlists;
 namespace Wishlist.Application.UseCases.LegacyImport;
 
 /// <summary>
-/// Turns an old item into what a GiftCircles item holds: a title, a plain-text
+/// Turns an old item into what a Kadoozle item holds: a title, a plain-text
 /// description, and the web addresses found in the description as links.
 /// </summary>
 public static partial class LegacyItemMapper

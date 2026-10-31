@@ -136,7 +136,7 @@ app.MapGet("/join/{code}", async (
     var preview = invitation is null
         ? null
         : new SpaPage.Preview(
-            $"{invitation.InviterName} invited you to {invitation.CircleName} on GiftCircles",
+            $"{invitation.InviterName} invited you to {invitation.CircleName} on Kadoozle",
             "Join the circle to see each other's wishlists and coordinate gifts.");
     return SpaPage.Html(SpaPage.Render(html, urls.PublicBaseUrl, http.Request.Path, preview), SpaPage.Caching.NoStore);
 }).AllowAnonymous();

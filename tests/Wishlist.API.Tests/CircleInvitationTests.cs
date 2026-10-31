@@ -197,7 +197,7 @@ public class CircleInvitationTests
 
     private sealed class Urls : IAppUrlProvider
     {
-        public string PublicBaseUrl => "https://giftcircles.test/";
+        public string PublicBaseUrl => "https://kadoozle.test/";
     }
 
     private sealed class FailingSender : IEmailSender

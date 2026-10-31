@@ -51,23 +51,23 @@ public class RequestPasswordResetUseCase(
 
         var message = new EmailMessage(
             To: user.Email,
-            Subject: "Get back into your GiftCircles account",
+            Subject: "Get back into your Kadoozle account",
             PlainTextBody:
                 $"Hi {user.DisplayName},\r\n\r\n" +
-                "We received a request to get back into your GiftCircles account. " +
+                "We received a request to get back into your Kadoozle account. " +
                 "If you did not make this request, you can safely ignore this email.\r\n\r\n" +
                 "Open the link below within the next 30 minutes, on the phone or computer you want to use. " +
                 "You can then sign in with Face ID or a fingerprint on that device, or set a new password:\r\n" +
                 $"{resetUrl}\r\n\r\n" +
-                "Thanks,\r\nGiftCircles",
+                "Thanks,\r\nKadoozle",
             HtmlBody:
                 $"<p>Hi {System.Net.WebUtility.HtmlEncode(user.DisplayName)},</p>" +
-                "<p>We received a request to get back into your GiftCircles account. " +
+                "<p>We received a request to get back into your Kadoozle account. " +
                 "If you did not make this request, you can safely ignore this email.</p>" +
                 "<p>Open the link below within the next 30 minutes, on the phone or computer you want to use. " +
                 "You can then sign in with Face ID or a fingerprint on that device, or set a new password:</p>" +
                 $"<p><a href=\"{resetUrl}\">{resetUrl}</a></p>" +
-                "<p>Thanks,<br/>GiftCircles</p>");
+                "<p>Thanks,<br/>Kadoozle</p>");
 
         try
         {

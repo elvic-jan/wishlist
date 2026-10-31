@@ -8,7 +8,7 @@ public class PasskeyConfigOptions
     /// <summary>
     /// The WebAuthn relying-party ID. Empty means: the host of
     /// <c>App:PublicBaseUrl</c> without a leading <c>www.</c>, so passkeys made on
-    /// <c>www.giftcircles.app</c> also work on <c>giftcircles.app</c>.
+    /// <c>www.kadoozle.app</c> also work on <c>kadoozle.app</c>.
     /// </summary>
     public string? ServerDomain { get; set; }
 

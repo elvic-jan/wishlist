@@ -25,9 +25,9 @@ export function buildInviteMessage(
   now = Date.now(),
 ): InviteMessage {
   const days = daysLeft(expiresAt, now)
-  const subject = `Join my ${circleName} circle on GiftCircles`
+  const subject = `Join my ${circleName} circle on Kadoozle`
   const text =
-    `${inviterName} invited you to the ${circleName} circle on GiftCircles, where we share wishlists. ` +
+    `${inviterName} invited you to the ${circleName} circle on Kadoozle, where we share wishlists. ` +
     `The link works for ${days} ${days === 1 ? 'day' : 'days'}:`
   const textWithLink = `${text} ${url}`
 

@@ -4,7 +4,7 @@ param name string
 @description('Where email data is stored at rest.')
 param dataLocation string = 'Europe'
 
-@description('Own sending domain (e.g. giftcircles.app). Empty = only the Azure-managed domain.')
+@description('Own sending domain (e.g. kadoozle.app). Empty = only the Azure-managed domain.')
 param customDomainName string = ''
 
 @description('Set to true once the custom domain\'s DNS records are verified; links it and switches the sender to it.')
@@ -14,7 +14,7 @@ param customDomainVerified bool = false
 param senderUsername string = 'noreply'
 
 @description('Display name shown with the sender address.')
-param senderDisplayName string = 'GiftCircles'
+param senderDisplayName string = 'Kadoozle'
 
 var hasCustomDomain = !empty(customDomainName)
 var useCustomDomain = hasCustomDomain && customDomainVerified
