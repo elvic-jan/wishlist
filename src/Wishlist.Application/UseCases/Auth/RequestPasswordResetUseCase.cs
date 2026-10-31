@@ -47,7 +47,7 @@ public class RequestPasswordResetUseCase(
             return;
         }
 
-        var resetUrl = BuildResetLink(appUrls.PublicBaseUrl, user.Email, token);
+        var resetUrl = RecoveryLink.Build(appUrls.PublicBaseUrl, user.Email, token);
 
         var message = new EmailMessage(
             To: user.Email,
@@ -78,13 +78,5 @@ public class RequestPasswordResetUseCase(
             // Same reason: failure to deliver must not turn into a 500.
             logger.LogWarning(ex, "Failed to send password-reset email to user {UserId}.", user.Id);
         }
-    }
-
-    private static string BuildResetLink(string baseUrl, string email, string token)
-    {
-        var trimmedBase = baseUrl.TrimEnd('/');
-        var encodedEmail = Uri.EscapeDataString(email);
-        var encodedToken = Uri.EscapeDataString(token);
-        return $"{trimmedBase}/recover?email={encodedEmail}&token={encodedToken}";
     }
 }

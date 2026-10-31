@@ -6,7 +6,9 @@ using Microsoft.IdentityModel.Tokens;
 using Wishlist.API;
 using Wishlist.Application;
 using Wishlist.Application.Interfaces;
+using Wishlist.Application.UseCases.Auth;
 using Wishlist.Application.UseCases.GiftClaims;
+using Wishlist.Domain.Exceptions;
 using Wishlist.Application.UseCases.Groups;
 using Wishlist.Application.UseCases.LegacyImport;
 using Wishlist.API.Controllers;
@@ -63,6 +65,8 @@ var app = builder.Build();
 // - "--job reservations": the monthly scheduled reservation run.
 // - "--job legacy-load --users <xlsx> --items <xlsx>": loads the old wishlist
 //   site's export once (see infra/README.md).
+// - "--job owner-access --email <email> [--name <name>]": creates the account if
+//   needed and prints a sign-in (recovery) link for it (see infra/README.md).
 var job = app.Configuration["job"];
 if (job is not null)
 {
@@ -77,8 +81,25 @@ if (job is not null)
             var itemsPath = app.Configuration["items"] ?? throw new InvalidOperationException("Pass --items <path to vl_items.xlsx>.");
             await scope.ServiceProvider.GetRequiredService<LoadLegacyDataUseCase>().ExecuteAsync(usersPath, itemsPath);
             break;
+        case "owner-access":
+            try
+            {
+                var access = await scope.ServiceProvider.GetRequiredService<OwnerAccessUseCase>()
+                    .ExecuteAsync(app.Configuration["email"], app.Configuration["name"]);
+                Console.WriteLine(access.Created
+                    ? $"Created account {access.UserId} (no password, no circle)."
+                    : $"Found account {access.UserId}; its details are unchanged.");
+                Console.WriteLine($"Open this link before {access.ExpiresAtUtc:yyyy-MM-dd HH:mm} UTC to add a passkey or set a password. It works once:");
+                Console.WriteLine(access.RecoveryUrl);
+            }
+            catch (DomainException ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+                Environment.ExitCode = 1;
+            }
+            break;
         default:
-            throw new InvalidOperationException($"Unknown job \"{job}\". Jobs: \"reservations\", \"legacy-load\".");
+            throw new InvalidOperationException($"Unknown job \"{job}\". Jobs: \"reservations\", \"legacy-load\", \"owner-access\".");
     }
     return;
 }

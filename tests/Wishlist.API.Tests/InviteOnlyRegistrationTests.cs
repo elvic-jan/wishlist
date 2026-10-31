@@ -4,8 +4,7 @@ using System.Net.Http.Json;
 namespace Wishlist.API.Tests;
 
 /// <summary>
-/// Accounts can only be created from a valid invite (which also joins its group),
-/// except for the very first account on an empty system.
+/// Accounts can only be created from a valid invite (which also joins its group).
 /// </summary>
 public class InviteOnlyRegistrationTests : IClassFixture<InMemoryApi>
 {
@@ -14,12 +13,11 @@ public class InviteOnlyRegistrationTests : IClassFixture<InMemoryApi>
     public InviteOnlyRegistrationTests(InMemoryApi api)
     {
         _api = api;
-        // These tests are about a system that is past bootstrap.
         if (_api.Store.Users.IsEmpty) _api.Store.AddUser();
     }
 
     [Fact]
-    public async Task Register_without_code_is_forbidden_once_users_exist()
+    public async Task Register_without_code_is_forbidden()
     {
         var email = NewEmail();
 
@@ -127,12 +125,11 @@ public class InviteOnlyRegistrationTests : IClassFixture<InMemoryApi>
     }
 
     [Fact]
-    public async Task Registration_status_requires_invite_once_users_exist()
+    public async Task Registration_status_endpoint_is_gone()
     {
         var response = await InMemoryApi.Send(_api.CreateClient(), HttpMethod.Get, "/api/auth/registration");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.True((await response.Content.ReadFromJsonAsync<StatusBody>())!.InviteRequired);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     private Task<HttpResponseMessage> Register(string email, string? inviteCode) =>
@@ -150,35 +147,33 @@ public class InviteOnlyRegistrationTests : IClassFixture<InMemoryApi>
     private static string NewEmail() => $"{Guid.NewGuid()}@example.com";
 
     private sealed record RegisterBody(Guid? JoinedGroupId);
-    private sealed record StatusBody(bool InviteRequired);
 }
 
-/// <summary>An empty system lets exactly one codeless sign-up through.</summary>
-public class FirstAccountBootstrapTests : IDisposable
+/// <summary>Not even an empty system lets a codeless sign-up through.</summary>
+public class EmptySystemRegistrationTests : IDisposable
 {
     private readonly InMemoryApi _api = new();
 
     [Fact]
-    public async Task First_account_needs_no_code_and_closes_the_door_behind_it()
+    public async Task Codeless_password_sign_up_on_an_empty_system_is_forbidden()
     {
-        var client = _api.CreateClient();
+        var response = await InMemoryApi.Post(_api.CreateClient(), "/api/auth/register",
+            new { email = "owner@example.com", displayName = "Owner", password = "Passw0rd!" });
 
-        var before = await InMemoryApi.Send(client, HttpMethod.Get, "/api/auth/registration");
-        var first = await Register(client);
-        var after = await InMemoryApi.Send(client, HttpMethod.Get, "/api/auth/registration");
-        var second = await Register(client);
-
-        Assert.Contains("\"inviteRequired\":false", await before.Content.ReadAsStringAsync());
-        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
-        Assert.Contains("\"joinedGroupId\":null", await first.Content.ReadAsStringAsync());
-        Assert.Empty(_api.Store.Members);
-        Assert.Contains("\"inviteRequired\":true", await after.Content.ReadAsStringAsync());
-        Assert.Equal(HttpStatusCode.Forbidden, second.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Empty(_api.Store.Users);
     }
 
-    private static Task<HttpResponseMessage> Register(HttpClient client) =>
-        InMemoryApi.Post(client, "/api/auth/register",
-            new { email = $"{Guid.NewGuid()}@example.com", displayName = "Owner", password = "Passw0rd!" });
+    [Fact]
+    public async Task Codeless_passkey_sign_up_on_an_empty_system_is_forbidden()
+    {
+        var response = await InMemoryApi.Post(_api.CreateClient(), "/api/auth/passkey/register/options",
+            new { email = "owner@example.com", displayName = "Owner" });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Null(InMemoryApi.SetCookieValue(response, "passkeyCeremony"));
+        Assert.Empty(_api.Store.Users);
+    }
 
     public void Dispose() => _api.Dispose();
 }

@@ -25,9 +25,6 @@ public class UserRepository(UserManager<ApplicationUser> userManager) : IUserRep
         return await userManager.FindByEmailAsync(email) is not null;
     }
 
-    public async Task<bool> AnyAsync(CancellationToken ct = default)
-        => await userManager.Users.AnyAsync(ct);
-
     public async Task<User> CreateAsync(string email, string displayName, string password, CancellationToken ct = default)
     {
         var appUser = new ApplicationUser

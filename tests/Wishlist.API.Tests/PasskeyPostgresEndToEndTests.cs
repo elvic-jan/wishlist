@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Wishlist.Application.Interfaces;
+using Wishlist.Application.UseCases.Auth;
 using Wishlist.Infrastructure.Persistence;
 
 namespace Wishlist.API.Tests;
@@ -53,8 +54,30 @@ public class PasskeyPostgresEndToEndTests
         var client = api.CreateClient();
         using var annPhone = new SoftwareAuthenticator();
 
-        // 1. First account (bootstrap, no invite) signs up with a passkey.
-        var ann = await SignUp(client, annPhone, "ann@example.test", "Ann", inviteCode: null);
+        // 0. No codeless sign-up, not even on an empty database.
+        Assert.Equal(HttpStatusCode.Forbidden, (await InMemoryApi.Post(client, "/api/auth/passkey/register/options",
+            new { email = "ann@example.test", displayName = "Ann" })).StatusCode);
+
+        // 1. The owner-access job makes the first account; its printed link adds a
+        //    passkey. The owner then creates a circle and invites Ann, who signs up with a passkey.
+        OwnerAccessResult owner;
+        await using (var jobScope = api.Services.CreateAsyncScope())
+            owner = await jobScope.ServiceProvider.GetRequiredService<OwnerAccessUseCase>().ExecuteAsync("owner@example.test", "Owner");
+        var ownerLink = System.Web.HttpUtility.ParseQueryString(new Uri(owner.RecoveryUrl).Query);
+        using var ownerPhone = new SoftwareAuthenticator();
+        var ownerOptions = await Options(await InMemoryApi.Post(client, "/api/auth/recovery/passkey/options",
+            new { email = ownerLink["email"], token = ownerLink["token"] }));
+        var ownerSignedIn = await InMemoryApi.Post(client, "/api/auth/recovery/passkey",
+            new { email = ownerLink["email"], token = ownerLink["token"], credential = ownerPhone.Create(ownerOptions.Options, Origin) },
+            ceremony: ownerOptions.Ceremony);
+        Assert.Equal(HttpStatusCode.OK, ownerSignedIn.StatusCode);
+        var ownerToken = await AccessToken(ownerSignedIn);
+        var ownerCircle = (await (await InMemoryApi.Post(client, "/api/groups", new { name = "Owner's circle" }, bearer: ownerToken))
+            .Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString()!;
+        var annInvite = (await (await InMemoryApi.Post(client, $"/api/groups/{ownerCircle}/invitations", bearer: ownerToken))
+            .Content.ReadFromJsonAsync<JsonElement>()).GetProperty("inviteUrl").GetString()!.Split("/join/")[1];
+
+        var ann = await SignUp(client, annPhone, "ann@example.test", "Ann", annInvite);
         Assert.Equal(HttpStatusCode.OK, ann.Response.StatusCode);
         var annToken = await AccessToken(ann.Response);
 
@@ -136,7 +159,7 @@ public class PasskeyPostgresEndToEndTests
         // 8. What landed in the database.
         await using var scope = api.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<WishlistDbContext>();
-        Assert.Equal(3, await db.UserPasskeys.CountAsync()); // Ann: laptop + new phone (old phone removed); Bob: phone
+        Assert.Equal(4, await db.UserPasskeys.CountAsync()); // Owner: phone; Ann: laptop + new phone (old phone removed); Bob: phone
         Assert.True((await db.Users.SingleAsync(u => u.Email == "ann@example.test")).EmailConfirmed);
     }
 

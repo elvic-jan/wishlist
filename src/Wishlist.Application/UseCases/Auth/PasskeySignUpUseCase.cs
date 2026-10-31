@@ -46,15 +46,12 @@ public class PasskeySignUpUseCase(
         {
             user = await users.CreateWithoutPasswordAsync(verified.User.Id, email, displayName, innerCt);
             await passkeys.AddAsync(user.Id, verified.Credential, PasskeyNames.Clean(request.PasskeyName), innerCt);
-            if (invitation is not null)
-            {
-                await groups.AddMemberAsync(invitation.GroupId, user.Id, GroupMemberRole.Member, innerCt);
-                await invitations.MarkUsedAsync(invitation.Id, innerCt);
-            }
+            await groups.AddMemberAsync(invitation.GroupId, user.Id, GroupMemberRole.Member, innerCt);
+            await invitations.MarkUsedAsync(invitation.Id, innerCt);
         }, ct);
 
         await emails.SendEmailConfirmationAsync(user, ct);
-        return await sessions.CreateAsync(user, invitation?.GroupId, ct);
+        return await sessions.CreateAsync(user, invitation.GroupId, ct);
     }
 
     private static (string Email, string DisplayName) Normalize(string? email, string? displayName) =>
