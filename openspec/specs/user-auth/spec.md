@@ -4,14 +4,18 @@
 TBD - created by archiving change family-gift-wishlist. Update Purpose after archive.
 ## Requirements
 ### Requirement: User registration
-The system SHALL allow a new user to create an account with a unique email address and a display name only when the request carries a valid, unexpired group invitation code. The single exception is first-account bootstrap: while no user accounts exist at all, the system SHALL allow registration without an invitation code. Registering with an invitation code SHALL also make the new user a member of that invitation's group.
+The system SHALL allow a new user to create an account with a unique email address and a display name only when the request carries a valid, unexpired group invitation code. This SHALL hold even when no user accounts exist. Registering SHALL also make the new user a member of that invitation's group.
 
 #### Scenario: Successful registration with an invitation
 - **WHEN** a visitor submits a valid email, display name, password, and an existing, unexpired invitation code
 - **THEN** the system creates the account, adds the user as a member of the invitation's group, marks the invitation as used, issues a JWT access token and an HttpOnly refresh token cookie, and returns the user's profile together with the joined group's ID
 
 #### Scenario: Registration without an invitation rejected
-- **WHEN** at least one user account exists and a visitor submits otherwise valid registration data without an invitation code
+- **WHEN** a visitor submits otherwise valid registration data without an invitation code
+- **THEN** the system returns a 403 Forbidden error stating that registration is by invitation only, and does not create an account
+
+#### Scenario: No codeless sign-up on an empty system
+- **WHEN** no user accounts exist and a visitor submits a valid email, display name, and password without an invitation code
 - **THEN** the system returns a 403 Forbidden error stating that registration is by invitation only, and does not create an account
 
 #### Scenario: Unknown invitation code rejected
@@ -22,20 +26,16 @@ The system SHALL allow a new user to create an account with a unique email addre
 - **WHEN** a visitor submits registration data with an invitation code past its expiry date
 - **THEN** the system returns a 410 Gone error and does not create an account
 
-#### Scenario: First account bootstrap
-- **WHEN** no user accounts exist and a visitor submits a valid email, display name, and password without an invitation code
-- **THEN** the system creates the account without any group membership, issues a JWT access token and an HttpOnly refresh token cookie, and returns the user's profile
-
 #### Scenario: Account and membership are created atomically
 - **WHEN** registration with a valid invitation code fails while adding the group membership
 - **THEN** the system does not persist the new account, so no account exists without its group membership
 
 #### Scenario: Duplicate email rejected
-- **WHEN** a visitor with a valid invitation code (or during bootstrap) submits an email address already associated with an existing account
+- **WHEN** a visitor with a valid invitation code submits an email address already associated with an existing account
 - **THEN** the system returns a 409 Conflict error and does not create a new account
 
 #### Scenario: Email existence not revealed without an invitation
-- **WHEN** at least one user account exists and a visitor without a valid invitation code submits an email address already associated with an existing account
+- **WHEN** a visitor without a valid invitation code submits an email address already associated with an existing account
 - **THEN** the system returns the same invitation error (403, 404, or 410) it would return for an unregistered email, not 409 Conflict
 
 #### Scenario: Invalid input rejected
@@ -254,17 +254,6 @@ The system SHALL build the reset link delivered in the email using the configure
 - **WHEN** the application is started in a non-Development environment with `App:PublicBaseUrl` missing or set to a non-`https://` URL
 - **THEN** the application fails to start and surfaces a configuration error, rather than silently sending reset links that the browser would refuse to treat as a secure origin
 
-### Requirement: Registration status endpoint
-The system SHALL expose a public, unauthenticated endpoint that reports whether new registrations require an invitation code, so the client can show either the sign-up form or an "invitation only" message.
-
-#### Scenario: Invitation required once any account exists
-- **WHEN** at least one user account exists and a client requests the registration status
-- **THEN** the system returns 200 OK with `inviteRequired: true`
-
-#### Scenario: Bootstrap open on an empty system
-- **WHEN** no user accounts exist and a client requests the registration status
-- **THEN** the system returns 200 OK with `inviteRequired: false`
-
 ### Requirement: Sign-up UI is invitation-driven
 The web client SHALL NOT offer open self-registration. It SHALL guide newcomers to create an account through an invitation link, and it SHALL route a newly registered invitee straight to the group they joined.
 
@@ -281,8 +270,8 @@ The web client SHALL NOT offer open self-registration. It SHALL guide newcomers 
 - **THEN** the client signs the user in and navigates to the joined group's page
 
 #### Scenario: Registration page opened without an invitation
-- **WHEN** a visitor opens `/register` without an invitation code and the registration status reports `inviteRequired: true`
-- **THEN** the page shows an "invitation only" message with a link to sign in, and does not show the registration form
+- **WHEN** a visitor opens `/register` without an invitation code
+- **THEN** the page shows an "invitation only" message with a link to sign in, does not show the registration form, and does not ask the server whether registration is open
 
 #### Scenario: Login page does not advertise open registration
 - **WHEN** a visitor views the login page
@@ -315,14 +304,14 @@ The system SHALL keep the state of every passkey ceremony (sign-in, sign-up, add
 - **THEN** the system clears the ceremony cookie, so submitting the same state again fails
 
 ### Requirement: Passkey registration through an invitation
-The system SHALL let a visitor create an account with a passkey instead of a password, under the same rules as password registration: a valid invitation is required (except for the very first account), the email must not already be registered, and the account joins the invitation's circle in the same operation.
+The system SHALL let a visitor create an account with a passkey instead of a password, under the same rules as password registration: a valid invitation is always required, the email must not already be registered, and the account joins the invitation's circle in the same operation.
 
 #### Scenario: Successful passkey sign-up with an invitation
 - **WHEN** a visitor requests passkey sign-up options with a valid invitation code, an unused email and a display name, then submits a valid attestation with the same email and display name
 - **THEN** the system creates an account without a password, stores the passkey, adds the account to the invitation's circle, marks the invitation used, returns an access token with the joined circle, sets the refresh-token cookie, and sends an email-confirmation message
 
 #### Scenario: Invitation gate applies to passkey sign-up
-- **WHEN** a visitor requests passkey sign-up options or submits a passkey sign-up without a valid invitation while accounts exist, or with an unknown or expired code
+- **WHEN** a visitor requests passkey sign-up options or submits a passkey sign-up without an invitation code, or with an unknown or expired code
 - **THEN** the system responds exactly as password registration does (403, 404 or 410) and creates no account
 
 #### Scenario: Details changed between options and completion
@@ -444,4 +433,27 @@ Passkeys SHALL be created for and checked against the relying party `kadoozle.ap
 #### Scenario: Prompted to add a passkey again
 - **WHEN** a user whose passkeys were cleared signs in with their password
 - **THEN** the app offers to add a passkey, as it does for any account without one
+
+### Requirement: Owner access job
+The system SHALL provide a command-line job, `--job owner-access --email <email> [--name <name>]`, that runs against the configured database and exits without starting the web server. It SHALL create the account when none exists for the email and SHALL print a single-use account-recovery link for that account to the console. It SHALL NOT send any email. This job is the only way to create an account without an invitation.
+
+#### Scenario: First account on a fresh install
+- **WHEN** an operator runs the job with an email that has no account and a name
+- **THEN** the system creates an account with that email and name, without a password and without any circle, marks the email confirmed, prints that it created the account, and prints a recovery link to `<App:PublicBaseUrl>/recover` with its expiry
+
+#### Scenario: Getting back into an existing account
+- **WHEN** an operator runs the job with the email of an existing account
+- **THEN** the system leaves the account's details unchanged, prints that it found the account, and prints a recovery link for it with its expiry
+
+#### Scenario: Printed link signs the owner in
+- **WHEN** the owner opens the printed link before it expires and adds a passkey or sets a password there
+- **THEN** recovery behaves as for an emailed recovery link: the owner is signed in, the link stops working and every other session ends
+
+#### Scenario: Name missing for a new account
+- **WHEN** an operator runs the job with an email that has no account and no `--name`
+- **THEN** the job fails with a message asking for `--name` and creates nothing
+
+#### Scenario: Email missing
+- **WHEN** an operator runs the job without `--email`
+- **THEN** the job fails with a message asking for `--email` and changes nothing
 
