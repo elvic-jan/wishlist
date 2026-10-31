@@ -153,7 +153,7 @@ The circle page SHALL let a member create an invitation and share it through the
 
 #### Scenario: Email
 - **WHEN** a member chooses "Email"
-- **THEN** their mail app opens a new message with a subject naming the circle and the invitation message and link in the body, and GiftCircles sends no email itself
+- **THEN** their mail app opens a new message with a subject naming the circle and the invitation message and link in the body, and Kadoozle sends no email itself
 
 #### Scenario: Copy link
 - **WHEN** a member chooses "Copy link"
@@ -164,15 +164,15 @@ The circle page SHALL let a member create an invitation and share it through the
 - **THEN** two different links are created, and both work for anyone until they expire
 
 ### Requirement: Invite link preview
-When an invite link is shared in a messaging app, the page it points to SHALL carry link-preview tags naming the inviter and the circle, with the GiftCircles preview image. Any other page, and any invite code that can't be used or is rate-limited, SHALL carry generic GiftCircles preview tags, so a preview never confirms a guessed code.
+When an invite link is shared in a messaging app, the page it points to SHALL carry link-preview tags naming the inviter and the circle, with the Kadoozle preview image. Any other page, and any invite code that can't be used or is rate-limited, SHALL carry generic Kadoozle preview tags, so a preview never confirms a guessed code.
 
 #### Scenario: Personal preview
 - **WHEN** a link-preview crawler fetches a valid, unexpired invite link
-- **THEN** the page's preview title is "<inviter> invited you to <circle> on GiftCircles", with the GiftCircles preview image at an absolute URL
+- **THEN** the page's preview title is "<inviter> invited you to <circle> on Kadoozle", with the Kadoozle preview image at an absolute URL
 
 #### Scenario: Generic preview for unusable codes
 - **WHEN** a crawler fetches an invite link that is unknown, expired, or comes from a client that is rate-limited for wrong codes
-- **THEN** the page carries the generic GiftCircles preview and reveals no circle or inviter
+- **THEN** the page carries the generic Kadoozle preview and reveals no circle or inviter
 
 #### Scenario: Page still works
 - **WHEN** a person opens an invite link in a browser
