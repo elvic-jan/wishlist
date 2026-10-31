@@ -150,7 +150,7 @@ Every response from the application, including the SPA page, static files, API r
 Outside local development, HTTPS responses SHALL also carry `Strict-Transport-Security` with a max-age of one year.
 
 #### Scenario: Page cannot be framed
-- **WHEN** another site embeds a GiftCircles page in a frame
+- **WHEN** another site embeds a Kadoozle page in a frame
 - **THEN** the browser refuses to show it
 
 #### Scenario: Only the app's own inline script runs
@@ -224,4 +224,23 @@ Workflows SHALL reference every third-party action by full commit SHA, with the 
 #### Scenario: A new action release
 - **WHEN** a pinned action publishes a newer release
 - **THEN** Dependabot opens a pull request that moves the SHA and its version comment, and the pull request checks run on it
+
+### Requirement: The app lives at www.kadoozle.app and the old address forwards
+The application SHALL be served at `https://www.kadoozle.app`, with `kadoozle.app` redirecting there. The former addresses `giftcircles.app` and `www.giftcircles.app` SHALL keep redirecting permanently (301) to the same path and query on `https://www.kadoozle.app`, and the `giftcircles.app` domain SHALL stay registered, so links in earlier emails, shared invite links and bookmarks keep working.
+
+#### Scenario: New address
+- **WHEN** someone opens `https://kadoozle.app/some/path?x=1`
+- **THEN** they are redirected to `https://www.kadoozle.app/some/path?x=1` and the app loads with a valid certificate
+
+#### Scenario: Old invite link
+- **WHEN** someone opens an invite link `https://www.giftcircles.app/join/{code}` shared before the move
+- **THEN** they are redirected to `https://www.kadoozle.app/join/{code}` and can join as before
+
+#### Scenario: Old bare domain
+- **WHEN** someone opens `https://giftcircles.app/`
+- **THEN** they end up on `https://www.kadoozle.app/`
+
+#### Scenario: No downtime during the switch
+- **WHEN** the new address is being set up and its certificate issued
+- **THEN** the app stays reachable at `www.giftcircles.app` until `www.kadoozle.app` works
 

@@ -34,12 +34,12 @@
 
 The deploy removes all passkeys. Deployed before the address switch, people would add new passkeys for giftcircles.app that break again at the switch, so the infra steps come first.
 
-- [ ] 6.1 Merge the PR; leave its **deploy** run waiting for approval
-- [ ] 6.2 Cloudflare kadoozle.app: `CNAME www` to the app FQDN (DNS only) and `TXT asuid.www`
-- [ ] 6.3 Email: set `EMAIL_DOMAIN=kadoozle.app`, `EMAIL_DOMAIN_VERIFIED=false`, run infra (mail goes out from the azurecomm.net address meanwhile); add the listed records plus `_dmarc` (`p=quarantine`) in Cloudflare (DNS only); once verified set `EMAIL_DOMAIN_VERIFIED=true`
-- [ ] 6.4 Set `CUSTOM_DOMAIN=www.kadoozle.app`, `CUSTOM_DOMAIN_CERT_READY=false`, `PREVIOUS_CUSTOM_DOMAIN=www.giftcircles.app`; run infra
-- [ ] 6.5 Set `CUSTOM_DOMAIN_CERT_READY=true`; run infra (new certificate, base URL switches); set `PUBLIC_SITE_URL=https://www.kadoozle.app`; now approve the waiting deploy (re-run it if it timed out)
-- [ ] 6.6 Cloudflare: kadoozle.app proxied `A @` and apex-to-www redirect; giftcircles.app apex and www proxied and redirected to `https://www.kadoozle.app` with path and query
-- [ ] 6.7 Clear `PREVIOUS_CUSTOM_DOMAIN`; run infra
-- [ ] 6.8 Check in production: new address, old invite link redirect, email from noreply@kadoozle.app passes DMARC, sign-in with a new passkey, move message shown
-- [ ] 6.9 giftcircles.app and kadoozle.app on auto-renew in Cloudflare
+- [x] 6.1 Merge the PR; leave its **deploy** run waiting for approval
+- [x] 6.2 Cloudflare kadoozle.app: `CNAME www` to the app FQDN (DNS only) and `TXT asuid.www`
+- [x] 6.3 Email: set `EMAIL_DOMAIN=kadoozle.app`, `EMAIL_DOMAIN_VERIFIED=false`, run infra (mail goes out from the azurecomm.net address meanwhile); add the listed records plus `_dmarc` (`p=quarantine`) in Cloudflare (DNS only); once verified set `EMAIL_DOMAIN_VERIFIED=true`
+- [x] 6.4 Set `CUSTOM_DOMAIN=www.kadoozle.app`, `CUSTOM_DOMAIN_CERT_READY=false`, `PREVIOUS_CUSTOM_DOMAIN=www.giftcircles.app`; run infra
+- [x] 6.5 Set `CUSTOM_DOMAIN_CERT_READY=true`; run infra (new certificate, base URL switches); set `PUBLIC_SITE_URL=https://www.kadoozle.app`; now approve the waiting deploy (re-run it if it timed out)
+- [x] 6.6 Cloudflare: kadoozle.app proxied `A @` and apex-to-www redirect; giftcircles.app apex and www proxied and redirected to `https://www.kadoozle.app` with path and query
+- [x] 6.7 Clear `PREVIOUS_CUSTOM_DOMAIN`; run infra
+- [x] 6.8 Check in production: new address, old invite link redirect, email from noreply@kadoozle.app passes DMARC, sign-in with a new passkey, move message shown
+- [x] 6.9 giftcircles.app and kadoozle.app on auto-renew in Cloudflare
