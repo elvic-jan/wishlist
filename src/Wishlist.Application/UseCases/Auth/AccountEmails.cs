@@ -31,21 +31,21 @@ public class AccountEmails(
         var link = $"{BaseUrl}/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
         await SendAsync(user, new EmailMessage(
             To: user.Email,
-            Subject: "Confirm your GiftCircles email",
+            Subject: "Confirm your Kadoozle email",
             PlainTextBody:
                 $"Hi {user.DisplayName},\r\n\r\n" +
-                "Welcome to GiftCircles! Please confirm this is your email address, so you can " +
+                "Welcome to Kadoozle! Please confirm this is your email address, so you can " +
                 "get back into your account if you ever lose your phone or forget how you signed in.\r\n\r\n" +
                 $"{link}\r\n\r\n" +
-                "The link works for 3 days. If you didn't create a GiftCircles account, you can ignore this email.\r\n\r\n" +
-                "Thanks,\r\nGiftCircles",
+                "The link works for 3 days. If you didn't create a Kadoozle account, you can ignore this email.\r\n\r\n" +
+                "Thanks,\r\nKadoozle",
             HtmlBody:
                 $"<p>Hi {WebUtility.HtmlEncode(user.DisplayName)},</p>" +
-                "<p>Welcome to GiftCircles! Please confirm this is your email address, so you can " +
+                "<p>Welcome to Kadoozle! Please confirm this is your email address, so you can " +
                 "get back into your account if you ever lose your phone or forget how you signed in.</p>" +
                 $"<p><a href=\"{link}\">Confirm my email</a></p>" +
-                "<p>The link works for 3 days. If you didn't create a GiftCircles account, you can ignore this email.</p>" +
-                "<p>Thanks,<br/>GiftCircles</p>"), "email-confirmation", ct);
+                "<p>The link works for 3 days. If you didn't create a Kadoozle account, you can ignore this email.</p>" +
+                "<p>Thanks,<br/>Kadoozle</p>"), "email-confirmation", ct);
     }
 
     public Task SendPasskeyAddedAsync(User user, string? passkeyName, CancellationToken ct = default)
@@ -58,24 +58,24 @@ public class AccountEmails(
 
         return SendAsync(user, new EmailMessage(
             To: user.Email,
-            Subject: "A passkey was added to your GiftCircles account",
+            Subject: "A passkey was added to your Kadoozle account",
             PlainTextBody:
                 $"Hi {user.DisplayName},\r\n\r\n" +
-                $"{what} was just added to your GiftCircles account (at {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC). " +
+                $"{what} was just added to your Kadoozle account (at {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC). " +
                 "It lets you sign in with Face ID, a fingerprint or your device PIN.\r\n\r\n" +
                 "If this was you, there's nothing to do.\r\n\r\n" +
                 "If it wasn't you, open your sign-in settings, remove the passkey and sign out other devices:\r\n" +
                 $"{settings}\r\n\r\n" +
-                "Thanks,\r\nGiftCircles",
+                "Thanks,\r\nKadoozle",
             HtmlBody:
                 $"<p>Hi {WebUtility.HtmlEncode(user.DisplayName)},</p>" +
-                $"<p>{whatHtml} was just added to your GiftCircles account " +
+                $"<p>{whatHtml} was just added to your Kadoozle account " +
                 $"(at <strong>{DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC</strong>). " +
                 "It lets you sign in with Face ID, a fingerprint or your device PIN.</p>" +
                 "<p>If this was you, there's nothing to do.</p>" +
                 "<p>If it wasn't you, open your sign-in settings, remove the passkey and sign out other devices: " +
                 $"<a href=\"{settings}\">{settings}</a></p>" +
-                "<p>Thanks,<br/>GiftCircles</p>"), "passkey-added", ct);
+                "<p>Thanks,<br/>Kadoozle</p>"), "passkey-added", ct);
     }
 
     private string BaseUrl => appUrls.PublicBaseUrl.TrimEnd('/');

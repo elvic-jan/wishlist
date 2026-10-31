@@ -63,11 +63,11 @@ public class InviteSharingTests : IClassFixture<InviteSharingTests.PreviewApi>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
         Assert.True(response.Headers.CacheControl?.NoStore);
-        Assert.Contains("""<meta property="og:title" content="Jan invited you to Family on GiftCircles" />""", html);
-        Assert.Contains("""<meta name="twitter:title" content="Jan invited you to Family on GiftCircles" />""", html);
+        Assert.Contains("""<meta property="og:title" content="Jan invited you to Family on Kadoozle" />""", html);
+        Assert.Contains("""<meta name="twitter:title" content="Jan invited you to Family on Kadoozle" />""", html);
         Assert.Contains("""<meta property="og:description" content="Join the circle to see each other&#39;s wishlists and coordinate gifts." />""", html);
         Assert.Contains($"""<meta property="og:url" content="https://wishlist.example.test/join/{invitation.InviteCode}" />""", html);
-        Assert.Contains("""<meta property="og:image" content="https://wishlist.example.test/og/giftcircles.png" />""", html);
+        Assert.Contains("""<meta property="og:image" content="https://wishlist.example.test/og/kadoozle.png" />""", html);
         Assert.Contains("""<div id="root"></div>""", html);
     }
 
@@ -78,7 +78,7 @@ public class InviteSharingTests : IClassFixture<InviteSharingTests.PreviewApi>
 
         var html = await (await Get($"/join/{invitation.InviteCode}", "198.51.100.4")).Content.ReadAsStringAsync();
 
-        Assert.Contains("&lt;b&gt;Jan&lt;/b&gt; invited you to Tom &amp; &quot;Jerry&quot; on GiftCircles", html);
+        Assert.Contains("&lt;b&gt;Jan&lt;/b&gt; invited you to Tom &amp; &quot;Jerry&quot; on Kadoozle", html);
         Assert.DoesNotContain("<b>Jan</b>", html);
     }
 
@@ -120,13 +120,13 @@ public class InviteSharingTests : IClassFixture<InviteSharingTests.PreviewApi>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         AssertGeneric(html);
         Assert.Contains("""<meta property="og:url" content="https://wishlist.example.test/circles/123" />""", html);
-        Assert.Contains("""<meta name="twitter:image" content="https://wishlist.example.test/og/giftcircles.png" />""", html);
+        Assert.Contains("""<meta name="twitter:image" content="https://wishlist.example.test/og/kadoozle.png" />""", html);
     }
 
     private static void AssertGeneric(string html)
     {
-        Assert.Contains("""<meta property="og:title" content="GiftCircles" />""", html);
-        Assert.Contains("""<meta property="og:image" content="https://wishlist.example.test/og/giftcircles.png" />""", html);
+        Assert.Contains("""<meta property="og:title" content="Kadoozle" />""", html);
+        Assert.Contains("""<meta property="og:image" content="https://wishlist.example.test/og/kadoozle.png" />""", html);
         Assert.DoesNotContain("invited you", html);
     }
 
@@ -149,14 +149,14 @@ public class InviteSharingTests : IClassFixture<InviteSharingTests.PreviewApi>
         // The parts of src/Wishlist.Web/index.html the server rewrites.
         private const string Page = """
             <!doctype html><html><head>
-            <title>GiftCircles</title>
-            <meta property="og:title" content="GiftCircles" />
+            <title>Kadoozle</title>
+            <meta property="og:title" content="Kadoozle" />
             <meta property="og:description" content="Share wishlists with your family and friends." />
             <meta property="og:url" content="/" />
-            <meta property="og:image" content="/og/giftcircles.png" />
-            <meta name="twitter:title" content="GiftCircles" />
+            <meta property="og:image" content="/og/kadoozle.png" />
+            <meta name="twitter:title" content="Kadoozle" />
             <meta name="twitter:description" content="Share wishlists with your family and friends." />
-            <meta name="twitter:image" content="/og/giftcircles.png" />
+            <meta name="twitter:image" content="/og/kadoozle.png" />
             </head><body><div id="root"></div></body></html>
             """;
 

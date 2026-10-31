@@ -107,7 +107,7 @@ gh secret set GHCR_PULL_TOKEN         --env production -R $REPO                 
 
 Optional variables: `MIN_REPLICAS` (`1` = no cold starts, ~$10–15/month),
 `POSTGRES_ADMIN_LOGIN` (default `wishlistadmin`), `CUSTOM_DOMAIN`,
-`CUSTOM_DOMAIN_CERT_READY` (see [Custom domain](#custom-domain)), `EMAIL_DOMAIN`,
+`CUSTOM_DOMAIN_CERT_READY`, `PREVIOUS_CUSTOM_DOMAIN` (see [Custom domain](#custom-domain)), `EMAIL_DOMAIN`,
 `EMAIL_DOMAIN_VERIFIED` (see [Custom email domain](#custom-email-domain)).
 
 ### 5. First provisioning
@@ -169,12 +169,32 @@ Use a subdomain (e.g. `wishlist.example.com`); apex domains need a different val
 With Cloudflare DNS, both records must be **DNS only** (grey cloud); a proxied CNAME stops
 the managed certificate from issuing and renewing.
 
+### Moving to another domain
+
+To move without downtime (as from `www.giftcircles.app` to `www.kadoozle.app`), keep the old
+hostname bound while the new one is set up:
+
+1. Add the `CNAME` and `TXT asuid` records for the new hostname (DNS only).
+2. Set `CUSTOM_DOMAIN=<new>`, `CUSTOM_DOMAIN_CERT_READY=false` and
+   `PREVIOUS_CUSTOM_DOMAIN=<old>`, then run **infra**. Both hostnames are on the app; the
+   old one keeps its certificate and stays the public base URL.
+3. Set `CUSTOM_DOMAIN_CERT_READY=true` and run **infra**. The new certificate is issued and
+   the public base URL (links in emails, passkeys) switches to the new hostname.
+4. Point the old domain at the new one with a redirect at the DNS provider (for
+   Cloudflare: proxied records plus a Redirect Rule keeping path and query), then clear
+   `PREVIOUS_CUSTOM_DOMAIN` and run **infra** to unbind it.
+
+Passkeys belong to the public base URL's domain, so they stop working at step 3. Deploy
+any code that goes with the move (such as removing old passkeys) right after step 3, not
+before: the deploy workflow waits for approval, so merge first and approve after the switch.
+Everyone is also signed out once, because sign-in cookies belong to the old hostname.
+
 ## Custom email domain
 
 Mail goes out as `DoNotReply@<guid>.azurecomm.net` until you add your own domain; then
-it's `noreply@<domain>` with the display name GiftCircles. Same two-phase pattern:
+it's `noreply@<domain>` with the display name Kadoozle. Same two-phase pattern:
 
-1. Set variable `EMAIL_DOMAIN` (e.g. `giftcircles.app`) and run **infra**. This creates
+1. Set variable `EMAIL_DOMAIN` (e.g. `kadoozle.app`) and run **infra**. This creates
    the customer-managed domain; the run summary's `emailDomainVerificationRecords` lists
    the DNS records Azure generated. Nothing about sending changes yet.
 2. At your DNS provider add those records (all **DNS only** in Cloudflare):

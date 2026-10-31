@@ -50,7 +50,7 @@ public class CacheHeaderTests : IClassFixture<CacheHeaderTests.BuiltSpaApi>
     public sealed class BuiltSpaApi : InMemoryApi
     {
         private const string Page = """
-            <!doctype html><html><head><title>GiftCircles</title>
+            <!doctype html><html><head><title>Kadoozle</title>
             <script type="module" crossorigin src="/assets/index-abc123.js"></script>
             </head><body><div id="root"></div></body></html>
             """;

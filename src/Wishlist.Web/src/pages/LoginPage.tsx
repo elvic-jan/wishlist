@@ -59,7 +59,7 @@ export function LoginPage() {
     setError(
       passkeyErrorMessage(err) ??
         (apiErrorMessage(err)
-          ? 'That passkey isn’t linked to a GiftCircles account. Sign in with your password, or use “Can’t sign in?”.'
+          ? 'That passkey isn’t linked to a Kadoozle account. Sign in with your password, or use “Can’t sign in?”.'
           : 'Signing in with Face ID / fingerprint didn’t work. Please try again.'),
     )
   }, [])

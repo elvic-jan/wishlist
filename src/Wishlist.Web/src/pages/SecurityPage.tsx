@@ -255,7 +255,7 @@ export function SecurityPage() {
             <AlertDialogTitle>Remove this passkey?</AlertDialogTitle>
             <AlertDialogDescription>
               &ldquo;{toRemove?.name ?? 'Passkey'}&rdquo; won&rsquo;t sign you in to
-              GiftCircles any more. You can still delete it from your device&rsquo;s
+              Kadoozle any more. You can still delete it from your device&rsquo;s
               password manager afterwards.
             </AlertDialogDescription>
           </AlertDialogHeader>

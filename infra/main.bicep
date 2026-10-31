@@ -18,8 +18,10 @@ param minReplicas int = 0
 
 param customDomainName string = ''
 param customDomainCertificateReady bool = false
+@description('Former custom domain kept working while customDomainName is set up (e.g. www.giftcircles.app). Empty = none.')
+param previousCustomDomainName string = ''
 
-@description('Own email sending domain, e.g. giftcircles.app. Empty = Azure-managed azurecomm.net sender.')
+@description('Own email sending domain, e.g. kadoozle.app. Empty = Azure-managed azurecomm.net sender.')
 param emailCustomDomain string = ''
 
 @description('True once the email domain\'s DNS records are verified in Azure; switches the sender to noreply@<domain>.')
@@ -101,6 +103,7 @@ module app 'modules/containerapp.bicep' = {
     minReplicas: minReplicas
     customDomainName: customDomainName
     customDomainCertificateReady: customDomainCertificateReady
+    previousCustomDomainName: previousCustomDomainName
     postgresFqdn: postgres.outputs.fqdn
     postgresDatabaseName: postgres.outputs.databaseName
     postgresAppPassword: postgresAppPassword

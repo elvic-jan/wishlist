@@ -25,7 +25,7 @@ public class BuddyTests
         Assert.Equal([w.Owner.Id], (await w.Manage.GetBuddyOfAsync(w.Buddy.Id)).Select(b => b.UserId));
         var email = Assert.Single(w.Store.EmailsTo(w.Buddy.Email));
         Assert.Contains("made you a buddy", email.Subject);
-        Assert.Contains($"https://giftcircles.test/wishlist/{w.Owner.Id}", email.PlainTextBody);
+        Assert.Contains($"https://kadoozle.test/wishlist/{w.Owner.Id}", email.PlainTextBody);
     }
 
     [Fact]
@@ -234,7 +234,7 @@ public class BuddyTests
 
     private sealed class Urls : IAppUrlProvider
     {
-        public string PublicBaseUrl => "https://giftcircles.test/";
+        public string PublicBaseUrl => "https://kadoozle.test/";
     }
 
     private sealed class FailingSender : IEmailSender

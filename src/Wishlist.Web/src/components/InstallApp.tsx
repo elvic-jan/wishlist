@@ -44,7 +44,7 @@ export function InstallAppLink() {
         onClick={() => (offer === 'prompt' ? void promptInstall() : setShowIosHelp(true))}
       >
         <Smartphone className="h-4 w-4" aria-hidden />
-        Install GiftCircles on this phone
+        Install Kadoozle on this phone
       </button>
       <IosInstallHelp open={showIosHelp} onOpenChange={setShowIosHelp} />
     </>
@@ -56,7 +56,7 @@ export function IosInstallHelp({ open, onOpenChange }: { open: boolean; onOpenCh
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add GiftCircles to your home screen</DialogTitle>
+          <DialogTitle>Add Kadoozle to your home screen</DialogTitle>
           <DialogDescription>
             It then opens like an app, full screen, straight from its own icon.
           </DialogDescription>
@@ -80,7 +80,7 @@ export function IosInstallHelp({ open, onOpenChange }: { open: boolean; onOpenCh
           <li className="flex items-start gap-3">
             <Step n={3} />
             <span>
-              Tap <strong>Add</strong>. GiftCircles appears on your home screen.
+              Tap <strong>Add</strong>. Kadoozle appears on your home screen.
             </span>
           </li>
         </ol>

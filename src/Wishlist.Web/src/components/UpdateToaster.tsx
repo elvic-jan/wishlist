@@ -15,7 +15,7 @@ export function UpdateToaster() {
   if (!available) return null
 
   return (
-    <LastingToast icon={Sparkles} title="New version available" text={note ?? 'Refresh to get the latest GiftCircles.'}>
+    <LastingToast icon={Sparkles} title="New version available" text={note ?? 'Refresh to get the latest Kadoozle.'}>
       <Button
         size="sm"
         disabled={refreshing}

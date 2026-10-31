@@ -82,7 +82,7 @@ public class SecurityHeaderTests : IClassFixture<SecurityHeaderTests.PageApi>
     public sealed class PageApi : InMemoryApi
     {
         private static readonly string Page =
-            "<!doctype html><html><head><title>GiftCircles</title>" +
+            "<!doctype html><html><head><title>Kadoozle</title>" +
             $"<script>{ThemeScript}</script>" +
             "<script type=\"module\" crossorigin src=\"/assets/index-abc123.js\"></script>" +
             "</head><body><div id=\"root\"></div></body></html>";

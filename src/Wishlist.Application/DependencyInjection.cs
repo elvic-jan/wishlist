@@ -68,6 +68,7 @@ public static class DependencyInjection
         services.AddScoped<ImportLegacyItemsUseCase>();
 
         // Messages, shown in this order. Add new ones at the end.
+        services.AddScoped<IMessageDefinition, RenamedToKadoozleMessage>();
         services.AddScoped<IMessageDefinition, LegacyImportMessage>();
         services.AddScoped<IMessageDefinition, WhatsNewNovember2026Message>();
         services.AddScoped<IMessageDefinition, WhatsNewBuddiesMessage>();

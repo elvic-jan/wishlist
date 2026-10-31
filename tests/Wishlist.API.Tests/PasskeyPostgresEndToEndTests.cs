@@ -43,7 +43,7 @@ public sealed class PostgresCollection
 [Collection(PostgresCollection.Name)]
 public class PasskeyPostgresEndToEndTests
 {
-    private const string Origin = "https://giftcircles.test";
+    private const string Origin = "https://kadoozle.test";
 
     [PostgresFact]
     public async Task Passkeys_work_end_to_end()
@@ -119,7 +119,7 @@ public class PasskeyPostgresEndToEndTests
             (await InMemoryApi.Post(client, "/api/auth/confirm-email", new { userId, token = confirmToken })).StatusCode);
 
         await InMemoryApi.Post(client, "/api/auth/forgot-password", new { email = "ann@example.test" });
-        var recoveryMail = api.Emails.Single(m => m.Subject == "Get back into your GiftCircles account");
+        var recoveryMail = api.Emails.Single(m => m.Subject == "Get back into your Kadoozle account");
         var (email, token) = LinkParts(recoveryMail, "/recover?", "email", "token");
 
         using var annNewPhone = new SoftwareAuthenticator();
@@ -188,8 +188,8 @@ internal sealed class PostgresApi(string connectionString) : WebApplicationFacto
         builder.UseSetting("ConnectionStrings:DefaultConnection", connectionString);
         builder.UseSetting("Jwt:Key", "test-signing-key-that-is-long-enough-for-hmac-sha256");
         builder.UseSetting("Smtp:Host", "smtp.example.test");
-        builder.UseSetting("App:PublicBaseUrl", "https://www.giftcircles.test");
-        builder.UseSetting("Passkeys:AdditionalOrigins:0", "https://giftcircles.test");
+        builder.UseSetting("App:PublicBaseUrl", "https://www.kadoozle.test");
+        builder.UseSetting("Passkeys:AdditionalOrigins:0", "https://kadoozle.test");
 
         builder.ConfigureTestServices(services =>
             services.AddSingleton<IEmailSender>(new CapturingSender(Emails)));

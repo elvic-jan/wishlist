@@ -28,14 +28,14 @@ public class ReservationEmails(IEmailSender emailSender, IAppUrlProvider appUrls
                 $"The reservation is still open and ends on {until}. After that, others can reserve it again.\r\n\r\n" +
                 "Open the wishlist to keep your reservation, mark the gift as bought, or release it:\r\n" +
                 $"{link}\r\n\r\n" +
-                "Thanks,\r\nGiftCircles",
+                "Thanks,\r\nKadoozle",
             HtmlBody:
                 $"<p>Hi {Html(reserver.DisplayName)},</p>" +
                 $"<p>A while ago you reserved <strong>{Html(item)}</strong> on {Html(owner.DisplayName)}&rsquo;s wishlist. " +
                 $"The reservation is still open and ends on <strong>{until}</strong>. After that, others can reserve it again.</p>" +
                 "<p>Open the wishlist to keep your reservation, mark the gift as bought, or release it:</p>" +
                 $"<p><a href=\"{link}\">Open {Html(owner.DisplayName)}&rsquo;s wishlist</a></p>" +
-                "<p>Thanks,<br/>GiftCircles</p>"), "reservation-reminder", ct);
+                "<p>Thanks,<br/>Kadoozle</p>"), "reservation-reminder", ct);
     }
 
     /// <summary>Returns whether the email was handed to the email service.</summary>
@@ -53,14 +53,14 @@ public class ReservationEmails(IEmailSender emailSender, IAppUrlProvider appUrls
                 "so others in the circle can reserve it now.\r\n\r\n" +
                 "If you still want to give it, open the wishlist and reserve it again while it's free:\r\n" +
                 $"{link}\r\n\r\n" +
-                "Thanks,\r\nGiftCircles",
+                "Thanks,\r\nKadoozle",
             HtmlBody:
                 $"<p>Hi {Html(reserver.DisplayName)},</p>" +
                 $"<p>Your reservation of <strong>{Html(item)}</strong> on {Html(owner.DisplayName)}&rsquo;s wishlist has ended, " +
                 "so others in the circle can reserve it now.</p>" +
                 "<p>If you still want to give it, open the wishlist and reserve it again while it&rsquo;s free:</p>" +
                 $"<p><a href=\"{link}\">Open {Html(owner.DisplayName)}&rsquo;s wishlist</a></p>" +
-                "<p>Thanks,<br/>GiftCircles</p>"), "reservation-expired", ct);
+                "<p>Thanks,<br/>Kadoozle</p>"), "reservation-expired", ct);
     }
 
     private string WishlistLink(User owner) => $"{appUrls.PublicBaseUrl.TrimEnd('/')}/wishlist/{owner.Id}";

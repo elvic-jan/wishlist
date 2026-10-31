@@ -12,7 +12,7 @@ import { WakingUp } from '@/components/WakingUp'
 import { confirmEmail } from '@/api/passkeys'
 import { useAuth } from '@/context/AuthContext'
 
-/** Where the "Confirm your GiftCircles email" link leads. */
+/** Where the "Confirm your Kadoozle email" link leads. */
 export function ConfirmEmailPage() {
   const [searchParams] = useSearchParams()
   const { user } = useAuth()

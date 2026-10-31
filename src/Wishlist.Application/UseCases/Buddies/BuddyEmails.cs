@@ -17,17 +17,17 @@ public class BuddyEmails(IEmailSender emailSender, IAppUrlProvider appUrls, ILog
             Subject: $"{owner.DisplayName} made you a buddy for their wishlist",
             PlainTextBody:
                 $"Hi {buddy.DisplayName},\r\n\r\n" +
-                $"{owner.DisplayName} made you a buddy for their wishlist on GiftCircles. " +
+                $"{owner.DisplayName} made you a buddy for their wishlist on Kadoozle. " +
                 "You can now add, change and remove wishes on their list, for example when you know what they'd like.\r\n\r\n" +
                 $"Open {owner.DisplayName}'s wishlist:\r\n" +
                 $"{link}\r\n\r\n" +
-                "Thanks,\r\nGiftCircles",
+                "Thanks,\r\nKadoozle",
             HtmlBody:
                 $"<p>Hi {Html(buddy.DisplayName)},</p>" +
-                $"<p>{Html(owner.DisplayName)} made you a <strong>buddy</strong> for their wishlist on GiftCircles. " +
+                $"<p>{Html(owner.DisplayName)} made you a <strong>buddy</strong> for their wishlist on Kadoozle. " +
                 "You can now add, change and remove wishes on their list, for example when you know what they&rsquo;d like.</p>" +
                 $"<p><a href=\"{link}\">Open {Html(owner.DisplayName)}&rsquo;s wishlist</a></p>" +
-                "<p>Thanks,<br/>GiftCircles</p>");
+                "<p>Thanks,<br/>Kadoozle</p>");
 
         try
         {

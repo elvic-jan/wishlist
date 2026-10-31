@@ -66,13 +66,32 @@ public class LegacyImportMessage(ILegacyRepository legacy) : IMessageDefinition
 {
     public string Id => "legacy-import";
     public string Title => "Bring your wishes from the old site";
-    public string Text => "Had a wishlist on verlanglijstje? Import your wishes into GiftCircles in a few taps, so you don't have to type them again.";
+    public string Text => "Had a wishlist on verlanglijstje? Import your wishes into Kadoozle in a few taps, so you don't have to type them again.";
     public MessageAction? Action => new("Import my wishes", "/import");
     public DateTime? ShowFrom => null;
     public DateTime? ShowUntil => null;
 
     public async Task<bool> AppliesToAsync(Guid userId, CancellationToken ct = default) =>
         await legacy.AnyAsync(ct) && await legacy.GetClaimedByAsync(userId, ct) is null;
+}
+
+/// <summary>Tells people who joined under the old name about the move to Kadoozle.</summary>
+public class RenamedToKadoozleMessage(IUserRepository users) : IMessageDefinition
+{
+    /// <summary>Accounts made before this date knew the app as GiftCircles.</summary>
+    public static readonly DateTime MovedAt = new(2026, 11, 1, 0, 0, 0, DateTimeKind.Utc);
+
+    public string Id => "renamed-to-kadoozle";
+    public string Title => "GiftCircles is now Kadoozle";
+    public string Text =>
+        "Same app, new name and address: kadoozle.app. Passkeys from the old address no longer work, so add a new one. " +
+        "If you had the app on your home screen, remove it and add Kadoozle again.";
+    public MessageAction? Action => new("Add a passkey", "/settings/security");
+    public DateTime? ShowFrom => null;
+    public DateTime? ShowUntil => new DateTime(2027, 3, 1, 0, 0, 0, DateTimeKind.Utc);
+
+    public async Task<bool> AppliesToAsync(Guid userId, CancellationToken ct = default) =>
+        await users.GetByIdAsync(userId, ct) is { } user && user.CreatedAt < MovedAt;
 }
 
 /// <summary>Announces wishlist buddies.</summary>
