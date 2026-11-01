@@ -9,9 +9,27 @@
 
 type Json = Record<string, unknown>
 
-/** Whether this browser can create and use passkeys at all. */
+/**
+ * Whether this browser can create and use passkeys at all.
+ *
+ * Firefox for Android is left out (issue #115): it creates the passkey, but
+ * can't find it again when signing in without an email, so people who signed
+ * up with only a passkey got stuck. It reports passkey support through the
+ * feature checks anyway, so it's recognised by its user agent.
+ */
 export function passkeysSupported(): boolean {
-  return typeof window !== 'undefined' && typeof window.PublicKeyCredential === 'function'
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.PublicKeyCredential === 'function' &&
+    !isFirefoxAndroid()
+  )
+}
+
+/** Firefox (or Firefox Focus) on an Android phone or tablet. */
+export function isFirefoxAndroid(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent
+  return /Android/.test(ua) && /Firefox\//.test(ua)
 }
 
 /** Whether the browser can offer passkeys in the email field's autofill. */
