@@ -56,7 +56,9 @@ export default function App() {
                   </ProtectedRoute>
                 }
               >
-                <Route path="/" element={<HomePage />} />
+                {/* Wishlists is the default page; My circles lives at /circles. */}
+                <Route path="/" element={<Navigate to="/wishlists" replace />} />
+                <Route path="/circles" element={<HomePage />} />
                 <Route path="/circles/:groupId" element={<GroupDetailPage />} />
                 {/* Circles used to be called groups; keep old bookmarks working. */}
                 <Route path="/groups/:groupId" element={<LegacyGroupRedirect />} />
@@ -67,7 +69,7 @@ export default function App() {
                 <Route path="/wishlist/:userId" element={<MemberWishlistPage />} />
               </Route>
 
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/wishlists" replace />} />
             </Routes>
             <Toaster />
             <UpdateToaster />

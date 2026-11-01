@@ -119,7 +119,7 @@ export function SecurityPage() {
     <div className="space-y-6">
       <div>
         <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2">
-          <Link to="/">
+          <Link to="/circles">
             <ArrowLeft className="h-4 w-4" />
             Back
           </Link>

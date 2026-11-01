@@ -36,7 +36,7 @@ export function JoinGroupPage() {
       .post(`/invitations/${code}/join`)
       .then(() => {
         setStatus('done')
-        setTimeout(() => navigate('/'), 2000)
+        setTimeout(() => navigate('/circles'), 2000)
       })
       .catch((err: unknown) => {
         setError(inviteErrorMessage(err, 'Failed to join circle. The link may have expired.'))
