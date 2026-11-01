@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button'
 /**
  * Goes back to the screen the user came from. When the page was opened
  * directly (a link, a new tab), there is no earlier screen in the app, so it
- * goes to "My circles" instead of leaving the site.
+ * goes to `fallback` (Wishlists unless the page says otherwise) instead of leaving the site.
  */
-export function BackButton() {
+export function BackButton({ fallback = '/wishlists' }: { fallback?: string }) {
   const navigate = useNavigate()
   const location = useLocation()
   // React Router gives the very first entry of the session the key "default".
@@ -18,7 +18,7 @@ export function BackButton() {
       variant="ghost"
       size="sm"
       className="-ml-2 mb-2"
-      onClick={() => (hasPreviousScreen ? navigate(-1) : navigate('/'))}
+      onClick={() => (hasPreviousScreen ? navigate(-1) : navigate(fallback))}
     >
       <ArrowLeft className="h-4 w-4" />
       Back

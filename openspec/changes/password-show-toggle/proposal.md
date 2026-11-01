@@ -6,7 +6,7 @@ Chrome (on Mac and elsewhere), Safari and Firefox show no button to reveal a pas
 
 - Every password field on the Login, Register and Recover pages gets an eye button inside the field that shows or hides the typed password. On Recover, the new and confirm fields each have their own button.
 - Edge's built-in reveal button (`::-ms-reveal`) is hidden, so there is only one.
-- Release note: "Option to unmask password".
+- Release note: "Option to unmask password"; shipping together with the Wishlists-home change, the combined note is "Wishlists is now the homepage. Improved password unmasking."
 
 ## Capabilities
 

@@ -117,7 +117,7 @@ public class CircleInvitationEmails(IEmailSender emailSender, IAppUrlProvider ap
 {
     public async Task SendInvitationAsync(User invitee, User inviter, Group circle, CancellationToken ct = default)
     {
-        var link = $"{appUrls.PublicBaseUrl.TrimEnd('/')}/";
+        var link = $"{appUrls.PublicBaseUrl.TrimEnd('/')}/circles";
         var message = new EmailMessage(
             To: invitee.Email,
             Subject: $"{inviter.DisplayName} invited you to join {circle.Name}",
