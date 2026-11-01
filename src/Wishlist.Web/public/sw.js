@@ -8,6 +8,7 @@
 //   assets are the files index.html names plus the page chunks its scripts
 //   load later; both are cached up front, and each fresh index.html prunes
 //   assets no longer needed.
+// - /releases.json (What's new): network first, the cached copy when offline.
 // - /api/*, /healthz and anything cross-origin: never intercepted.
 
 const CACHE = 'wishlist-shell-v1';
@@ -75,8 +76,26 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(serveShell(event));
   } else if (url.pathname.startsWith('/assets/')) {
     event.respondWith(cacheFirst(request));
+  } else if (url.pathname === RELEASES) {
+    event.respondWith(networkFirst(request));
   }
 });
+
+// The What's new list: fresh when online, the last one seen when offline.
+const RELEASES = '/releases.json';
+
+async function networkFirst(request) {
+  const cache = await caches.open(CACHE);
+  try {
+    const response = await fetch(request);
+    if (response.ok) await cache.put(RELEASES, response.clone());
+    return response;
+  } catch (error) {
+    const cached = await cache.match(RELEASES, MATCH);
+    if (cached) return cached;
+    throw error;
+  }
+}
 
 async function serveShell(event) {
   const cache = await caches.open(CACHE);

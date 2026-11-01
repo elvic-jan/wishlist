@@ -1,6 +1,12 @@
 # Build on every push to main; deploy to production after a manual approval on
 # the `production` environment. Rollback: re-run the deploy job of an older run
-# (it carries that run's image tag and migrations bundle).
+# (it carries that run's image tag and migrations bundle; its version is
+# already tagged, so nothing is re-tagged).
+#
+# Versions: the build works out the version (scripts/release-version.mjs, from
+# the last vX.Y.Z tag and the release-notes/ files added since) and the What's
+# new list; after a successful deploy the commit is tagged vX.Y.Z, a GitHub
+# Release is created and the image gets the tag X.Y.Z.
 name: deploy
 
 on:
@@ -28,8 +34,14 @@ jobs:
       packages: write
     outputs:
       image: ${{ steps.meta.outputs.image }}
+      version: ${{ steps.version.outputs.version }}
+      notes: ${{ steps.version.outputs.notes }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The version comes from the tags and the history since the last one.
+          fetch-depth: 0
+          fetch-tags: true
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 10.0.x
@@ -63,10 +75,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # A release that doesn't write a new note shows the generic text, not the
-      # previous release's note (scripts/release-note-guard.sh).
-      - name: Release note
-        run: scripts/release-note-guard.sh "${{ vars.PUBLIC_SITE_URL || 'https://www.kadoozle.app' }}"
+      - name: Version and release notes
+        id: version
+        run: |
+          version=$(node scripts/release-version.mjs --json src/Wishlist.Web/public/releases.json --notes "$RUNNER_TEMP/notes.md")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          { echo "notes<<EOF_NOTES"; cat "$RUNNER_TEMP/notes.md"; echo "EOF_NOTES"; } >> "$GITHUB_OUTPUT"
+          { echo "### Version $version"; cat "$RUNNER_TEMP/notes.md"; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build and push image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
@@ -76,6 +91,9 @@ jobs:
           tags: |
             ${{ steps.meta.outputs.image }}
             ${{ steps.meta.outputs.latest }}
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.version }}
+            APP_COMMIT=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -99,13 +117,16 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     permissions:
-      contents: read
+      # Write: the version tag and GitHub Release, and the image's version tag.
+      contents: write
+      packages: write
       id-token: write
     env:
       RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
       CONTAINER_APP: ca-wishlist
       RESERVATION_JOB: caj-wishlist-reservations
       IMAGE: ${{ needs.build.outputs.image }}
+      VERSION: ${{ needs.build.outputs.version }}
     steps:
       # Before the download: checkout cleans the workspace.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -188,8 +209,50 @@ jobs:
             echo "::notice::$RESERVATION_JOB doesn't exist yet; run the infra workflow to create it."
           fi
 
+      # Healthy, and running this version (not the previous revision).
       - name: Smoke check
         run: |
           fqdn=$(az containerapp show -g "$RESOURCE_GROUP" -n "$CONTAINER_APP" --query properties.configuration.ingress.fqdn -o tsv)
-          curl -fsS --retry 10 --retry-delay 6 --retry-all-errors "https://${fqdn}/healthz"
-          echo "Deployed $IMAGE to https://${fqdn}" >> "$GITHUB_STEP_SUMMARY"
+          for attempt in $(seq 1 20); do
+            health=$(curl -fsS --max-time 30 "https://${fqdn}/healthz" || true)
+            if printf '%s' "$health" | grep -q "\"version\":\"$VERSION\""; then
+              echo "Deployed version $VERSION ($IMAGE) to https://${fqdn}" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "Attempt $attempt: ${health:-no answer}"
+            sleep 6
+          done
+          echo "::error::https://${fqdn}/healthz doesn't report version $VERSION."
+          exit 1
+
+      # Only for a version not tagged yet: re-running an older run's deploy job
+      # (a rollback) finds its tag and changes nothing.
+      - name: Tag the release
+        id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOTES: ${{ needs.build.outputs.notes }}
+        run: |
+          tag="v$VERSION"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --silent 2>/dev/null; then
+            echo "::notice::$tag already exists; not tagging again."
+            exit 0
+          fi
+          # Annotated, so the tag carries the release date (shown on What's new).
+          object=$(gh api "repos/$GITHUB_REPOSITORY/git/tags" -f tag="$tag" -f message="Kadoozle $VERSION" \
+            -f object="$GITHUB_SHA" -f type=commit --jq .sha)
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$tag" -f sha="$object" --silent
+          printf '%s\n' "$NOTES" > "$RUNNER_TEMP/notes.md"
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --verify-tag --title "Kadoozle $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        if: steps.tag.outputs.created == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag the image with the version
+        if: steps.tag.outputs.created == 'true'
+        run: docker buildx imagetools create --tag "${IMAGE%:*}:$VERSION" "$IMAGE"

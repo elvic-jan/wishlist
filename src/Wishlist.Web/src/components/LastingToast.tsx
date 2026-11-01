@@ -4,7 +4,7 @@ import { X } from 'lucide-react'
 
 /**
  * The card for toasts that stay until handled (messages, the new-version
- * notice): icon, title, text, the given buttons, and a close button when
+ * notice): icon, title, optional text, the given buttons, and a close button when
  * `onClose` is given.
  */
 export function LastingToast({
@@ -16,7 +16,7 @@ export function LastingToast({
 }: {
   icon: LucideIcon
   title: string
-  text: string
+  text?: string
   onClose?: () => void
   children: ReactNode
 }) {
@@ -31,7 +31,7 @@ export function LastingToast({
           <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
           <div className="min-w-0 flex-1 space-y-1">
             <p className="text-sm font-semibold">{title}</p>
-            <p className="text-sm text-muted-foreground">{text}</p>
+            {text && <p className="text-sm text-muted-foreground">{text}</p>}
           </div>
           {onClose && (
             <button

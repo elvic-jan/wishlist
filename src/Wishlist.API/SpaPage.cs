@@ -70,7 +70,7 @@ public static partial class SpaPage
     /// </summary>
     public static string? CacheControlFor(PathString path) =>
         path.StartsWithSegments("/assets") ? ForGood
-        : path == "/index.html" || path == "/sw.js" ? NoCache
+        : path == "/index.html" || path == "/sw.js" || path == "/releases.json" ? NoCache
         : null;
 
     // Replaces the content of <meta property|name="key" content="...">.

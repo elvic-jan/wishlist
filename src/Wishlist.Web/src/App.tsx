@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
-import { AuthProvider } from '@/context/AuthContext'
+import { AuthProvider, useAuth } from '@/context/AuthContext'
+import { WakingUp } from '@/components/WakingUp'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppShell } from '@/components/AppShell'
@@ -23,6 +24,14 @@ const WishlistsPage = lazyPage(() => import('@/pages/WishlistsPage'), 'Wishlists
 const MemberWishlistPage = lazyPage(() => import('@/pages/MemberWishlistPage'), 'MemberWishlistPage')
 const JoinGroupPage = lazyPage(() => import('@/pages/JoinGroupPage'), 'JoinGroupPage')
 const ImportPage = lazyPage(() => import('@/pages/ImportPage'), 'ImportPage')
+const WhatsNewPage = lazyPage(() => import('@/pages/WhatsNewPage'), 'WhatsNewPage')
+
+/** For pages anyone may open: the app shell when signed in, the sign-in layout otherwise. */
+function AnyoneLayout() {
+  const { user, restoring } = useAuth()
+  if (restoring) return <WakingUp />
+  return user ? <AppShell /> : <AuthLayout />
+}
 
 function LegacyGroupRedirect() {
   const { groupId } = useParams()
@@ -67,6 +76,11 @@ export default function App() {
                 <Route path="/wishlists" element={<WishlistsPage />} />
                 <Route path="/wishlist/me" element={<MyWishlistPage />} />
                 <Route path="/wishlist/:userId" element={<MemberWishlistPage />} />
+              </Route>
+
+              {/* Signed in or not: the update notice links here from sign-in pages too. */}
+              <Route element={<AnyoneLayout />}>
+                <Route path="/whats-new" element={<WhatsNewPage />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/wishlists" replace />} />
