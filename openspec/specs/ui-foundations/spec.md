@@ -147,7 +147,7 @@ The application SHALL be installable from the browser as a standalone home-scree
 
 #### Scenario: Manifest and icons are served
 - **WHEN** a browser loads any page
-- **THEN** the page links a web app manifest naming the app "Kadoozle", with standalone display, start URL `/`, theme and background colours, and icons of at least 192 and 512 pixels including a maskable icon, all served successfully
+- **THEN** the page links a web app manifest naming the app "Kadoozle", with id `/`, standalone display, start URL `/wishlists`, theme and background colours, and icons of at least 192 and 512 pixels including a maskable icon, all served successfully
 
 #### Scenario: iPhone home-screen icon
 - **WHEN** someone adds the app to the home screen in Safari on iPhone or iPad
@@ -197,14 +197,18 @@ The circle page SHALL show the circle's name as its heading, list the members wi
 - **THEN** the page lists the other circles they belong to, each opening that circle, and no longer shows a separate "Other wishlists" list
 
 ### Requirement: Back returns to the previous screen
-Back buttons on wishlist and circle pages SHALL return to the screen the user came from within the app, and SHALL go to "My circles" when there is no previous screen in the app.
+Back buttons on wishlist, circle and import pages SHALL return to the screen the user came from within the app. When there is no previous screen in the app, Back on a wishlist page or the import page SHALL go to Wishlists, and Back on a circle page SHALL go to "My circles".
 
 #### Scenario: Back after opening a wishlist from a circle
 - **WHEN** a user opens a member's wishlist from a circle page and presses Back
 - **THEN** the circle page is shown again
 
-#### Scenario: Back on a page opened directly
+#### Scenario: Back on a wishlist page opened directly
 - **WHEN** a user opens a wishlist page directly from a link and presses Back
+- **THEN** the Wishlists page is shown
+
+#### Scenario: Back on a circle page opened directly
+- **WHEN** a user opens a circle page directly from a link and presses Back
 - **THEN** "My circles" is shown
 
 ### Requirement: Lists don't show an empty state before loading
@@ -287,4 +291,30 @@ The SPA SHALL load each page's code the first time that page is opened, not with
 #### Scenario: Old tab after a release
 - **WHEN** a tab running the previous version opens a page whose code is no longer on the server or in the cache
 - **THEN** the SPA loads the new version once, and opens the page there
+
+### Requirement: Wishlists is the default page
+The SPA SHALL open the Wishlists page (`/wishlists`) as its default page and show "My circles" at `/circles`. Opening `/`, an unknown path, the product wordmark in the app shell, or the installed app SHALL land on Wishlists.
+
+#### Scenario: Opening the site root
+- **WHEN** a signed-in user opens `/`
+- **THEN** the SPA shows the Wishlists page at `/wishlists`
+
+#### Scenario: Clicking the wordmark
+- **WHEN** a signed-in user clicks the Kadoozle wordmark in the app shell
+- **THEN** the SPA opens `/wishlists`
+
+#### Scenario: My circles has its own address
+- **WHEN** a signed-in user opens `/circles`
+- **THEN** "My circles" is shown
+
+### Requirement: Top menu order and highlighting
+The app shell's top menu SHALL show "Wishlists" first and "Circles" second. "Circles" SHALL open `/circles` and SHALL be highlighted on `/circles` and on every circle page `/circles/{id}`, and not on wishlist pages.
+
+#### Scenario: Menu order
+- **WHEN** a signed-in user views the top menu
+- **THEN** "Wishlists" comes before "Circles"
+
+#### Scenario: Highlighted on a circle page
+- **WHEN** the user is on `/circles` or `/circles/{id}` (including after an old `/groups/{id}` link redirects there)
+- **THEN** "Circles" is highlighted in the top menu and "Wishlists" is not
 
