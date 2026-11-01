@@ -64,15 +64,17 @@ public class SmtpEmailSender(
             await client.SendAsync(mime, timeoutCts.Token);
             await client.DisconnectAsync(quit: true, timeoutCts.Token);
         }
+        // No recipient address in the logs: it's personal data, and the log line
+        // sits next to the request that sent the email anyway.
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
             logger.LogWarning(
-                "SMTP send to {To} timed out after {Timeout}; giving up without throwing.",
-                message.To, SendTimeout);
+                "SMTP send timed out after {Timeout}; giving up without throwing.",
+                SendTimeout);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "SMTP send to {To} failed.", message.To);
+            logger.LogWarning(ex, "SMTP send failed.");
         }
     }
 }
