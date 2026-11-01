@@ -4,7 +4,7 @@ namespace Wishlist.API.Tests;
 
 /// <summary>
 /// Release note files (release-notes/*.md) are read by the deploy
-/// (scripts/release-version.sh) and shown on the What's new page, so a broken
+/// (scripts/release-version.mjs) and shown on the What's new page, so a broken
 /// one fails here instead of in a release.
 /// </summary>
 public partial class ReleaseNoteTests

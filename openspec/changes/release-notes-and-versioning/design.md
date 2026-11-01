@@ -43,7 +43,7 @@ See what's new in each version on the new What's new page
 `type` is `feature`, `fix` or `major`. The body is one or more lines, each one note (max 200 characters). The slug is free; the branch name is a good default. The check fails on an unknown type, an empty body or a line over 200 characters.
 
 ### Versions exist only in the pipeline
-`package.json` and the `.csproj` files stay at `0.0.0`. The deploy passes the version to the Docker build as `APP_VERSION` (and the commit as `APP_COMMIT`); the SPA gets `VITE_APP_VERSION`, the API `-p:Version=` plus an `APP_COMMIT` environment value. `releases.json` is written to `src/Wishlist.Web/public/` before the Docker build (git-ignored). Locally, the version shows as "dev" and the What's new page shows "No release notes yet" when `releases.json` is missing.
+`package.json` and the `.csproj` files stay at `0.0.0`. The deploy passes the version to the Docker build as `APP_VERSION` (and the commit as `APP_COMMIT`); the SPA gets `VITE_APP_VERSION`, and the runtime image gets `APP_VERSION` and `APP_COMMIT` environment values that `/healthz` reports. `releases.json` is written to `src/Wishlist.Web/public/` before the Docker build (git-ignored). Locally, the version shows as "dev" and the What's new page shows "No release notes yet" when `releases.json` is missing.
 
 ### Tag only after a successful deploy
 The deploy job, after the smoke check passes (and `/healthz` reports the expected version), creates an annotated tag `vX.Y.Z` on the run's commit and `gh release create vX.Y.Z` with the notes; it also adds the image tag `X.Y.Z` with `docker buildx imagetools create` (a retag, no rebuild). If the tag already exists (re-run of an old deploy as rollback), these steps are skipped. Needs `contents: write` and `packages: write` on the deploy job.
@@ -56,7 +56,7 @@ Because tags only exist for approved deploys, a run that is never approved simpl
 - The notice title becomes "A new version of Kadoozle is available", without a release note text, with buttons **Refresh** and **What's new**. `releaseNoteOf` and the meta tag go away.
 - **What's new** does what Refresh does, then lands on `/whats-new` (the reload navigates to `/whats-new` instead of the current URL), so the page shows the new version's notes.
 - `/whats-new` fetches `/releases.json` (`cache: 'no-cache'`) and lists versions newest first: version, date, notes as bullets. A version without notes shows "Small fixes and improvements". It's reachable signed in (inside the app shell) and signed out (the notice also appears on sign-in pages), with a Back link.
-- The service worker precaches `releases.json` with the app shell so the page works offline for the running version.
+- The service worker fetches `releases.json` network first and keeps the last copy, so the page also works offline.
 
 ### Account menu
 A "What's new" item above "Sign out", and at the bottom, below a separator, a muted, non-clickable line "Version 1.0.0" ("Version dev" locally).

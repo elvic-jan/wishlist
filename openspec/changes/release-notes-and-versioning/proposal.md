@@ -25,7 +25,7 @@ Today each release's note is one `<meta name="release-note">` tag in `index.html
 ## Impact
 
 - **Web**: `lib/appUpdate.ts`, `components/UpdateToaster.tsx`, `components/AppShell.tsx` (menu item + version), new `pages/WhatsNewPage.tsx` and route, `index.html` (meta tag removed), `vite` build reads `VITE_APP_VERSION`.
-- **API**: `/healthz` response body; assembly version set at build; `ReleaseNoteTests` replaced by tests for the note files.
+- **API**: `/healthz` response body; `ReleaseNoteTests` replaced by tests for the note files.
 - **Build/deploy**: `Dockerfile` (version build arg), `.github/workflows/deploy.yml` (full history fetch, version step, image retag, tag + GitHub Release, `contents: write` on the deploy job), `.github/workflows/ci.yml` (release-note job), new `scripts/release-version.mjs`, `scripts/release-note-guard.sh` removed.
 - **Repo**: new `release-notes/` folder with a README on the file format.
 - **Process**: the "every change sets the release note" habit now means adding a note file; Dependabot pull requests add none and ship as a patch version.

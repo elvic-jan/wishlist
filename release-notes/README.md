@@ -21,4 +21,4 @@ You can now sort your wishlist
 - **No file** (a Dependabot update, say): the release still gets a patch
   version, listed as "Small fixes and improvements".
 - Files stay here after release; the deploy works out which ones are new from
-  the git tags (`scripts/release-version.sh`). Don't edit or delete old ones.
+  the git tags (`scripts/release-version.mjs`). Don't edit or delete old ones.
