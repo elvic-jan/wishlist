@@ -30,7 +30,7 @@ import {
   type SecurityOverview,
 } from '@/api/passkeys'
 import { useAuth } from '@/context/AuthContext'
-import { passkeyErrorMessage, passkeysSupported } from '@/lib/webauthn'
+import { isFirefoxAndroid, passkeyErrorMessage, passkeysSupported } from '@/lib/webauthn'
 
 const dateFormat = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -176,6 +176,11 @@ export function SecurityPage() {
               <Fingerprint className="mr-2 h-4 w-4" aria-hidden />
               {adding ? 'Waiting for your device…' : 'Add Face ID / fingerprint on this device'}
             </Button>
+          ) : isFirefoxAndroid() ? (
+            <p className="text-sm text-muted-foreground">
+              Face ID / fingerprint sign-in doesn&rsquo;t work in Firefox on Android.
+              Use Chrome on this phone to add it, or sign in with your password.
+            </p>
           ) : (
             <p className="text-sm text-muted-foreground">
               This browser can&rsquo;t create passkeys. Try on your phone, or a recent
