@@ -86,7 +86,7 @@ export function GroupDetailPage() {
   const leaveGroup = async () => {
     try {
       await client.delete(`/groups/${groupId}/members/me`)
-      navigate('/')
+      navigate('/circles')
     } catch (err: unknown) {
       const msg = apiErrorMessage(err)
       setError(msg ?? 'Failed to leave circle.')
@@ -96,7 +96,7 @@ export function GroupDetailPage() {
   return (
     <div className="space-y-6">
       <div>
-        <BackButton />
+        <BackButton fallback="/circles" />
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5 shrink-0 text-primary" aria-hidden />
           {circleName ? (

@@ -1,5 +1,5 @@
 import { Download, Gift, LogOut, ShieldCheck } from 'lucide-react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -38,6 +38,7 @@ export function AppShell() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const inWishlists = pathname === '/wishlists' || pathname.startsWith('/wishlist/')
+  const inCircles = pathname === '/circles' || pathname.startsWith('/circles/')
   const [showIosInstallHelp, setShowIosInstallHelp] = useState(false)
 
   const handleLogout = async () => {
@@ -51,20 +52,13 @@ export function AppShell() {
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-4 sm:gap-6">
             <Link
-              to="/"
+              to="/wishlists"
               className="flex items-center gap-2 text-sm font-semibold tracking-tight text-foreground hover:text-foreground"
             >
               <Gift className="h-5 w-5 text-primary" aria-hidden />
               <span>Kadoozle</span>
             </Link>
             <nav className="flex items-center gap-1">
-              <NavLink
-                to="/"
-                end
-                className={({ isActive }) => navLinkClasses(isActive)}
-              >
-                Circles
-              </NavLink>
               {/* Highlighted on the overview and on every wishlist, mine or someone else's. */}
               <Link
                 to="/wishlists"
@@ -72,6 +66,14 @@ export function AppShell() {
                 className={navLinkClasses(inWishlists)}
               >
                 Wishlists
+              </Link>
+              {/* Highlighted on My circles and on every circle's page. */}
+              <Link
+                to="/circles"
+                aria-current={inCircles ? 'page' : undefined}
+                className={navLinkClasses(inCircles)}
+              >
+                Circles
               </Link>
             </nav>
           </div>

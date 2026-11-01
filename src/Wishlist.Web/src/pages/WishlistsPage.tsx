@@ -142,7 +142,7 @@ export function WishlistsPage() {
               </p>
             </div>
             <Button asChild variant="outline" className="mt-2">
-              <Link to="/">Go to My circles</Link>
+              <Link to="/circles">Go to My circles</Link>
             </Button>
           </CardContent>
         </Card>

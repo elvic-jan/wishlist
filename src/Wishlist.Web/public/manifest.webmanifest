@@ -4,7 +4,7 @@
   "short_name": "Kadoozle",
   "description": "Share wishlists with your family and friends, and see who's getting what without spoiling the surprise.",
   "lang": "en",
-  "start_url": "/",
+  "start_url": "/wishlists",
   "scope": "/",
   "display": "standalone",
   "background_color": "#c2410c",
