@@ -23,7 +23,9 @@ Everything lives in one resource group, `rg-wishlist-prod`, in Sweden Central.
 - **`deploy.yml`** (push to `main`): tests, builds and pushes `ghcr.io/<owner>/wishlist:sha-<sha7>`,
   then, **after approval on the `production` environment**, opens a temporary Postgres
   firewall rule for the runner, applies EF Core migrations, closes the rule, rolls the
-  container app to the new image and smoke-checks `/healthz`.
+  container app to the new image and smoke-checks `/healthz` (which must report the new
+  version). Then it tags the commit `vX.Y.Z`, creates a GitHub Release and tags the image
+  `X.Y.Z` (see Versions below).
 
 Both log in to Azure with OIDC; GitHub holds no Azure secret.
 
@@ -233,8 +235,19 @@ it's `noreply@<domain>` with the display name Kadoozle. Same two-phase pattern:
   log line ("Reservation run: …") is in `ContainerAppConsoleLogs_CL`.
 - **Rollback**: re-run the `deploy` job of an earlier successful run (its image tag and
   migrations bundle are kept for 30 days), or
-  `az containerapp update -g $RG -n ca-wishlist --image ghcr.io/<owner>/wishlist:sha-<old>`.
-  Migrations are not rolled back, so keep them additive.
+  `az containerapp update -g $RG -n ca-wishlist --image ghcr.io/<owner>/wishlist:<version>`
+  (or `:sha-<old>`). Migrations are not rolled back, so keep them additive. A re-run finds
+  its version already tagged and tags nothing.
+- **Versions**: every production release is `MAJOR.MINOR.PATCH`, starting at 1.0.0.
+  `scripts/release-version.mjs` works it out at build time from the last `vX.Y.Z` tag and
+  the `release-notes/*.md` files added since (`major` → major, `feature` → minor,
+  otherwise patch; see `release-notes/README.md`), and writes `releases.json` for the
+  What's new page. A version exists only once a deploy succeeds: a run that's never
+  approved has its notes counted in the next one. Branching stays simple: short branches,
+  pull requests into `main`, every approved deploy is a release. If `main` ever holds
+  something that mustn't ship yet and a fix can't wait, branch `hotfix/...` from the last
+  tag, run **deploy** by hand on it (it gets the next patch version; the `production`
+  environment must allow that branch), then merge the fix into `main`.
 - **Database logins**: migrations run as the admin; the app and its jobs log in as
   `wishlist_app`, which can only read and write rows (`infra/sql/app-role.sql`). Every
   deploy runs that script after the migrations and sets the login's password from

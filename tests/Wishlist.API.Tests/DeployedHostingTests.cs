@@ -31,6 +31,11 @@ public class DeployedHostingTests : IClassFixture<DeployedHostingTests.Productio
         var response = await client.GetAsync("/healthz");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        // Names the running version; "dev" outside a deployed image.
+        var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+        Assert.NotNull(body);
+        Assert.False(string.IsNullOrEmpty(body["version"]));
+        Assert.False(string.IsNullOrEmpty(body["commit"]));
     }
 
     [Fact]

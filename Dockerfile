@@ -8,6 +8,9 @@ WORKDIR /src/Wishlist.Web
 COPY src/Wishlist.Web/package.json src/Wishlist.Web/package-lock.json ./
 RUN npm ci
 COPY src/Wishlist.Web/ ./
+# Set by the deploy (scripts/release-version.mjs); "dev" for local builds.
+ARG APP_VERSION=dev
+ENV VITE_APP_VERSION=$APP_VERSION
 RUN npm run build
 
 # --- API publish -------------------------------------------------------------
@@ -30,5 +33,10 @@ COPY --from=api /app ./
 ENV ASPNETCORE_HTTP_PORTS=8080 \
     DOTNET_RUNNING_IN_CONTAINER=true
 EXPOSE 8080
+# Reported by /healthz, so the deploy can check the right version is live.
+ARG APP_VERSION=dev
+ARG APP_COMMIT=dev
+ENV APP_VERSION=$APP_VERSION \
+    APP_COMMIT=$APP_COMMIT
 USER app
 ENTRYPOINT ["dotnet", "Wishlist.API.dll"]

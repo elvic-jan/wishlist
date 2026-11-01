@@ -13,32 +13,20 @@ const SW_TIMEOUT_MS = 5_000
 /** A server waking from zero takes ~20 s; don't wait forever on one request. */
 const FETCH_TIMEOUT_MS = 45_000
 
-const MAX_NOTE_LENGTH = 200
+/** The running version ("1.2.0"), set by the deploy; "dev" in local builds. */
+export const APP_VERSION: string = import.meta.env.VITE_APP_VERSION || 'dev'
 
 let available = false
-/** What the newer version brings (its release note), once one is known. */
-let note: string | null = null
 let lastCheck = 0
 /** Whether the last check got no answer from the server. */
 let lastFailed = false
 let running: Promise<boolean> | null = null
 const listeners = new Set<() => void>()
 
-function setAvailable(releaseNote: string | null) {
+function setAvailable() {
   if (available) return
   available = true
-  note = releaseNote
   listeners.forEach(l => l())
-}
-
-/** The page's <meta name="release-note">, trimmed; null when missing or empty. */
-export function releaseNoteOf(html: string): string | null {
-  const content = new DOMParser()
-    .parseFromString(html, 'text/html')
-    .querySelector('meta[name="release-note"]')
-    ?.getAttribute('content')
-    ?.trim()
-  return content ? content.slice(0, MAX_NOTE_LENGTH) : null
 }
 
 function runningEntry(): string | null {
@@ -67,7 +55,7 @@ export function checkForUpdate(): Promise<boolean> {
       const html = await response.text()
       lastFailed = false
       const deployed = html.match(/\/assets\/index-[^"'\s]+\.js/)?.[0]
-      if (deployed && deployed !== current) setAvailable(releaseNoteOf(html))
+      if (deployed && deployed !== current) setAvailable()
     } catch {
       // Offline, or the server is slow or waking up: keep the version we have;
       // startUpdateChecks tries again.
@@ -155,9 +143,4 @@ function subscribe(listener: () => void) {
 /** True once a newer version is known to be deployed. */
 export function useUpdateAvailable(): boolean {
   return useSyncExternalStore(subscribe, () => available)
-}
-
-/** What the newer version brings, from its release note; null without one. */
-export function useUpdateNote(): string | null {
-  return useSyncExternalStore(subscribe, () => note)
 }

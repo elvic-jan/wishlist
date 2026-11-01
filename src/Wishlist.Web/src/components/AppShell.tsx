@@ -1,4 +1,4 @@
-import { Download, Gift, LogOut, ShieldCheck } from 'lucide-react'
+import { Download, Gift, LogOut, ShieldCheck, Sparkles } from 'lucide-react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,7 @@ import { InstallAppMenuItem, IosInstallHelp } from '@/components/InstallApp'
 import { MessageToaster } from '@/components/MessageToaster'
 import { ModeToggle } from '@/components/ModeToggle'
 import { useAuth } from '@/context/AuthContext'
+import { APP_VERSION } from '@/lib/appUpdate'
 import { cn } from '@/lib/utils'
 
 function initialsOf(name: string | undefined): string {
@@ -116,10 +117,16 @@ export function AppShell() {
                   <ShieldCheck className="mr-2 h-4 w-4" />
                   Sign-in &amp; security
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/whats-new')}>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  What's new
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign out
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <p className="px-2 py-1.5 text-xs text-muted-foreground">Version {APP_VERSION}</p>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

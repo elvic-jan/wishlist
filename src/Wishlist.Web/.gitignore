@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Written by scripts/release-version.mjs at deploy time.
+public/releases.json

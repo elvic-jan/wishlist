@@ -141,8 +141,13 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Liveness/readiness probe. Deliberately touches no database so probes neither
-// depend on nor keep Postgres busy.
-app.MapGet("/healthz", () => Results.Ok()).AllowAnonymous();
+// depend on nor keep Postgres busy. Names the running version (set in the
+// image by the deploy) so the deploy can check the new one is live.
+app.MapGet("/healthz", (IConfiguration config) => Results.Ok(new
+{
+    version = config["APP_VERSION"] ?? "dev",
+    commit = config["APP_COMMIT"] ?? "dev",
+})).AllowAnonymous();
 
 // Invite links get a personal link preview ("Jan invited you to Family…").
 // Unknown, expired or rate-limited codes get the generic one, so a preview
