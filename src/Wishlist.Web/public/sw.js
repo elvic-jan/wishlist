@@ -49,7 +49,9 @@ self.addEventListener('activate', (event) => {
 
 // The app found a newer version and wants it cached before it reloads, so the
 // reload doesn't get the old shell again. Always answers, even on failure.
+// Only Kadoozle's own pages can talk to its worker; checked anyway.
 self.addEventListener('message', (event) => {
+  if (event.origin !== self.location.origin) return;
   if (event.data?.type !== 'refresh-shell') return;
   const port = event.ports[0];
   event.waitUntil(
