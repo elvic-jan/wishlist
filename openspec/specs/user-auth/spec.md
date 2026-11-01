@@ -398,15 +398,19 @@ The system SHALL limit failed password sign-ins per email address and per client
 - **THEN** the user can still sign in with a passkey or request a password reset
 
 ### Requirement: Sign-in redirect stays on the site
-After signing in, the SPA SHALL follow the login page's `redirect` parameter only when it is a path on the same site. A value with a backslash, a protocol-relative `//` start, a scheme, or anything else that resolves to another origin SHALL be ignored, and the SPA SHALL go to the home page instead.
+After signing in, the SPA SHALL follow the login page's `redirect` parameter only when it is a path on the same site. A value with a backslash, a protocol-relative `//` start, a scheme, or anything else that resolves to another origin SHALL be ignored, and the SPA SHALL go to the Wishlists page instead. Without a `redirect` parameter the SPA SHALL also go to the Wishlists page.
 
 #### Scenario: Redirect within the site
 - **WHEN** a user signs in from `/login?redirect=/circles/123`
 - **THEN** the SPA opens `/circles/123`
 
+#### Scenario: No redirect
+- **WHEN** a user signs in from `/login`
+- **THEN** the SPA opens `/wishlists`
+
 #### Scenario: Redirect to another site is ignored
 - **WHEN** a user signs in from `/login?redirect=/\evil.example` (or `//evil.example`, or `https://evil.example`)
-- **THEN** the SPA opens the home page and never leaves the site
+- **THEN** the SPA opens `/wishlists` and never leaves the site
 
 ### Requirement: Account fields have length limits
 Every sign-up path (password and passkey) SHALL refuse with 400 Bad Request, before creating anything, a display name longer than 100 characters, an email address longer than 256 characters, or a password longer than 256 characters. The SPA's inputs SHALL not accept more than these limits.
@@ -456,4 +460,43 @@ The system SHALL provide a command-line job, `--job owner-access --email <email>
 #### Scenario: Email missing
 - **WHEN** an operator runs the job without `--email`
 - **THEN** the job fails with a message asking for `--email` and changes nothing
+
+### Requirement: Passkey options only where they work
+The SPA SHALL offer passkey ("Face ID / fingerprint") options for signing in, creating an account, recovering access and adding a passkey only on browsers that have the WebAuthn API and are not Firefox for Android. On other browsers the SPA SHALL offer only the password options, and the Sign-in & security page SHALL explain why no passkey can be added. Passkeys already on the account SHALL still be listed and removable there.
+
+#### Scenario: Firefox for Android gets password options only
+- **WHEN** a visitor opens Sign in, Create account or a "Can't sign in?" link in Firefox for Android
+- **THEN** no "Face ID / fingerprint" option is shown and the password options work as usual
+
+#### Scenario: Explanation on the security page
+- **WHEN** a signed-in user opens Sign-in & security in Firefox for Android
+- **THEN** there is no button to add a passkey, and the page says fingerprint sign-in doesn't work in Firefox on Android and suggests Chrome on that phone or the password
+
+#### Scenario: No add-a-passkey prompt
+- **WHEN** a signed-in user without passkeys uses Kadoozle in Firefox for Android
+- **THEN** the banner suggesting to add Face ID / fingerprint is not shown
+
+#### Scenario: Other browsers unchanged
+- **WHEN** a visitor uses Chrome, Edge, Samsung Internet, Safari, or Firefox on Windows, Mac, iPhone or iPad
+- **THEN** the passkey options are offered as before
+
+### Requirement: Password fields can be shown
+Every password field on the sign-in, sign-up and account recovery pages SHALL have a button inside the field that shows or hides the typed password. The password SHALL be hidden by default. Each field SHALL toggle on its own. The button SHALL NOT submit the form, and SHALL be labelled for screen readers ("Show password" / "Hide password"). The browser's own reveal button (Edge) SHALL be hidden so only one button shows.
+
+#### Scenario: Show the password while signing in
+- **WHEN** a person types a password on the sign-in page and clicks the eye button
+- **THEN** the password is shown as plain text and the button's label becomes "Hide password"
+- **AND** the form is not submitted
+
+#### Scenario: Hide it again
+- **WHEN** the password is shown and the person clicks the button again
+- **THEN** the password is masked again
+
+#### Scenario: Recover fields toggle separately
+- **WHEN** a person on the recovery page shows the "New password" field
+- **THEN** the "Confirm password" field stays masked
+
+#### Scenario: Only one reveal button in Edge
+- **WHEN** the page is opened in Microsoft Edge
+- **THEN** Edge's built-in reveal button is not shown, only the app's eye button
 
