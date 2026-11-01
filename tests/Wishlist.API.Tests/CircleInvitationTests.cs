@@ -47,6 +47,7 @@ public class CircleInvitationTests
         Assert.Equal(new InviteFromCirclesResult(0, 2), again);
         var email = Assert.Single(w.Store.EmailsTo(w.Bob.Email));
         Assert.Equal("Me invited you to join Target", email.Subject);
+        Assert.Contains("https://kadoozle.test/circles", email.PlainTextBody); // My circles, where they join or decline
         Assert.Single(w.Store.EmailsTo(w.Cleo.Email));
         Assert.Empty(w.Store.EmailsTo(w.Ann.Email));
     }
