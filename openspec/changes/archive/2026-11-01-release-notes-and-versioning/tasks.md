@@ -34,5 +34,5 @@
 
 ## 6. Ship
 
-- [ ] 6.1 Open the pull request ("Closes #122") with the confirmed note text
-- [ ] 6.2 After the deploy: check `v1.0.0` tag, GitHub Release, version in the menu and the What's new page on www.kadoozle.app
+- [x] 6.1 Open the pull request ("Closes #122") with the confirmed note text
+- [x] 6.2 After the deploy: check `v1.0.0` tag, GitHub Release, version in the menu and the What's new page on www.kadoozle.app (tag, Release, image tag 1.0.0, /healthz and What's new checked; menu left to the user)
