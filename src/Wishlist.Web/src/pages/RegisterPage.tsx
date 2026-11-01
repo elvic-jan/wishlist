@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import { InvalidInvitation } from '@/components/InvalidInvitation'
 import { WakingUp } from '@/components/WakingUp'
@@ -135,9 +136,8 @@ function RegisterForm({ inviteCode }: { inviteCode: string }) {
             <>
               <div className="space-y-1.5">
                 <Label htmlFor="register-password">Password</Label>
-                <Input
+                <PasswordInput
                   id="register-password"
-                  type="password"
                   autoComplete="new-password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}

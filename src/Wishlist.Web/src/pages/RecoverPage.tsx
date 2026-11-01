@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import { resetPassword } from '@/api/auth'
 import { apiErrorMessage, recoverWithPasskey } from '@/api/passkeys'
@@ -183,9 +183,8 @@ function NewPasswordForm({ email, token }: { email: string; token: string }) {
         <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />
         <div className="space-y-1.5">
           <Label htmlFor="reset-new-password">New password</Label>
-          <Input
+          <PasswordInput
             id="reset-new-password"
-            type="password"
             autoComplete="new-password"
             value={newPassword}
             onChange={e => setNewPassword(e.target.value)}
@@ -196,9 +195,8 @@ function NewPasswordForm({ email, token }: { email: string; token: string }) {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="reset-confirm-password">Confirm password</Label>
-          <Input
+          <PasswordInput
             id="reset-confirm-password"
-            type="password"
             autoComplete="new-password"
             value={confirmPassword}
             onChange={e => setConfirmPassword(e.target.value)}
