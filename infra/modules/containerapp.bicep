@@ -276,6 +276,7 @@ resource reservationJob 'Microsoft.App/jobs@2024-03-01' = {
 }
 
 output name string = app.name
+output id string = app.id
 output reservationJobName string = reservationJob.name
 output fqdn string = app.properties.configuration.ingress.fqdn
 output customDomainVerificationId string = app.properties.customDomainVerificationId
