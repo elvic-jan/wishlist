@@ -98,12 +98,23 @@ CI SHALL authenticate to Azure using OpenID Connect federated credentials scoped
 
 ### Requirement: Monthly cost is capped and monitored
 
-The infrastructure SHALL be sized so that expected monthly cost stays under $25 at family-scale usage, and SHALL include a budget alert on the resource group that notifies the owner when actual spend reaches 80% and 100% of $25.
+The infrastructure SHALL be sized so that expected monthly cost stays under 25 (billing currency) at family-scale usage, and SHALL include a monthly budget of 25 on the resource group that emails the owner when actual spend reaches 50%, 80% and 100% and when forecast spend reaches 100%. When actual spend reaches 100%, the budget SHALL stop the container app automatically, unless the auto-stop is turned off in the infrastructure parameters. The identity that stops the app SHALL be able to read and stop only that app.
 
-#### Scenario: Spend crosses the alert threshold
+#### Scenario: Spend crosses an alert threshold
 
-- **WHEN** actual spend for the resource group in the current month reaches $20
+- **WHEN** actual spend for the resource group in the current month reaches 12.50 (50% of the budget)
 - **THEN** the configured recipient receives a budget alert email
+
+#### Scenario: Forecast passes the budget
+
+- **WHEN** the forecast spend for the current month reaches 25
+- **THEN** the configured recipient receives a budget alert email, and nothing is stopped
+
+#### Scenario: Budget runs out
+
+- **WHEN** actual spend for the resource group in the current month reaches 25 and auto-stop is on
+- **THEN** the configured recipient receives a budget alert email
+- **AND** the container app is stopped, so the site is unavailable until the owner starts it again
 
 ### Requirement: Monthly reservation job
 A scheduled job SHALL run on the 1st of every month at 07:00 UTC, in the same Container Apps environment and from the same image as the app, to send reservation reminders, end expired reservations and email their reservers. It SHALL use the app's database and email settings, need no public endpoint, and be updated to the new image on every deploy.

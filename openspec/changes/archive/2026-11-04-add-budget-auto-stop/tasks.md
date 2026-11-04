@@ -8,7 +8,7 @@
 
 ## 2. Apply (owner)
 
-- [ ] 2.1 Register `Microsoft.Logic` and `Microsoft.Insights`
-- [ ] 2.2 Run the **infra** workflow
-- [ ] 2.3 Create the "Container App Stopper (wishlist)" role and assign it to the Logic App's identity on `ca-wishlist`
-- [ ] 2.4 Check Cost Management → Budgets → `budget-wishlist`: four alert conditions, the 100% actual one with action group `ag-wishlist-budget-stop`
+- [x] 2.1 Register `Microsoft.Logic` and `Microsoft.Insights`
+- [x] 2.2 Run the **infra** workflow
+- [x] 2.3 Create the "Container App Stopper (wishlist)" role and assign it to the Logic App's identity on `ca-wishlist`
+- [x] 2.4 Check Cost Management → Budgets → `budget-wishlist`: four alert conditions, the 100% actual one with action group `ag-wishlist-budget-stop`
