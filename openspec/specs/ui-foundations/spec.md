@@ -154,8 +154,16 @@ The application SHALL be installable from the browser as a standalone home-scree
 - **THEN** the home-screen icon is the Kadoozle icon and the title is "Kadoozle"
 
 #### Scenario: Icons are filled to the edge
-- **WHEN** any of the app's icon images is shown
+- **WHEN** the maskable icon or the iPhone home-screen icon is shown
 - **THEN** its background colour reaches every edge, with no white or lighter lines along a side
+
+#### Scenario: General icons have rounded corners
+- **WHEN** one of the general-purpose ("any") icons is shown, for example on an older Android startup screen or a desktop install
+- **THEN** it is a terracotta tile with rounded, transparent corners and no white or lighter lines along a side
+
+#### Scenario: Startup screen without a faint border
+- **WHEN** the installed app starts on Android
+- **THEN** the startup screen background is a deeper terracotta than the icon, so the icon's edge reads as intended rather than as a faint border
 
 #### Scenario: System bars readable in dark mode
 - **WHEN** the installed app runs on Android with the phone or the app in dark mode
