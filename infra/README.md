@@ -277,7 +277,9 @@ Find out what used the money (Cost Management → Cost analysis, grouped by reso
 it, raise `budgetAmount` if needed, then:
 
 ```bash
-az containerapp start -g $RG -n ca-wishlist
+# plain REST call: `az containerapp start` needs the containerapp CLI extension
+APP_ID=$(az containerapp show -g $RG -n ca-wishlist --query id -o tsv)
+az rest --method post --url "https://management.azure.com$APP_ID/start?api-version=2024-03-01"
 ```
 
 Each threshold alerts once per month, so after a restart the budget won't stop the app
