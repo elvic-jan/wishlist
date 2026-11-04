@@ -12,7 +12,8 @@ rationale: `openspec/changes/add-cheap-azure-hosting/design.md` (archived under
 | PostgreSQL Flexible Server `psql-wishlist-<suffix>` | Standard_B1ms, 32 GiB, 7-day backups | ~$13–16 |
 | Communication Services `acs-wishlist-<suffix>` (+ `-email`) | Azure-managed domain | ~$0.00025 / email |
 | Log Analytics `log-wishlist` | PerGB2018, 0.1 GB/day cap | cents |
-| Budget `budget-wishlist` | $25, alerts at 80% / 100% | free |
+| Budget `budget-wishlist` | 25 EUR (billing currency); emails at 50/80/100% actual and 100% forecast; stops the app at 100% | free |
+| Logic App `logic-wishlist-budget-stop` + action group `ag-wishlist-budget-stop` | Consumption; runs only when the budget runs out | ~0 |
 | Images | `ghcr.io/<owner>/wishlist` | free |
 
 Everything lives in one resource group, `rg-wishlist-prod`, in Sweden Central.
@@ -39,7 +40,7 @@ TENANT=$(az account show --query tenantId -o tsv)
 RG=rg-wishlist-prod
 REPO=elvic-jan/wishlist
 
-for p in Microsoft.App Microsoft.OperationalInsights Microsoft.DBforPostgreSQL Microsoft.Communication; do
+for p in Microsoft.App Microsoft.OperationalInsights Microsoft.DBforPostgreSQL Microsoft.Communication Microsoft.Logic Microsoft.Insights; do
   az provider register --namespace $p
 done
 az group create -n $RG -l swedencentral
@@ -221,6 +222,70 @@ it's `noreply@<domain>` with the display name Kadoozle. Same two-phase pattern:
 4. When all four show **Verified**, set `EMAIL_DOMAIN_VERIFIED=true` and run **infra**.
    This links the domain to the Communication Service, adds the `noreply` sender and
    switches `Smtp__FromAddress`. The Azure-managed domain stays linked as a fallback.
+
+## Budget and auto-stop
+
+The subscription is Pay-As-You-Go, which has no spending cap. The budget
+`budget-wishlist` (resource group only, 25 EUR a month, `budgetAmount` in
+`main.parameters.json`) emails `BUDGET_CONTACT_EMAIL` at 50%, 80% and 100% of actual
+spend and when the month's forecast reaches 100%. At 100% actual it also runs the action
+group `ag-wishlist-budget-stop`, which starts the Logic App `logic-wishlist-budget-stop`;
+that **stops `ca-wishlist`, so the site is down** until you start it again.
+
+It is not an exact cap: Azure's cost data lags by 8–24 hours, so spend can pass the
+budget before the stop runs. Only the app is stopped. Postgres (the largest fixed cost,
+storage and compute) and the monthly reservation job (seconds a month) keep running. To
+keep the emails but never stop the app, deploy with `budgetAutoStop=false`.
+
+### One-time setup (subscription Owner)
+
+The deploy identity is only Contributor on the resource group, so it can't register
+providers or grant the Logic App its permission. Before the first **infra** run with
+auto-stop:
+
+```bash
+az provider register --namespace Microsoft.Logic
+az provider register --namespace Microsoft.Insights
+```
+
+After that **infra** run, give the Logic App's managed identity the right to stop the app
+(and nothing else):
+
+```bash
+PRINCIPAL=$(az resource show -g $RG -n logic-wishlist-budget-stop \
+  --resource-type Microsoft.Logic/workflows --query identity.principalId -o tsv)
+APP_ID=$(az containerapp show -g $RG -n ca-wishlist --query id -o tsv)
+az role definition create --role-definition "{
+  \"Name\": \"Container App Stopper (wishlist)\",
+  \"Actions\": [
+    \"Microsoft.App/containerApps/read\",
+    \"Microsoft.App/containerApps/stop/action\"
+  ],
+  \"AssignableScopes\": [\"/subscriptions/$SUB/resourceGroups/$RG\"]
+}"
+az role assignment create --assignee-object-id $PRINCIPAL --assignee-principal-type ServicePrincipal \
+  --role "Container App Stopper (wishlist)" --scope $APP_ID
+```
+
+The assignment survives later infra runs. If the Logic App is ever deleted and recreated
+it gets a new identity: run the last command again.
+
+### When the app was stopped
+
+You get the 100% email, and the Logic App's run history shows `Stop_container_app`.
+Find out what used the money (Cost Management → Cost analysis, grouped by resource), fix
+it, raise `budgetAmount` if needed, then:
+
+```bash
+az containerapp start -g $RG -n ca-wishlist
+```
+
+Each threshold alerts once per month, so after a restart the budget won't stop the app
+again until next month; keep an eye on Cost analysis.
+
+To test the chain, at a quiet moment: Azure portal → Monitor → Alerts → Action groups →
+`ag-wishlist-budget-stop` → **Test** (Logic App). The site goes down; start it again with
+the command above.
 
 ## Operations
 

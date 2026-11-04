@@ -1,6 +1,6 @@
 // Cheapest production hosting for the wishlist app: one resource group with a
 // scale-to-zero Container App (plus its monthly reservation job), a Burstable Postgres server, ACS Email and a
-// budget alert. See infra/README.md for the one-time bootstrap.
+// budget that stops the app when it runs out. See infra/README.md for the one-time bootstrap.
 targetScope = 'resourceGroup'
 
 @description('Azure region for regional resources.')
@@ -53,12 +53,16 @@ param ghcrUsername string = ''
 @secure()
 param ghcrToken string = ''
 
+@description('Monthly budget for the resource group, in the billing currency (EUR).')
 param budgetAmount int = 25
 
 @description('First day of the month the budget starts (yyyy-MM-01). Keep it fixed across deployments.')
 param budgetStartDate string
 
 param budgetContactEmails array
+
+@description('Stop ca-wishlist automatically when actual spend reaches 100% of the budget. False = emails only.')
+param budgetAutoStop bool = true
 
 // Postgres and ACS names are globally unique; the suffix keeps them stable per resource group.
 var suffix = take(uniqueString(resourceGroup().id), 6)
@@ -116,6 +120,16 @@ module app 'modules/containerapp.bicep' = {
   }
 }
 
+module budgetStop 'modules/budget-stop.bicep' = if (budgetAutoStop) {
+  name: 'budget-stop'
+  params: {
+    location: location
+    workflowName: 'logic-${baseName}-budget-stop'
+    actionGroupName: 'ag-${baseName}-budget-stop'
+    containerAppId: app.outputs.id
+  }
+}
+
 module budget 'modules/budget.bicep' = {
   name: 'budget'
   params: {
@@ -123,6 +137,7 @@ module budget 'modules/budget.bicep' = {
     amount: budgetAmount
     startDate: budgetStartDate
     contactEmails: budgetContactEmails
+    stopActionGroupId: budgetAutoStop ? budgetStop!.outputs.actionGroupId : ''
   }
 }
 
@@ -138,4 +153,5 @@ output communicationServiceName string = email.outputs.communicationServiceName
 output emailSenderAddress string = email.outputs.senderAddress
 output emailServiceName string = email.outputs.emailServiceName
 output emailDomainVerificationRecords object = email.outputs.customDomainVerificationRecords
+output budgetStopWorkflowName string = budgetAutoStop ? budgetStop!.outputs.workflowName : ''
 output emailDomainVerificationStates object = email.outputs.customDomainVerificationStates
