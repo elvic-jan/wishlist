@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Full-bleed background so maskable crops (circle, squircle) stay filled.
-       The gift is 288 px (56%) and centred, inside the 80% maskable safe zone. -->
-  <rect width="512" height="512" fill="#c2410c" />
+  <!-- General-purpose icon: rounded tile with transparent corners.
+       The full-bleed version for maskable crops is icon-maskable-512.png.
+       The gift is 288 px (56%) and centred. -->
+  <rect width="512" height="512" rx="102.4" fill="#c2410c" />
   <g transform="translate(112 112) scale(12)" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <rect x="3" y="8" width="18" height="4" rx="1" />
     <path d="M12 8v13" />
