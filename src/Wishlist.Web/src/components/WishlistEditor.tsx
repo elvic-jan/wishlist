@@ -20,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import client from '@/api/client'
 import { MAX_ITEM_DESCRIPTION, MAX_ITEM_TITLE, MAX_URL } from '@/lib/inputLimits'
 import { apiErrorMessage } from '@/api/errors'
+import { useToast } from '@/hooks/use-toast'
 
 export interface AddedBy {
   userId: string
@@ -101,7 +102,9 @@ export function WishlistEditor<T extends EditableItem>({
 }) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
-  const [adding, setAdding] = useState(false)
+  // Where the new-item form is open: at the top or bottom add button.
+  const [adding, setAdding] = useState<'top' | 'bottom' | null>(null)
+  const { toast } = useToast()
   const [error, setError] = useState('')
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
@@ -141,8 +144,10 @@ export function WishlistEditor<T extends EditableItem>({
         urls,
       })
       setForm(emptyForm)
-      setAdding(false)
+      setAdding(null)
       onChanged()
+      // The item lands at the end of the list, maybe off screen: confirm in place.
+      toast({ title: 'Added', description: form.title })
     } catch (err: unknown) {
       setError(apiErrorMessage(err) ?? 'Failed to add item.')
     }
@@ -178,7 +183,7 @@ export function WishlistEditor<T extends EditableItem>({
   }
 
   const startEdit = (item: T) => {
-    setAdding(false)
+    setAdding(null)
     setEditingId(item.id)
     setForm({
       title: item.title,
@@ -187,11 +192,69 @@ export function WishlistEditor<T extends EditableItem>({
     })
   }
 
-  const startAdd = () => {
+  const startAdd = (place: 'top' | 'bottom') => {
     setEditingId(null)
     setForm(emptyForm)
-    setAdding(true)
+    setAdding(place)
   }
+
+  // The bottom button is only worth it once the list is long enough to scroll.
+  const showBottomAdd = items.length >= 4
+
+  const renderAddButton = (place: 'top' | 'bottom') => (
+    <Button variant="outline" onClick={() => startAdd(place)}>
+      <Plus className="h-4 w-4" />
+      {addLabel}
+    </Button>
+  )
+
+  const renderAddForm = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">New item</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={addItem} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="new-item-title">Title</Label>
+            <Input
+              id="new-item-title"
+              value={form.title}
+              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              maxLength={MAX_ITEM_TITLE}
+              required
+              autoFocus
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="new-item-description">Description</Label>
+            <Textarea
+              id="new-item-description"
+              value={form.description}
+              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              maxLength={MAX_ITEM_DESCRIPTION}
+              placeholder="Optional notes for whoever picks this up."
+              rows={2}
+            />
+          </div>
+          {renderUrlEditor()}
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setAdding(null)
+                setForm(emptyForm)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit">Add item</Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
 
   const renderUrlEditor = () => (
     <div className="space-y-3">
@@ -261,7 +324,7 @@ export function WishlistEditor<T extends EditableItem>({
               <p className="text-sm text-muted-foreground">{emptyText}</p>
             </div>
             {canEdit && (
-              <Button onClick={startAdd} className="mt-2">
+              <Button onClick={() => startAdd('top')} className="mt-2">
                 <Plus className="h-4 w-4" />
                 {addLabel}
               </Button>
@@ -269,166 +332,115 @@ export function WishlistEditor<T extends EditableItem>({
           </CardContent>
         </Card>
       ) : (
-        <ul className="space-y-3">
-          {items.map(item => (
-            <li key={item.id}>
-              <Card>
-                {editingId === item.id ? (
-                  <CardContent className="space-y-4 pt-6">
-                    <div className="space-y-1.5">
-                      <Label htmlFor={`title-${item.id}`}>Title</Label>
-                      <Input
-                        id={`title-${item.id}`}
-                        value={form.title}
-                        onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                        maxLength={MAX_ITEM_TITLE}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor={`desc-${item.id}`}>Description</Label>
-                      <Textarea
-                        id={`desc-${item.id}`}
-                        value={form.description}
-                        onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                        maxLength={MAX_ITEM_DESCRIPTION}
-                        rows={2}
-                      />
-                    </div>
-                    {renderUrlEditor()}
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => {
-                          setEditingId(null)
-                          setForm(emptyForm)
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button onClick={() => saveEdit(item.id)}>Save</Button>
-                    </div>
-                  </CardContent>
-                ) : (
-                  <>
-                    <CardHeader className="space-y-2">
-                      <div className="flex items-start justify-between gap-3">
-                        <CardTitle className="min-w-0 break-words text-base font-medium">
-                          {item.title}
-                        </CardTitle>
-                        <div className="flex shrink-0 items-center gap-1">
-                          {renderBadge?.(item)}
-                          {canEdit && (
-                            <>
-                              <Button variant="ghost" size="sm" onClick={() => startEdit(item)}>
-                                Edit
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setPendingDeleteId(item.id)}
-                                aria-label={`Delete ${item.title}`}
-                                className="text-muted-foreground hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
+        <>
+          {canEdit && (adding === 'top' ? renderAddForm() : items.length > 0 && renderAddButton('top'))}
+          <ul className="space-y-3">
+            {items.map(item => (
+              <li key={item.id}>
+                <Card>
+                  {editingId === item.id ? (
+                    <CardContent className="space-y-4 pt-6">
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`title-${item.id}`}>Title</Label>
+                        <Input
+                          id={`title-${item.id}`}
+                          value={form.title}
+                          onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                          maxLength={MAX_ITEM_TITLE}
+                        />
                       </div>
-                      {item.description && (
-                        <p className="text-sm text-muted-foreground">{item.description}</p>
-                      )}
-                      {item.addedBy && (
-                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <UserRound className="h-3 w-3" aria-hidden />
-                          Added by{' '}
-                          {item.addedBy.userId === currentUserId ? 'you' : item.addedBy.displayName}
-                        </p>
-                      )}
-                    </CardHeader>
-                    {item.urls.length > 0 && (
-                      <CardContent className={renderActions ? 'pb-3' : undefined}>
-                        <div className="flex flex-wrap gap-2">
-                          {item.urls.map((u, i) => (
-                            <a
-                              key={i}
-                              href={u}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs text-foreground transition-colors hover:bg-accent"
-                            >
-                              {hostFor(u)}
-                              <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                            </a>
-                          ))}
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`desc-${item.id}`}>Description</Label>
+                        <Textarea
+                          id={`desc-${item.id}`}
+                          value={form.description}
+                          onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                          maxLength={MAX_ITEM_DESCRIPTION}
+                          rows={2}
+                        />
+                      </div>
+                      {renderUrlEditor()}
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingId(null)
+                            setForm(emptyForm)
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button onClick={() => saveEdit(item.id)}>Save</Button>
+                      </div>
+                    </CardContent>
+                  ) : (
+                    <>
+                      <CardHeader className="space-y-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <CardTitle className="min-w-0 break-words text-base font-medium">
+                            {item.title}
+                          </CardTitle>
+                          <div className="flex shrink-0 items-center gap-1">
+                            {renderBadge?.(item)}
+                            {canEdit && (
+                              <>
+                                <Button variant="ghost" size="sm" onClick={() => startEdit(item)}>
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setPendingDeleteId(item.id)}
+                                  aria-label={`Delete ${item.title}`}
+                                  className="text-muted-foreground hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </CardContent>
-                    )}
-                    {renderActions?.(item)}
-                  </>
-                )}
-              </Card>
-            </li>
-          ))}
-        </ul>
+                        {item.description && (
+                          <p className="text-sm text-muted-foreground">{item.description}</p>
+                        )}
+                        {item.addedBy && (
+                          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <UserRound className="h-3 w-3" aria-hidden />
+                            Added by{' '}
+                            {item.addedBy.userId === currentUserId ? 'you' : item.addedBy.displayName}
+                          </p>
+                        )}
+                      </CardHeader>
+                      {item.urls.length > 0 && (
+                        <CardContent className={renderActions ? 'pb-3' : undefined}>
+                          <div className="flex flex-wrap gap-2">
+                            {item.urls.map((u, i) => (
+                              <a
+                                key={i}
+                                href={u}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs text-foreground transition-colors hover:bg-accent"
+                              >
+                                {hostFor(u)}
+                                <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                              </a>
+                            ))}
+                          </div>
+                        </CardContent>
+                      )}
+                      {renderActions?.(item)}
+                    </>
+                  )}
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
-      {canEdit &&
-        (adding ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">New item</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={addItem} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="new-item-title">Title</Label>
-                  <Input
-                    id="new-item-title"
-                    value={form.title}
-                    onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                    maxLength={MAX_ITEM_TITLE}
-                    required
-                    autoFocus
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="new-item-description">Description</Label>
-                  <Textarea
-                    id="new-item-description"
-                    value={form.description}
-                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                    maxLength={MAX_ITEM_DESCRIPTION}
-                    placeholder="Optional notes for whoever picks this up."
-                    rows={2}
-                  />
-                </div>
-                {renderUrlEditor()}
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => {
-                      setAdding(false)
-                      setForm(emptyForm)
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit">Add item</Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        ) : (
-          items.length > 0 && (
-            <Button variant="outline" onClick={startAdd}>
-              <Plus className="h-4 w-4" />
-              {addLabel}
-            </Button>
-          )
-        ))}
+      {canEdit && (adding === 'bottom' ? renderAddForm() : showBottomAdd && renderAddButton('bottom'))}
 
       <AlertDialog
         open={pendingDeleteId !== null}
