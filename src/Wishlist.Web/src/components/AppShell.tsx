@@ -1,4 +1,4 @@
-import { Download, Gift, LogOut, ShieldCheck, Sparkles } from 'lucide-react'
+import { Download, Gift, LogOut, Scale, ShieldCheck, Sparkles } from 'lucide-react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -120,6 +120,10 @@ export function AppShell() {
                 <DropdownMenuItem onClick={() => navigate('/whats-new')}>
                   <Sparkles className="mr-2 h-4 w-4" />
                   What's new
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/licenses')}>
+                  <Scale className="mr-2 h-4 w-4" />
+                  Open-source licences
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />

@@ -2,10 +2,11 @@ import path from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import basicSsl from '@vitejs/plugin-basic-ssl'
+import { licenses } from './build/licenses.ts'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), basicSsl()],
+  plugins: [react(), basicSsl(), licenses(['tailwindcss'])],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

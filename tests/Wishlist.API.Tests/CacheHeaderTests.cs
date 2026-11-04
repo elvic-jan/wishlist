@@ -18,6 +18,7 @@ public class CacheHeaderTests : IClassFixture<CacheHeaderTests.BuiltSpaApi>
     [Theory]
     [InlineData("/index.html", "no-cache")]
     [InlineData("/sw.js", "no-cache")]
+    [InlineData("/licenses.json", "no-cache")]
     [InlineData("/assets/index-abc123.js", "public, max-age=31536000, immutable")]
     [InlineData("/circles/123", "no-cache")]
     [InlineData("/", "no-cache")]
@@ -62,6 +63,7 @@ public class CacheHeaderTests : IClassFixture<CacheHeaderTests.BuiltSpaApi>
             Directory.CreateDirectory(Path.Combine(_webRoot, "assets"));
             File.WriteAllText(Path.Combine(_webRoot, "index.html"), Page);
             File.WriteAllText(Path.Combine(_webRoot, "sw.js"), "// worker");
+            File.WriteAllText(Path.Combine(_webRoot, "licenses.json"), "{\"packages\":[]}");
             File.WriteAllText(Path.Combine(_webRoot, "assets", "index-abc123.js"), "// app");
             File.WriteAllText(Path.Combine(_webRoot, "manifest.webmanifest"), "{}");
         }
