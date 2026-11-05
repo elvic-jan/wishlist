@@ -100,7 +100,8 @@ gh variable set AZURE_CLIENT_ID       --env production --body "$DEPLOY_APP_ID" -
 gh variable set AZURE_TENANT_ID       --env production --body "$TENANT" -R $REPO
 gh variable set AZURE_SUBSCRIPTION_ID --env production --body "$SUB" -R $REPO
 gh variable set AZURE_RESOURCE_GROUP  --env production --body "$RG" -R $REPO
-gh variable set BUDGET_CONTACT_EMAIL  --env production --body "you@example.com" -R $REPO
+# A secret, not a variable: the repo is public and variables show in workflow logs.
+gh secret set BUDGET_CONTACT_EMAIL    --env production --body "you@example.com" -R $REPO
 
 # Postgres requires 3 of: upper, lower, digit, symbol. Avoid ; and quotes (it goes in a connection string).
 gh secret set POSTGRES_ADMIN_PASSWORD --env production --body "$(openssl rand -base64 32 | tr -d '/+=')" -R $REPO
@@ -327,11 +328,13 @@ branches). Same names as production, its own values:
 
 - Variables: `AZURE_CLIENT_ID` (the staging deploy identity), `AZURE_TENANT_ID`,
   `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP=rg-wishlist-staging`,
-  `BASE_NAME=wishlist-stg`, `BUDGET_AMOUNT=5`, `BUDGET_CONTACT_EMAIL`,
+  `BASE_NAME=wishlist-stg`, `BUDGET_AMOUNT=5`,
   `POSTGRES_HOST` (Neon direct host), `POSTGRES_ADMIN_LOGIN` (Neon owner),
-  `APP_ENVIRONMENT_LABEL=TEST`, `EMAIL_ALLOWLIST` (e.g. `you@example.com`).
+  `APP_ENVIRONMENT_LABEL=TEST`.
 - Secrets: `POSTGRES_ADMIN_PASSWORD` (Neon owner), `POSTGRES_APP_PASSWORD`, `JWT_KEY` (its
-  own), `GHCR_PULL_TOKEN` (its own), `SMTP_PASSWORD`, `SMTP_USER`.
+  own), `GHCR_PULL_TOKEN` (its own), `SMTP_PASSWORD`, `SMTP_USER`, and the email addresses
+  `BUDGET_CONTACT_EMAIL` and `EMAIL_ALLOWLIST` (e.g. `you@example.com`). Addresses are
+  secrets because the repository is public and a variable's value shows in workflow logs.
 
 The infra workflow refuses to provision staging without `APP_ENVIRONMENT_LABEL`, and
 production with it.

@@ -57,11 +57,13 @@ jobs:
           PREVIOUS_CUSTOM_DOMAIN: ${{ vars.PREVIOUS_CUSTOM_DOMAIN }}
           EMAIL_DOMAIN: ${{ vars.EMAIL_DOMAIN }}
           EMAIL_DOMAIN_VERIFIED: ${{ vars.EMAIL_DOMAIN_VERIFIED || 'false' }}
-          BUDGET_CONTACT_EMAIL: ${{ vars.BUDGET_CONTACT_EMAIL }}
+          # Email addresses are secrets: the repository is public, and a plain
+          # variable's value is printed at the top of this step's log.
+          BUDGET_CONTACT_EMAIL: ${{ secrets.BUDGET_CONTACT_EMAIL }}
           BUDGET_AMOUNT: ${{ vars.BUDGET_AMOUNT || '25' }}
           EXTERNAL_POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
           ENVIRONMENT_LABEL: ${{ vars.APP_ENVIRONMENT_LABEL }}
-          EMAIL_ALLOWLIST: ${{ vars.EMAIL_ALLOWLIST }}
+          EMAIL_ALLOWLIST: ${{ secrets.EMAIL_ALLOWLIST }}
           GHCR_USERNAME: ${{ github.repository_owner }}
           POSTGRES_ADMIN_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
           POSTGRES_APP_PASSWORD: ${{ secrets.POSTGRES_APP_PASSWORD }}
@@ -73,6 +75,10 @@ jobs:
           # Test environments must name who may receive email; production must not.
           if [ "${{ inputs.environment }}" != production ] && [ -z "$ENVIRONMENT_LABEL" ]; then
             echo "::error::Variable APP_ENVIRONMENT_LABEL is missing in the ${{ inputs.environment }} environment (see infra/README.md)."
+            exit 1
+          fi
+          if [ -z "$BUDGET_CONTACT_EMAIL" ]; then
+            echo "::error::Secret BUDGET_CONTACT_EMAIL is missing in the ${{ inputs.environment }} environment (see infra/README.md)."
             exit 1
           fi
           if [ "${{ inputs.environment }}" = production ] && [ -n "$ENVIRONMENT_LABEL" ]; then

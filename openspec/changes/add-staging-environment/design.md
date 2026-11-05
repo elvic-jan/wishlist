@@ -35,7 +35,7 @@ Alternatives:
 
 Chosen for cost and isolation. Bicep gets `externalPostgresHost` (default empty = deploy the Azure server as today); when set, the Postgres module is skipped and the app's connection string is built from that host with database `wishlist`, login `wishlist_app` and `SSL Mode=VerifyFull`, exactly as for Azure. The host is the provider's **direct** endpoint, not its pooler (transaction pooling breaks Npgsql prepared statements). The staging database's owner login takes the admin role for migrations; `app-role.sql` runs unchanged and creates `wishlist_app` on that separate server, so login names stay the same in both environments.
 
-The GitHub `staging` environment uses production's setting names (`POSTGRES_ADMIN_LOGIN`, `POSTGRES_ADMIN_PASSWORD`, `POSTGRES_APP_PASSWORD`, `JWT_KEY`, …) plus `POSTGRES_HOST`, `BASE_NAME=wishlist-stg`, `BUDGET_AMOUNT`, `APP_ENVIRONMENT_LABEL` and `EMAIL_ALLOWLIST`. The base name is short because `caj-<base>-reservations` must fit Azure's 32-character limit.
+The GitHub `staging` environment uses production's setting names (`POSTGRES_ADMIN_LOGIN`, `POSTGRES_ADMIN_PASSWORD`, `POSTGRES_APP_PASSWORD`, `JWT_KEY`, …) plus `POSTGRES_HOST`, `BASE_NAME=wishlist-stg`, `BUDGET_AMOUNT`, `APP_ENVIRONMENT_LABEL` and the secret `EMAIL_ALLOWLIST`. Email addresses (`EMAIL_ALLOWLIST`, `BUDGET_CONTACT_EMAIL`) are secrets in both environments: the repository is public, and a variable's value is printed in workflow logs. The base name is short because `caj-<base>-reservations` must fit Azure's 32-character limit.
 
 Trade-off: the Azure-only database steps (server lookup, firewall open/close) don't run on staging, so a bug there still shows up first in production. Migrations, which fail more often, are exercised.
 
