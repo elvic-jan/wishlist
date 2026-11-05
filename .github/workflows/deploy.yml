@@ -144,6 +144,8 @@ jobs:
       group: deploy-staging
       cancel-in-progress: false
     uses: ./.github/workflows/deploy-environment.yml
+    # Without this the called workflow sees none of the environment's secrets.
+    secrets: inherit
     with:
       environment: staging
       image: ${{ needs.build.outputs.image }}
@@ -163,6 +165,7 @@ jobs:
       group: deploy-production
       cancel-in-progress: false
     uses: ./.github/workflows/deploy-environment.yml
+    secrets: inherit
     with:
       environment: production
       image: ${{ needs.build.outputs.image }}
