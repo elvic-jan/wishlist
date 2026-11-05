@@ -5,6 +5,7 @@ using Wishlist.Application.UseCases.GiftClaims;
 using Wishlist.Application.Messages;
 using Wishlist.Application.UseCases.Groups;
 using Wishlist.Application.UseCases.LegacyImport;
+using Wishlist.Application.UseCases.TestData;
 using Wishlist.Application.UseCases.Wishlists;
 
 namespace Wishlist.Application;
@@ -61,6 +62,8 @@ public static class DependencyInjection
         services.AddScoped<KeepReservationUseCase>();
         services.AddScoped<ReservationEmails>();
         services.AddScoped<ProcessReservationsUseCase>();
+
+        services.AddScoped<SeedTestDataUseCase>();
 
         services.AddScoped<LoadLegacyDataUseCase>();
         services.AddScoped<GetLegacyImportStatusUseCase>();

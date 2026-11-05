@@ -1,6 +1,8 @@
 // Cheapest production hosting for the wishlist app: one resource group with a
 // scale-to-zero Container App (plus its monthly reservation job), a Burstable Postgres server, ACS Email and a
 // budget that stops the app when it runs out. See infra/README.md for the one-time bootstrap.
+// Staging is a second copy in its own resource group (baseName wishlist-stg), with
+// an external Postgres (externalPostgresHost) and environmentLabel set.
 targetScope = 'resourceGroup'
 
 @description('Azure region for regional resources.')
@@ -26,6 +28,9 @@ param emailCustomDomain string = ''
 
 @description('True once the email domain\'s DNS records are verified in Azure; switches the sender to noreply@<domain>.')
 param emailCustomDomainVerified bool = false
+
+@description('Host of a Postgres server outside Azure (e.g. staging\'s free Neon database, its direct endpoint). Empty = deploy the Azure server below. Either way the app uses database wishlist as wishlist_app.')
+param externalPostgresHost string = ''
 
 param postgresVersion string = '17'
 param postgresAdministratorLogin string = 'wishlistadmin'
@@ -61,11 +66,19 @@ param budgetStartDate string
 
 param budgetContactEmails array
 
-@description('Stop ca-wishlist automatically when actual spend reaches 100% of the budget. False = emails only.')
+@description('Stop the container app automatically when actual spend reaches 100% of the budget. False = emails only.')
 param budgetAutoStop bool = true
+
+@description('Marks a test environment (e.g. TEST): banner, noindex, email allow-list, seeded test data. Empty = production.')
+param environmentLabel string = ''
+
+@description('Test environments only: comma-separated recipients email may go to (name@domain, which also covers name+tag@domain, or *@domain).')
+param emailAllowList string = ''
 
 // Postgres and ACS names are globally unique; the suffix keeps them stable per resource group.
 var suffix = take(uniqueString(resourceGroup().id), 6)
+
+var useAzurePostgres = empty(externalPostgresHost)
 
 module logs 'modules/logs.bicep' = {
   name: 'logs'
@@ -75,7 +88,7 @@ module logs 'modules/logs.bicep' = {
   }
 }
 
-module postgres 'modules/postgres.bicep' = {
+module postgres 'modules/postgres.bicep' = if (useAzurePostgres) {
   name: 'postgres'
   params: {
     location: location
@@ -108,8 +121,8 @@ module app 'modules/containerapp.bicep' = {
     customDomainName: customDomainName
     customDomainCertificateReady: customDomainCertificateReady
     previousCustomDomainName: previousCustomDomainName
-    postgresFqdn: postgres.outputs.fqdn
-    postgresDatabaseName: postgres.outputs.databaseName
+    postgresFqdn: useAzurePostgres ? postgres!.outputs.fqdn : externalPostgresHost
+    postgresDatabaseName: useAzurePostgres ? postgres!.outputs.databaseName : 'wishlist'
     postgresAppPassword: postgresAppPassword
     jwtKey: jwtKey
     smtpFromAddress: email.outputs.senderAddress
@@ -117,6 +130,8 @@ module app 'modules/containerapp.bicep' = {
     smtpPassword: smtpPassword
     ghcrUsername: ghcrUsername
     ghcrToken: ghcrToken
+    environmentLabel: environmentLabel
+    emailAllowList: emailAllowList
   }
 }
 
@@ -146,9 +161,9 @@ output reservationJobName string = app.outputs.reservationJobName
 output appFqdn string = app.outputs.fqdn
 output publicBaseUrl string = app.outputs.publicBaseUrl
 output customDomainVerificationId string = app.outputs.customDomainVerificationId
-output postgresServerName string = postgres.outputs.name
-output postgresFqdn string = postgres.outputs.fqdn
-output postgresDatabaseName string = postgres.outputs.databaseName
+output postgresServerName string = useAzurePostgres ? postgres!.outputs.name : ''
+output postgresFqdn string = useAzurePostgres ? postgres!.outputs.fqdn : externalPostgresHost
+output postgresDatabaseName string = useAzurePostgres ? postgres!.outputs.databaseName : 'wishlist'
 output communicationServiceName string = email.outputs.communicationServiceName
 output emailSenderAddress string = email.outputs.senderAddress
 output emailServiceName string = email.outputs.emailServiceName

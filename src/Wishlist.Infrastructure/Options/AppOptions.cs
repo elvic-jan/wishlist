@@ -14,4 +14,16 @@ public class AppOptions
     /// in production. MUST be HTTPS in non-Development environments.
     /// </summary>
     public string PublicBaseUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Marks a test environment, e.g. <c>TEST</c> on staging: a banner on every
+    /// page, no search indexing, email only to <see cref="SmtpOptions.AllowedRecipients"/>,
+    /// and seeded test data. Empty in production.
+    /// </summary>
+    public string? EnvironmentLabel { get; set; }
+
+    public static string? EnvironmentLabelFrom(Microsoft.Extensions.Configuration.IConfiguration config) =>
+        config[$"{SectionName}:{nameof(EnvironmentLabel)}"] is { } label && !string.IsNullOrWhiteSpace(label)
+            ? label.Trim()
+            : null;
 }

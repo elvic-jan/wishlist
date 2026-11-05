@@ -10,11 +10,13 @@ namespace Wishlist.API.Middleware;
 /// script in index.html (the first-paint theme script) is allowed by its hash, taken
 /// from the page actually served so it can't drift.
 /// </summary>
-public sealed partial class SecurityHeadersMiddleware(RequestDelegate next, ISpaTemplate spa, IWebHostEnvironment env)
+public sealed partial class SecurityHeadersMiddleware(RequestDelegate next, ISpaTemplate spa, IWebHostEnvironment env, IConfiguration config)
 {
     public const string HstsValue = "max-age=31536000";
 
     private readonly Lazy<string> _csp = new(() => ContentSecurityPolicy(spa.Html));
+    // A test environment (staging) must never show up in search results.
+    private readonly bool _noIndex = Wishlist.Infrastructure.Options.AppOptions.EnvironmentLabelFrom(config) is not null;
 
     public Task InvokeAsync(HttpContext context)
     {
@@ -29,6 +31,8 @@ public sealed partial class SecurityHeadersMiddleware(RequestDelegate next, ISpa
             // Deployed, the scheme comes from the ingress's X-Forwarded-Proto.
             if (!env.IsDevelopment() && context.Request.IsHttps)
                 headers.StrictTransportSecurity = HstsValue;
+            if (_noIndex)
+                headers["X-Robots-Tag"] = "noindex";
             return Task.CompletedTask;
         });
         return next(context);

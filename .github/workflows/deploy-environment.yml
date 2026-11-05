@@ -1,0 +1,215 @@
+# Deploys one build to one environment (staging or production). Called by
+# deploy.yml; not run on its own. Names, the database and Azure access come from
+# the environment's own variables and secrets.
+#
+# Order: migrations first (on staging, after emptying the database if it has a
+# migration this build doesn't), then the app's database login, then the new
+# image for the app and the reservation job, then a check that /healthz reports
+# this version. Production then tags the release.
+name: deploy-environment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      image:
+        type: string
+        required: true
+      version:
+        type: string
+        required: true
+      notes:
+        type: string
+        default: ''
+      # Staging only: empty the database when it has a migration this build lacks.
+      reset-on-unknown-migration:
+        type: boolean
+        default: false
+      # Production only: tag vX.Y.Z, create the GitHub Release and the image's version tag.
+      release:
+        type: boolean
+        default: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      ENVIRONMENT: ${{ inputs.environment }}
+      RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      CONTAINER_APP: ca-${{ vars.BASE_NAME || 'wishlist' }}
+      RESERVATION_JOB: caj-${{ vars.BASE_NAME || 'wishlist' }}-reservations
+      # Set for a database outside Azure (staging): no Azure lookup or firewall.
+      EXTERNAL_PG_HOST: ${{ vars.POSTGRES_HOST }}
+      IMAGE: ${{ inputs.image }}
+      VERSION: ${{ inputs.version }}
+      # The database admin (migrations, the app login, a staging reset).
+      PGUSER: ${{ vars.POSTGRES_ADMIN_LOGIN || 'wishlistadmin' }}
+      PGPASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+      PGDATABASE: wishlist
+      PGSSLMODE: verify-full
+      # PGSSLROOTCERT=system (psql: trust the system's CAs) is set on the psql
+      # steps only: the migrations bundle's Npgsql reads it too, as a file path.
+    steps:
+      # Before the download: checkout cleans the workspace.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: infra/sql
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: efbundle
+
+      - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Allow CLI extensions to install on demand
+        run: az config set extension.use_dynamic_install=yes_without_prompt --only-show-errors
+
+      - name: Look up Postgres server
+        id: pg
+        run: |
+          if [ -n "$EXTERNAL_PG_HOST" ]; then
+            echo "fqdn=$EXTERNAL_PG_HOST" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          name=$(az postgres flexible-server list -g "$RESOURCE_GROUP" --query "[0].name" -o tsv)
+          fqdn=$(az postgres flexible-server show -g "$RESOURCE_GROUP" -n "$name" --query fullyQualifiedDomainName -o tsv)
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "fqdn=$fqdn" >> "$GITHUB_OUTPUT"
+
+      - name: Open database firewall for this runner
+        if: steps.pg.outputs.name != ''
+        run: |
+          ip=$(curl -fsS https://api.ipify.org)
+          az postgres flexible-server firewall-rule create -g "$RESOURCE_GROUP" -s "${{ steps.pg.outputs.name }}" \
+            -n "gha-${GITHUB_RUN_ID}" --start-ip-address "$ip" --end-ip-address "$ip" --output none
+
+      # Back on main after a branch that added a migration, the database has a
+      # migration this build doesn't know and can't undo. Staging only holds test
+      # data, so it starts over: empty, migrated below, seeded by the app on start.
+      - name: Empty the database if it has an unknown migration
+        if: inputs.reset-on-unknown-migration
+        env:
+          PGHOST: ${{ steps.pg.outputs.fqdn }}
+          PGSSLROOTCERT: system
+        run: |
+          if [ "$ENVIRONMENT" = production ]; then
+            echo "::error::Refusing to empty the production database."
+            exit 1
+          fi
+          has_history=$(psql -v ON_ERROR_STOP=1 -tAc "SELECT to_regclass('public.\"__EFMigrationsHistory\"') IS NOT NULL")
+          if [ "$has_history" != t ]; then
+            echo "No migration history yet; nothing to compare."
+            exit 0
+          fi
+          psql -v ON_ERROR_STOP=1 -tAc 'SELECT "MigrationId" FROM "__EFMigrationsHistory"' | sort > applied.txt
+          sort migrations.txt > known.txt
+          unknown=$(comm -23 applied.txt known.txt)
+          if [ -z "$unknown" ]; then
+            echo "Every applied migration is in this build; keeping the data."
+            exit 0
+          fi
+          echo "::notice::Emptying the $ENVIRONMENT database: it has migrations this build doesn't: $(echo $unknown)"
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          DROP SCHEMA public CASCADE;
+          CREATE SCHEMA public;
+          GRANT USAGE ON SCHEMA public TO PUBLIC;
+          SQL
+
+      - name: Apply migrations
+        env:
+          PG_FQDN: ${{ steps.pg.outputs.fqdn }}
+        run: |
+          chmod +x efbundle
+          ./efbundle --connection "Host=${PG_FQDN};Port=5432;Database=${PGDATABASE};Username=${PGUSER};Password=${PGPASSWORD};SSL Mode=VerifyFull"
+
+      # The app logs in as wishlist_app, which can only read and write rows
+      # (infra/sql/app-role.sql). Created or updated here, after migrations, so
+      # new tables are covered before the new image starts.
+      - name: Set up the app's database login
+        env:
+          PGHOST: ${{ steps.pg.outputs.fqdn }}
+          PGSSLROOTCERT: system
+          APP_PASSWORD: ${{ secrets.POSTGRES_APP_PASSWORD }}
+        run: |
+          if [ -z "$APP_PASSWORD" ]; then
+            echo "::error::Secret POSTGRES_APP_PASSWORD is missing in the $ENVIRONMENT environment (see infra/README.md)."
+            exit 1
+          fi
+          psql -v ON_ERROR_STOP=1 -f infra/sql/app-role.sql
+          # Through stdin so the password is a psql variable, not part of a command line.
+          echo "ALTER ROLE wishlist_app PASSWORD :'app_password';" | psql -v ON_ERROR_STOP=1 -v app_password="$APP_PASSWORD"
+
+      - name: Close database firewall
+        if: always() && steps.pg.outputs.name != ''
+        run: |
+          az postgres flexible-server firewall-rule delete -g "$RESOURCE_GROUP" -s "${{ steps.pg.outputs.name }}" \
+            -n "gha-${GITHUB_RUN_ID}" --yes --output none || true
+
+      - name: Deploy image
+        run: az containerapp update -g "$RESOURCE_GROUP" -n "$CONTAINER_APP" --image "$IMAGE" --output none
+
+      # The monthly job runs the same image, so it always matches the app and
+      # the schema. It's created by the infra workflow; until then, skip.
+      - name: Update reservation job image
+        run: |
+          if az containerapp job show -g "$RESOURCE_GROUP" -n "$RESERVATION_JOB" --output none 2>/dev/null; then
+            az containerapp job update -g "$RESOURCE_GROUP" -n "$RESERVATION_JOB" --image "$IMAGE" --output none
+          else
+            echo "::notice::$RESERVATION_JOB doesn't exist yet; run the infra workflow to create it."
+          fi
+
+      # Healthy, and running this version (not the previous revision).
+      - name: Smoke check
+        run: |
+          fqdn=$(az containerapp show -g "$RESOURCE_GROUP" -n "$CONTAINER_APP" --query properties.configuration.ingress.fqdn -o tsv)
+          for attempt in $(seq 1 20); do
+            health=$(curl -fsS --max-time 30 "https://${fqdn}/healthz" || true)
+            if printf '%s' "$health" | grep -qF "\"version\":\"$VERSION\""; then
+              echo "Deployed version $VERSION ($IMAGE) to $ENVIRONMENT: https://${fqdn}" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "Attempt $attempt: ${health:-no answer}"
+            sleep 6
+          done
+          echo "::error::https://${fqdn}/healthz doesn't report version $VERSION."
+          exit 1
+
+      # Only for a version not tagged yet: re-running an older run's deploy job
+      # (a rollback) finds its tag and changes nothing.
+      - name: Tag the release
+        id: tag
+        if: inputs.release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOTES: ${{ inputs.notes }}
+        run: |
+          tag="v$VERSION"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --silent 2>/dev/null; then
+            echo "::notice::$tag already exists; not tagging again."
+            exit 0
+          fi
+          # Annotated, so the tag carries the release date (shown on What's new).
+          object=$(gh api "repos/$GITHUB_REPOSITORY/git/tags" -f tag="$tag" -f message="Kadoozle $VERSION" \
+            -f object="$GITHUB_SHA" -f type=commit --jq .sha)
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$tag" -f sha="$object" --silent
+          printf '%s\n' "$NOTES" > "$RUNNER_TEMP/notes.md"
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --verify-tag --title "Kadoozle $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        if: steps.tag.outputs.created == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag the image with the version
+        if: steps.tag.outputs.created == 'true'
+        run: docker buildx imagetools create --tag "${IMAGE%:*}:$VERSION" "$IMAGE"

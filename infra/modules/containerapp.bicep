@@ -60,6 +60,12 @@ param ghcrUsername string = ''
 @secure()
 param ghcrToken string = ''
 
+@description('Marks a test environment (e.g. TEST). Empty = production.')
+param environmentLabel string = ''
+
+@description('Test environments only: comma-separated email recipients allowed.')
+param emailAllowList string = ''
+
 resource workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
   name: logAnalyticsWorkspaceName
 }
@@ -126,8 +132,16 @@ var appSecrets = concat(
   usePrivateRegistry ? [{ name: 'ghcr-token', value: ghcrToken }] : []
 )
 
+// Only on test environments: production keeps exactly the settings it had.
+var testEnvironmentEnv = empty(environmentLabel)
+  ? []
+  : [
+      { name: 'App__EnvironmentLabel', value: environmentLabel }
+      { name: 'Smtp__AllowedRecipients', value: emailAllowList }
+    ]
+
 // Shared by the app and the reservation job, so both see the same settings.
-var appEnv = [
+var appEnv = concat(testEnvironmentEnv, [
   { name: 'ASPNETCORE_ENVIRONMENT', value: 'Production' }
   { name: 'App__PublicBaseUrl', value: effectivePublicBaseUrl }
   { name: 'ConnectionStrings__DefaultConnection', secretRef: 'db-connection' }
@@ -139,7 +153,7 @@ var appEnv = [
   { name: 'Smtp__Password', secretRef: 'smtp-password' }
   { name: 'Smtp__FromAddress', value: smtpFromAddress }
   { name: 'Smtp__FromName', value: smtpFromName }
-]
+])
 
 var registries = usePrivateRegistry
   ? [

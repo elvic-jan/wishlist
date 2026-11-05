@@ -75,12 +75,34 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
 
         services.AddScoped<IAppUrlProvider, AppUrlProvider>();
-        services.AddSingleton<IEmailSender, SmtpEmailSender>();
+        AddEmail(services, config);
         services.AddSingleton<IForgotPasswordRateLimiter, ForgotPasswordRateLimiter>();
         services.AddSingleton<ILoginAttemptLimiter, LoginAttemptLimiter>();
         services.AddSingleton<IInviteCodeAttemptLimiter, InviteCodeAttemptLimiter>();
 
         return services;
+    }
+
+    /// <summary>
+    /// Production sends through SMTP directly. A test environment wraps it in the
+    /// allow-list, so it can never email people who aren't on it.
+    /// </summary>
+    private static void AddEmail(IServiceCollection services, IConfiguration config)
+    {
+        var allowList = EmailAllowList.Parse(config[$"{SmtpOptions.SectionName}:{nameof(SmtpOptions.AllowedRecipients)}"]);
+        services.AddSingleton(allowList);
+        services.AddSingleton<SmtpEmailSender>();
+
+        if (AppOptions.EnvironmentLabelFrom(config) is null)
+        {
+            services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<SmtpEmailSender>());
+            return;
+        }
+
+        services.AddSingleton<IEmailSender>(sp => new AllowListEmailSender(
+            sp.GetRequiredService<SmtpEmailSender>(),
+            allowList,
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<AllowListEmailSender>>()));
     }
 
     private static void AddPasskeys(IServiceCollection services, IConfiguration config)
