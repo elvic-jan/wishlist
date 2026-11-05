@@ -38,7 +38,7 @@
 - [x] 6.2 Check on a phone: TEST banner, test user sign-in through "Forgot password", sign up with a passkey, an allow-listed email arrives with `[TEST]`, an unlisted one is dropped and logged masked, PWA update notice
 - [x] 6.3 Deploy a branch with an extra migration, then `main`: database is emptied, migrated and re-seeded, and `main` works
 - [x] 6.4 Start the staging reservation job by hand; it finishes and mails only allow-listed recipients
-- [ ] 6.5 Confirm production deploy waited for staging and still needs approval
+- [x] 6.5 Confirm production deploy waited for staging and still needs approval
 
 ## 7. Release
 
