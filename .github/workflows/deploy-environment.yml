@@ -50,7 +50,8 @@ jobs:
       PGPASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
       PGDATABASE: wishlist
       PGSSLMODE: verify-full
-      PGSSLROOTCERT: system
+      # PGSSLROOTCERT=system (psql: trust the system's CAs) is set on the psql
+      # steps only: the migrations bundle's Npgsql reads it too, as a file path.
     steps:
       # Before the download: checkout cleans the workspace.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -96,6 +97,7 @@ jobs:
         if: inputs.reset-on-unknown-migration
         env:
           PGHOST: ${{ steps.pg.outputs.fqdn }}
+          PGSSLROOTCERT: system
         run: |
           if [ "$ENVIRONMENT" = production ]; then
             echo "::error::Refusing to empty the production database."
@@ -133,6 +135,7 @@ jobs:
       - name: Set up the app's database login
         env:
           PGHOST: ${{ steps.pg.outputs.fqdn }}
+          PGSSLROOTCERT: system
           APP_PASSWORD: ${{ secrets.POSTGRES_APP_PASSWORD }}
         run: |
           if [ -z "$APP_PASSWORD" ]; then
