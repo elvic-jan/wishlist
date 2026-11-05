@@ -35,7 +35,7 @@
 ## 6. Bring staging up (before merging: after the merge, production waits for staging)
 
 - [x] 6.1 Set variables `BASE_NAME`, `BUDGET_AMOUNT`, `APP_ENVIRONMENT_LABEL` and secrets `EMAIL_ALLOWLIST`, `BUDGET_CONTACT_EMAIL` on `staging` (and `BUDGET_CONTACT_EMAIL` as a secret on `production`; its variable goes after the merge); run `infra` for staging from this branch; finish SMTP and budget-stop roles; run `deploy` on this branch
-- [ ] 6.2 Check on a phone: TEST banner, test user sign-in through "Forgot password", sign up with a passkey, an allow-listed email arrives with `[TEST]`, an unlisted one is dropped and logged masked, PWA update notice
+- [x] 6.2 Check on a phone: TEST banner, test user sign-in through "Forgot password", sign up with a passkey, an allow-listed email arrives with `[TEST]`, an unlisted one is dropped and logged masked, PWA update notice
 - [ ] 6.3 Deploy a branch with an extra migration, then `main`: database is emptied, migrated and re-seeded, and `main` works
 - [ ] 6.4 Start the staging reservation job by hand; it finishes and mails only allow-listed recipients
 - [ ] 6.5 Confirm production deploy waited for staging and still needs approval
