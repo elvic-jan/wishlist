@@ -328,7 +328,8 @@ branches). Same names as production, its own values:
 
 - Variables: `AZURE_CLIENT_ID` (the staging deploy identity), `AZURE_TENANT_ID`,
   `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP=rg-wishlist-staging`,
-  `BASE_NAME=wishlist-stg`, `BUDGET_AMOUNT=5`,
+  `BASE_NAME=wishlist-stg`, `BUDGET_AMOUNT=5`, `BUDGET_START_DATE=2026-11-01` (a new budget
+  can't start before the month it's created in; keep it fixed afterwards),
   `POSTGRES_HOST` (Neon direct host), `POSTGRES_ADMIN_LOGIN` (Neon owner),
   `APP_ENVIRONMENT_LABEL=TEST`.
 - Secrets: `POSTGRES_ADMIN_PASSWORD` (Neon owner), `POSTGRES_APP_PASSWORD`, `JWT_KEY` (its

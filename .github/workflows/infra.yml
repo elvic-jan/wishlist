@@ -61,6 +61,8 @@ jobs:
           # variable's value is printed at the top of this step's log.
           BUDGET_CONTACT_EMAIL: ${{ secrets.BUDGET_CONTACT_EMAIL }}
           BUDGET_AMOUNT: ${{ vars.BUDGET_AMOUNT || '25' }}
+          # Fixed per environment: a new budget can't start before the month it's created in.
+          BUDGET_START_DATE: ${{ vars.BUDGET_START_DATE || '2026-10-01' }}
           EXTERNAL_POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
           ENVIRONMENT_LABEL: ${{ vars.APP_ENVIRONMENT_LABEL }}
           EMAIL_ALLOWLIST: ${{ secrets.EMAIL_ALLOWLIST }}
@@ -100,6 +102,7 @@ jobs:
               emailCustomDomain="$EMAIL_DOMAIN" \
               emailCustomDomainVerified="$EMAIL_DOMAIN_VERIFIED" \
               budgetAmount="$BUDGET_AMOUNT" \
+              budgetStartDate="$BUDGET_START_DATE" \
               budgetContactEmails="[\"$BUDGET_CONTACT_EMAIL\"]" \
               externalPostgresHost="$EXTERNAL_POSTGRES_HOST" \
               environmentLabel="$ENVIRONMENT_LABEL" \
