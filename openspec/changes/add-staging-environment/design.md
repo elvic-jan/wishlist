@@ -33,7 +33,9 @@ Alternatives:
 - *Separate database on the production server* — rejected. Logins are server-wide, so staging's `ALTER ROLE wishlist_app PASSWORD` would change production's password; staging would need the production admin password and Azure rights on the production resource group.
 - *Own Azure Flexible Server* — fully isolated and identical to production but about €15/month.
 
-Chosen for cost and isolation. Bicep gets `deployPostgres` (default `true`) and `databaseConnectionString` (secure, used when `deployPostgres` is `false`). The staging connection string points at the provider's **direct** endpoint, not its pooler (transaction pooling breaks Npgsql prepared statements), with `SSL Mode=VerifyFull`. The staging database's owner login takes the admin role for migrations; `app-role.sql` runs unchanged and creates `wishlist_app` on that separate server, so login names stay the same in both environments.
+Chosen for cost and isolation. Bicep gets `externalPostgresHost` (default empty = deploy the Azure server as today); when set, the Postgres module is skipped and the app's connection string is built from that host with database `wishlist`, login `wishlist_app` and `SSL Mode=VerifyFull`, exactly as for Azure. The host is the provider's **direct** endpoint, not its pooler (transaction pooling breaks Npgsql prepared statements). The staging database's owner login takes the admin role for migrations; `app-role.sql` runs unchanged and creates `wishlist_app` on that separate server, so login names stay the same in both environments.
+
+The GitHub `staging` environment uses production's setting names (`POSTGRES_ADMIN_LOGIN`, `POSTGRES_ADMIN_PASSWORD`, `POSTGRES_APP_PASSWORD`, `JWT_KEY`, …) plus `POSTGRES_HOST`, `BASE_NAME=wishlist-stg`, `BUDGET_AMOUNT`, `APP_ENVIRONMENT_LABEL` and `EMAIL_ALLOWLIST`. The base name is short because `caj-<base>-reservations` must fit Azure's 32-character limit.
 
 Trade-off: the Azure-only database steps (server lookup, firewall open/close) don't run on staging, so a bug there still shows up first in production. Migrations, which fail more often, are exercised.
 
@@ -52,14 +54,14 @@ manual run on a branch ─▶ build ─▶ deploy-staging          (stops)
 A separate Entra app registration for staging with a federated credential for `environment:staging` and Contributor only on the staging resource group. Production's identity is unchanged. A staging run therefore cannot change production resources even if a workflow file on a branch is altered.
 
 ### 5. Database reset only when migrations differ
-Before migrating, the staging deploy compares the migrations in this build's bundle (`efbundle --list` or the migrations assembly) with `__EFMigrationsHistory`. If the database has any applied migration that the bundle doesn't contain, the deploy resets the database to the clean seeded state and then migrates. Otherwise it only migrates (normal case: new migrations on top).
+The build writes the IDs of the migrations it contains (the file names in `src/Wishlist.Infrastructure/Migrations`) to `migrations.txt` next to the bundle. Before migrating, a deploy that allows resets (staging only) reads `__EFMigrationsHistory`. If the database has any applied migration that the build doesn't contain, it wipes the database with plain SQL (`DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT USAGE ON SCHEMA public TO PUBLIC;`) and then migrates as usual. Otherwise it only migrates (normal case: new migrations on top). The reset step also refuses to run for the `production` environment.
 
-Reset mechanism: restore the provider's `seed` branch onto the staging branch (Neon "reset from parent") via its API, with an API key as a staging secret. Fallback if the provider changes: drop and recreate the `public` schema, migrate, run `--job seed-test-data`.
-
-Alternatives: reset on every deploy (simplest, but test accounts never survive a deploy); a database branch per pull request (cleanest, but the app's connection string changes per deploy).
+Alternatives: restoring a seeded Neon branch through Neon's API (needs an API key and branch IDs, and ties staging to Neon); reset on every deploy (test accounts never survive a deploy); a database branch per pull request (the app's connection string changes per deploy).
 
 ### 6. Seeding
-`--job seed-test-data` (same pattern as `owner-access`): creates a few test users with addresses on the allow-list (`+tag` variants of one inbox), two circles, wishes and a reservation. It refuses to run unless the environment label is set. Passwords come from a staging secret; nothing is printed. Run once to build the `seed` branch, and after any fallback reset.
+When the web app starts with an environment label, it creates its test data if the first test user doesn't exist yet: four users, two circles, wishes and a reservation. So after a reset the next start fills the database again, and an existing database is left alone. Job runs (`--job …`) never seed.
+
+The users' addresses are `+tag` variants of the first exact address on the email allow-list (`you@example.com` → `you+anna@example.com`, …), so their mail reaches that inbox. Without such an address, seeding is skipped with a warning. The users have no password: sign in through "Forgot password", whose email arrives through the allow-list, then set a password or passkey. No seed secret, nothing printed.
 
 ### 7. Email allow-list
 A decorator `AllowListEmailSender : IEmailSender` around `SmtpEmailSender`, registered only when `App:EnvironmentLabel` is set. Production has no label, so its code path is unchanged.
@@ -70,7 +72,7 @@ A decorator `AllowListEmailSender : IEmailSender` around `SmtpEmailSender`, regi
 - Staging has no `EMAIL_DOMAIN`, so it sends from the Azure-managed `azurecomm.net` address of its own ACS resource.
 
 ### 8. TEST marker
-`App:EnvironmentLabel` (e.g. `TEST`) reaches the SPA with the existing app config the SPA already loads (or a small `/api/app-info` field). When set: a fixed, non-dismissible banner at the top of every page, and `X-Robots-Tag: noindex` on every response. Production renders nothing extra.
+`App:EnvironmentLabel` (e.g. `TEST`) is added to `/healthz`'s answer (`environment`). The service worker caches the page itself, so the label can't be written into the HTML; `/healthz` is never cached by it and needs no database. The SPA fetches it at start, shows a non-dismissible banner at the top of every page, and remembers the label in `localStorage` so the banner is there at once on the next visit, even while the app wakes up. Every response gets `X-Robots-Tag: noindex`. Production has no label: no banner, no header, and `/healthz` has no `environment` value.
 
 ### 9. Reservation job
 Created by the same template on staging with the same monthly schedule; its mail goes through the allow-list. Can be started by hand (`az containerapp job start`) to test.
@@ -90,14 +92,12 @@ The template's existing budget module, on the staging resource group, with a sma
 
 ## Migration Plan
 
-1. Create the external database (EU), a `seed` branch, and the owner credentials.
-2. Create the staging resource group, Entra app and federated credential, the GitHub `staging` environment with variables and secrets.
-3. Merge the change; run `infra` for staging; the next push to `main` deploys to staging, then waits for production approval as before.
-4. Seed, then save the seeded state as the `seed` branch.
+1. Create the external database (EU) and the owner credentials. (Done.)
+2. Create the staging resource group, Entra app and federated credential, the GitHub `staging` environment with variables and secrets. (Done, apart from the variables this change introduces.)
+3. Merge the change; run `infra` for staging; finish the staging SMTP and budget-stop roles; the next push to `main` deploys to staging (which seeds itself), then waits for production approval as before.
 
 Rollback: remove the `deploy-staging` job and the `needs` from `deploy-production`; production is otherwise unchanged.
 
 ## Open Questions
 
-- The exact way the SPA learns the label (existing config endpoint vs. a new field) — decide while implementing.
 - The budget amount for staging (5 suggested).

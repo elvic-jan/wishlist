@@ -15,4 +15,11 @@ public class SmtpOptions
     public bool UseStartTls { get; set; }
     public string FromAddress { get; set; } = string.Empty;
     public string FromName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Test environments only (see <see cref="AppOptions.EnvironmentLabel"/>): comma-separated
+    /// recipients email may go to. <c>name@domain</c> also covers <c>name+tag@domain</c>;
+    /// <c>*@domain</c> covers the whole domain. Empty there = no email at all.
+    /// </summary>
+    public string? AllowedRecipients { get; set; }
 }

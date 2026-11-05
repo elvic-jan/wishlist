@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/context/ThemeContext'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppShell } from '@/components/AppShell'
 import { AuthLayout } from '@/components/AuthLayout'
+import { EnvironmentBanner } from '@/components/EnvironmentBanner'
 import { Toaster } from '@/components/ui/toaster'
 import { UpdateToaster } from '@/components/UpdateToaster'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -44,6 +45,7 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <TooltipProvider delayDuration={150}>
+          <EnvironmentBanner />
           <BrowserRouter>
             <Routes>
               {/* Unauthenticated — minimal centered layout. */}

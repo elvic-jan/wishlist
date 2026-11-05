@@ -20,13 +20,16 @@ Everything lives in one resource group, `rg-wishlist-prod`, in Sweden Central.
 
 ## Workflows
 
-- **`infra.yml`** (manual): deploys `infra/main.bicep`. Keeps the currently running image.
+- **`infra.yml`** (manual, pick `production` or `staging`): deploys `infra/main.bicep` to
+  that environment's resource group. Keeps the currently running image.
 - **`deploy.yml`** (push to `main`): tests, builds and pushes `ghcr.io/<owner>/wishlist:sha-<sha7>`,
-  then, **after approval on the `production` environment**, opens a temporary Postgres
-  firewall rule for the runner, applies EF Core migrations, closes the rule, rolls the
-  container app to the new image and smoke-checks `/healthz` (which must report the new
-  version). Then it tags the commit `vX.Y.Z`, creates a GitHub Release and tags the image
-  `X.Y.Z` (see Versions below).
+  deploys it to **staging** (see [Staging](#staging)), and once staging's smoke check
+  passes, **after approval on the `production` environment**, to production: opens a
+  temporary Postgres firewall rule for the runner, applies EF Core migrations, closes the
+  rule, rolls the container app to the new image and smoke-checks `/healthz` (which must
+  report the new version). Then it tags the commit `vX.Y.Z`, creates a GitHub Release and
+  tags the image `X.Y.Z` (see Versions below). The deploy steps are in
+  `deploy-environment.yml`, shared by both environments.
 
 Both log in to Azure with OIDC; GitHub holds no Azure secret.
 
@@ -289,6 +292,97 @@ To test the chain, at a quiet moment: Azure portal → Monitor → Alerts → Ac
 `ag-wishlist-budget-stop` → **Test** (Logic App). The site goes down; start it again with
 the command above.
 
+## Staging
+
+A second copy of the app for trying changes on real hosting (phones, passkeys, email,
+PWA updates) before production. Design: `openspec/changes/add-staging-environment/`.
+
+- **Where:** resource group `rg-wishlist-staging`, base name `wishlist-stg` (so
+  `ca-wishlist-stg`, `caj-wishlist-stg-reservations`, …), at its free
+  `*.azurecontainerapps.io` address. Passkeys there belong to that host only.
+- **Database:** a free external Postgres (Neon, Frankfurt), database `wishlist`, reached on
+  its direct (not pooled) endpoint. No Azure Postgres server, so no firewall steps.
+- **Test data only, never a copy of production.** When the app starts and its test users
+  don't exist, it creates them: `+anna`, `+ben`, `+carla`, `+david` addresses of the first
+  plain address in `EMAIL_ALLOWLIST`, with two circles, wishes and a reservation. They have
+  no password: use **Forgot password** on staging; the email arrives in that inbox.
+- **Email:** only to `EMAIL_ALLOWLIST` (`name@domain`, which covers `name+tag@domain`, or
+  `*@domain`), with `[TEST]` before the subject. Everything else is dropped and logged with
+  its subject and a masked recipient (`y**+alice@g****.com`). Sent from the Azure-managed
+  `azurecomm.net` address (no `EMAIL_DOMAIN`).
+- **Marked:** a TEST banner on every page and `X-Robots-Tag: noindex`.
+- **Deploys:** every `main` build goes to staging first, automatically; production waits for
+  it. To try a branch: **Actions → deploy → Run workflow** on that branch (or
+  `gh workflow run deploy.yml --ref <branch>`). It gets a version like `1.4.0-pr.abc1234` and
+  never reaches production. If staging's database has a migration the deployed build doesn't
+  (back on `main` after such a branch), the deploy empties it, migrates, and the app seeds
+  fresh test data.
+- **Never add a deploy trigger outsiders can fire** (`pull_request_target`, comments,
+  labels): those run with secrets. Deploys start only from a push to `main` or by hand.
+
+### GitHub `staging` environment
+
+No required reviewers; deployment branches: all (only people with write access create
+branches). Same names as production, its own values:
+
+- Variables: `AZURE_CLIENT_ID` (the staging deploy identity), `AZURE_TENANT_ID`,
+  `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP=rg-wishlist-staging`,
+  `BASE_NAME=wishlist-stg`, `BUDGET_AMOUNT=5`, `BUDGET_CONTACT_EMAIL`,
+  `POSTGRES_HOST` (Neon direct host), `POSTGRES_ADMIN_LOGIN` (Neon owner),
+  `APP_ENVIRONMENT_LABEL=TEST`, `EMAIL_ALLOWLIST` (e.g. `you@example.com`).
+- Secrets: `POSTGRES_ADMIN_PASSWORD` (Neon owner), `POSTGRES_APP_PASSWORD`, `JWT_KEY` (its
+  own), `GHCR_PULL_TOKEN` (its own), `SMTP_PASSWORD`, `SMTP_USER`.
+
+The infra workflow refuses to provision staging without `APP_ENVIRONMENT_LABEL`, and
+production with it.
+
+### One-time Azure setup (subscription Owner)
+
+As for production ([CI identity](#1-ci-identity-oidc), [SMTP identity](#2-smtp-identity-for-acs-email)),
+with `RG=rg-wishlist-staging`, app names `gh-wishlist-deploy-staging` and
+`wishlist-acs-smtp-staging`, and federated subject `repo:$REPO:environment:staging`. The
+staging deploy identity has Contributor on the staging resource group only.
+
+Then run **infra** for `staging` (from a branch too: the `staging` environment accepts any
+branch), and give the roles their own names, since production's custom roles are scoped to
+production's resource group:
+
+```bash
+RG=rg-wishlist-staging
+ACS_ID=$(az resource list -g $RG --resource-type Microsoft.Communication/CommunicationServices --query "[0].id" -o tsv)
+ACS=$(az resource list -g $RG --resource-type Microsoft.Communication/CommunicationServices --query "[0].name" -o tsv)
+az role definition create --role-definition "{
+  \"Name\": \"ACS SMTP Sender (wishlist-stg)\",
+  \"Actions\": [
+    \"Microsoft.Communication/CommunicationServices/Read\",
+    \"Microsoft.Communication/CommunicationServices/Write\",
+    \"Microsoft.Communication/EmailServices/write\"
+  ],
+  \"AssignableScopes\": [\"/subscriptions/$SUB/resourceGroups/$RG\"]
+}"
+az role assignment create --assignee $SMTP_APP_ID --role "ACS SMTP Sender (wishlist-stg)" --scope $ACS_ID
+gh secret set SMTP_USER --env staging --body "$ACS.$SMTP_APP_ID.$TENANT" -R $REPO
+
+PRINCIPAL=$(az resource show -g $RG -n logic-wishlist-stg-budget-stop \
+  --resource-type Microsoft.Logic/workflows --query identity.principalId -o tsv)
+APP_ID=$(az containerapp show -g $RG -n ca-wishlist-stg --query id -o tsv)
+az role definition create --role-definition "{
+  \"Name\": \"Container App Stopper (wishlist-stg)\",
+  \"Actions\": [
+    \"Microsoft.App/containerApps/read\",
+    \"Microsoft.App/containerApps/stop/action\"
+  ],
+  \"AssignableScopes\": [\"/subscriptions/$SUB/resourceGroups/$RG\"]
+}"
+az role assignment create --assignee-object-id $PRINCIPAL --assignee-principal-type ServicePrincipal \
+  --role "Container App Stopper (wishlist-stg)" --scope $APP_ID
+```
+
+Run **infra** for `staging` once more so the app picks up `SMTP_USER`, then deploy.
+
+Staging has to be up before the change that introduces it is merged: from then on every
+`main` deploy goes to staging first, and production waits for it.
+
 ## Operations
 
 - **Logs**: `az containerapp logs show -g $RG -n ca-wishlist --follow`, or query
@@ -408,3 +502,5 @@ them. Deleting an account also releases its claim.
 |---|---|---|---|
 | ACS SMTP client secret | `SMTP_PASSWORD` | _record date_ (2 years from creation) | password-reset emails fail (logged; reset requests still return 202) |
 | GHCR pull PAT | `GHCR_PULL_TOKEN` | _record date_ | the image can no longer be pulled, so the next scale-up from zero fails and **the site goes down** |
+| Staging ACS SMTP client secret | `SMTP_PASSWORD` (`staging`) | 2 years from creation (2026-11-05) | staging emails fail |
+| Staging GHCR pull PAT | `GHCR_PULL_TOKEN` (`staging`) | _record date_ | staging can't start from zero |

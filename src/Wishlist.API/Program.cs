@@ -14,6 +14,7 @@ using Wishlist.Application.UseCases.LegacyImport;
 using Wishlist.API.Controllers;
 using Wishlist.API.Middleware;
 using Wishlist.Infrastructure;
+using Wishlist.Infrastructure.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -142,12 +143,20 @@ app.MapControllers();
 
 // Liveness/readiness probe. Deliberately touches no database so probes neither
 // depend on nor keep Postgres busy. Names the running version (set in the
-// image by the deploy) so the deploy can check the new one is live.
-app.MapGet("/healthz", (IConfiguration config) => Results.Ok(new
+// image by the deploy) so the deploy can check the new one is live, and on a
+// test environment its label, which the SPA shows as a banner.
+var environmentLabel = AppOptions.EnvironmentLabelFrom(app.Configuration);
+app.MapGet("/healthz", (IConfiguration config) => Results.Ok(environmentLabel is null
+    ? new { version = config["APP_VERSION"] ?? "dev", commit = config["APP_COMMIT"] ?? "dev" }
+    : (object)new { version = config["APP_VERSION"] ?? "dev", commit = config["APP_COMMIT"] ?? "dev", environment = environmentLabel }))
+    .AllowAnonymous();
+
+// A test environment fills itself with test data once it's up (again after
+// the deploy emptied its database). In the background, so startup isn't held up.
+if (environmentLabel is not null)
 {
-    version = config["APP_VERSION"] ?? "dev",
-    commit = config["APP_COMMIT"] ?? "dev",
-})).AllowAnonymous();
+    app.Lifetime.ApplicationStarted.Register(() => _ = Task.Run(() => TestDataSeeder.RunAsync(app.Services, app.Lifetime.ApplicationStopping)));
+}
 
 // Invite links get a personal link preview ("Jan invited you to Family…").
 // Unknown, expired or rate-limited codes get the generic one, so a preview

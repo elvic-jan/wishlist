@@ -34,7 +34,7 @@ The owner SHALL be able to deploy any branch of the repository to staging by sta
 - **THEN** no staging or production deploy starts
 
 ### Requirement: Staging's database is reset only when its migrations don't match
-Before migrating, a staging deploy SHALL compare the migrations already applied to the staging database with those in the build. When the database has a migration the build doesn't contain, the deploy SHALL reset the database to the clean seeded test data and then apply the build's migrations. Otherwise it SHALL only apply new migrations and keep existing test data.
+Before migrating, a staging deploy SHALL compare the migrations already applied to the staging database with those in the build. When the database has a migration the build doesn't contain, the deploy SHALL empty the database and then apply the build's migrations, after which the app seeds fresh test data when it starts. Otherwise it SHALL only apply new migrations and keep existing test data. A production deploy SHALL never empty its database.
 
 #### Scenario: Normal main deploy keeps test data
 - **WHEN** staging runs `main` and the next `main` build adds a migration
@@ -42,18 +42,26 @@ Before migrating, a staging deploy SHALL compare the migrations already applied 
 
 #### Scenario: Back to main after a pull request with a migration
 - **WHEN** a branch with an extra migration was deployed to staging, and then a `main` build without that migration is deployed
-- **THEN** the database is reset to the seeded test data and migrated to `main`'s schema before the new image starts
+- **THEN** the database is emptied and migrated to `main`'s schema before the new image starts, and the app seeds fresh test data when it starts
 
 ### Requirement: Staging has seeded test data
-A seeding job in the same image SHALL create a small set of test users, circles, wishes and a reservation, with email addresses on staging's allow-list. It SHALL refuse to run unless the environment is marked as a test environment, and SHALL NOT print passwords.
+When the web app starts with an environment label and its test users don't exist yet, it SHALL create a small set of test users, circles, wishes and a reservation. The test users' email addresses SHALL be `+tag` variants of the first exact address on the email allow-list, so their mail is delivered; without such an address, seeding SHALL be skipped with a warning. Test users SHALL have no password. Without an environment label, and in job runs, nothing SHALL be seeded.
 
 #### Scenario: Seeding a fresh database
-- **WHEN** the seeding job runs on an empty, migrated staging database
-- **THEN** the test users can sign in and see their circles and wishes
+- **WHEN** the staging app starts on an empty, migrated database and the allow-list starts with `you@example.com`
+- **THEN** users such as `you+anna@example.com` exist, share circles, and have wishes and a reservation
 
-#### Scenario: Seeding refused in production
-- **WHEN** the seeding job is started without a test environment label
-- **THEN** it exits with an error and changes nothing
+#### Scenario: Signing in as a test user
+- **WHEN** someone asks for a password reset for `you+anna@example.com` on staging
+- **THEN** the email reaches the `you@example.com` inbox and the test user can set a password or passkey
+
+#### Scenario: Existing test data is kept
+- **WHEN** the staging app restarts and its test users already exist
+- **THEN** nothing is created or changed
+
+#### Scenario: Never in production
+- **WHEN** the app starts without an environment label
+- **THEN** no test data is created
 
 ### Requirement: Test environments email only allow-listed recipients
 When the app runs with an environment label (a test environment), it SHALL send email only to recipients on its configured allow-list, and SHALL prefix the subject of every sent email with `[TEST] `. An allow-list entry SHALL be an exact address, which also matches the same address with any `+tag` before the `@`, or `*@domain` for a whole domain, compared without regard to case. Mail to any other recipient SHALL be dropped and logged with its subject and a masked recipient, never its body or links. If the allow-list is empty or missing, no email SHALL be sent. Without an environment label (production), email SHALL be sent as before.

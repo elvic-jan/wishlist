@@ -9,8 +9,8 @@ Changes reach users the first time they run on a real hosted setup: phones, pass
 - The deploy workflow becomes build → deploy to staging (automatic) → smoke check → deploy to production (approval). **Production deploys now also require this run's staging smoke check to pass.**
 - A pull request branch can be deployed to staging by starting the deploy workflow by hand on that branch. It never deploys to production. No deploy is ever triggered by `pull_request_target`, comments or labels.
 - Staging and production have separate concurrency groups, so a staging deploy never cancels a production deploy waiting for approval.
-- Staging's database is reset to a clean seeded copy only when the migrations being deployed differ from those it already has (e.g. after a pull request that added a migration); otherwise test data stays.
-- Seeded test data: a few test users, circles and wishes. Never a copy of production.
+- Staging's database is emptied only when it has a migration the deployed build doesn't (e.g. back on `main` after a pull request that added one); otherwise test data stays.
+- Seeded test data: a few password-less test users (sign in through "Forgot password"), circles and wishes, created by the app when it starts on an empty test database. Never a copy of production.
 - Email on a test environment is sent only to addresses on an allow-list (exact addresses, whole domains, and `+tag` variants of a listed address), with a `[TEST]` subject prefix. Other mail is dropped and logged with its subject and a masked recipient. If the allow-list is missing on a test environment, nothing is sent.
 - A visible "TEST" banner on every page of a test environment, and search engines are told not to index it.
 - The monthly reservation job also runs on staging, through the same email allow-list.
@@ -30,6 +30,6 @@ Changes reach users the first time they run on a real hosted setup: phones, pass
 - **Workflows:** `.github/workflows/deploy.yml` (reusable deploy job per environment, staging job, conditional Azure-only database steps, database reset check, separate concurrency), `.github/workflows/infra.yml` (choose the environment; no hard-coded `ca-wishlist`).
 - **API:** an email sender wrapper that applies the allow-list; startup reads the environment label; the label reaches the SPA.
 - **SPA:** TEST banner; `noindex` on test environments.
-- **New job:** `--job seed-test-data` in the same image.
+- **Seeding:** the app seeds its own test data at start on a test environment whose test users don't exist yet.
 - **External:** an account with a free PostgreSQL provider (Neon assumed); a GitHub `staging` environment with its own variables and secrets; an Entra federated credential for it; a staging resource group.
 - **Cost:** roughly €0 extra per month (scale-to-zero app, free database, free ACS email domain), watched by the staging budget.
