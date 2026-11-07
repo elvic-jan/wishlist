@@ -23,6 +23,8 @@ public class WishlistDbContext(DbContextOptions<WishlistDbContext> options)
     public DbSet<UserMessageState> UserMessageStates => Set<UserMessageState>();
     public DbSet<WishlistBuddy> WishlistBuddies => Set<WishlistBuddy>();
     public DbSet<CircleInvitation> CircleInvitations => Set<CircleInvitation>();
+    public DbSet<SignInEvent> SignInEvents => Set<SignInEvent>();
+    public DbSet<UserActivityDay> UserActivityDays => Set<UserActivityDay>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -134,6 +136,22 @@ public class WishlistDbContext(DbContextOptions<WishlistDbContext> options)
             e.HasIndex(b => b.BuddyId);
             e.HasOne<ApplicationUser>().WithMany().HasForeignKey(b => b.OwnerId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<ApplicationUser>().WithMany().HasForeignKey(b => b.BuddyId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Sign-ins and active days for the admin page; go with the account.
+        builder.Entity<SignInEvent>(e =>
+        {
+            e.HasKey(s => s.Id);
+            e.Property(s => s.Method).HasConversion<string>().HasMaxLength(20);
+            e.HasIndex(s => new { s.UserId, s.OccurredAt });
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<UserActivityDay>(e =>
+        {
+            e.HasKey(a => new { a.UserId, a.Day });
+            e.HasIndex(a => a.Day);
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(a => a.UserId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

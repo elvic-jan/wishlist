@@ -7,6 +7,9 @@ public interface IUserRepository
     Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
     Task<bool> EmailExistsAsync(string email, CancellationToken ct = default);
+
+    /// <summary>Grants or removes the site-wide Admin role. Returns false when nothing changed.</summary>
+    Task<bool> SetAdminAsync(Guid userId, bool isAdmin, CancellationToken ct = default);
     Task<User> CreateAsync(string email, string displayName, string password, CancellationToken ct = default);
 
     /// <summary>

@@ -73,6 +73,8 @@ public static class DependencyInjection
         services.AddSingleton<ISpreadsheetReader, XlsxReader>();
         services.AddSingleton<ILegacyUserNameAttemptLimiter, LegacyUserNameAttemptLimiter>();
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IActivityRecorder, ActivityRecorder>();
+        services.AddScoped<IAdminQueries, AdminQueries>();
 
         services.AddScoped<IAppUrlProvider, AppUrlProvider>();
         AddEmail(services, config);

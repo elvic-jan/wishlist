@@ -1,3 +1,4 @@
+using Wishlist.Domain.Enums;
 using Wishlist.Application.DTOs;
 using Wishlist.Application.Interfaces;
 using Wishlist.Domain.Exceptions;
@@ -14,7 +15,7 @@ public class PasskeySignInUseCase(IPasskeyService passkeys, IUserRepository user
         var userId = await passkeys.CompleteSignInAsync(credentialJson, state, ct);
         var user = await users.GetByIdAsync(userId, ct)
             ?? throw new DomainException(PasskeyMessages.SignInFailed);
-        return await sessions.CreateAsync(user, ct: ct);
+        return await sessions.CreateAsync(user, SignInMethod.Passkey, ct: ct);
     }
 }
 

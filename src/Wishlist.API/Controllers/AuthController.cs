@@ -126,7 +126,7 @@ public class AuthController(
         var userId = User.GetUserId();
         var user = await users.GetByIdAsync(userId, ct);
         if (user is null) return NotFound();
-        return Ok(new UserDto(user.Id, user.Email, user.DisplayName));
+        return Ok(UserDto.From(user));
     }
 
     [Authorize]

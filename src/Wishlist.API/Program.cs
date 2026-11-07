@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Wishlist.API;
 using Wishlist.Application;
 using Wishlist.Application.Interfaces;
+using Wishlist.Application.UseCases.Admin;
 using Wishlist.Application.UseCases.Auth;
 using Wishlist.Application.UseCases.GiftClaims;
 using Wishlist.Domain.Exceptions;
@@ -68,6 +69,8 @@ var app = builder.Build();
 //   site's export once (see infra/README.md).
 // - "--job owner-access --email <email> [--name <name>]": creates the account if
 //   needed and prints a sign-in (recovery) link for it (see infra/README.md).
+// - "--job admin --email <email> [--remove]": grants (or removes) the site-wide
+//   Admin role; put --remove last (see infra/README.md).
 var job = app.Configuration["job"];
 if (job is not null)
 {
@@ -99,8 +102,28 @@ if (job is not null)
                 Environment.ExitCode = 1;
             }
             break;
+        case "admin":
+            try
+            {
+                var remove = args.Contains("--remove");
+                var admin = await scope.ServiceProvider.GetRequiredService<AdminRoleUseCase>()
+                    .ExecuteAsync(app.Configuration["email"], remove);
+                Console.WriteLine((admin.IsAdmin, admin.Changed) switch
+                {
+                    (true, true) => $"Account {admin.UserId} is now an admin. It takes effect within 15 minutes (or at the next sign-in).",
+                    (true, false) => $"Account {admin.UserId} was already an admin; nothing changed.",
+                    (false, true) => $"Account {admin.UserId} is no longer an admin. It takes effect within 15 minutes.",
+                    (false, false) => $"Account {admin.UserId} wasn't an admin; nothing changed.",
+                });
+            }
+            catch (DomainException ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+                Environment.ExitCode = 1;
+            }
+            break;
         default:
-            throw new InvalidOperationException($"Unknown job \"{job}\". Jobs: \"reservations\", \"legacy-load\", \"owner-access\".");
+            throw new InvalidOperationException($"Unknown job \"{job}\". Jobs: \"reservations\", \"legacy-load\", \"owner-access\", \"admin\".");
     }
     return;
 }

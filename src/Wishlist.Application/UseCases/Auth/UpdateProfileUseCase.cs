@@ -16,6 +16,6 @@ public class UpdateProfileUseCase(IUserRepository users)
         await users.UpdateDisplayNameAsync(userId, name, ct);
         var user = await users.GetByIdAsync(userId, ct)
             ?? throw new NotFoundException("User not found.");
-        return new UserDto(user.Id, user.Email, user.DisplayName);
+        return UserDto.From(user);
     }
 }

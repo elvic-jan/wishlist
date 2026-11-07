@@ -4,7 +4,10 @@ public record RegisterRequest(string Email, string DisplayName, string Password,
 public record LoginRequest(string Email, string Password);
 public record AuthResponse(string AccessToken, UserDto User, Guid? JoinedGroupId = null);
 public record UpdateProfileRequest(string DisplayName);
-public record UserDto(Guid Id, string Email, string DisplayName);
+public record UserDto(Guid Id, string Email, string DisplayName, bool IsAdmin = false)
+{
+    public static UserDto From(Wishlist.Domain.Entities.User user) => new(user.Id, user.Email, user.DisplayName, user.IsAdmin);
+}
 public record ForgotPasswordRequest(string Email);
 public record ResetPasswordRequest(string Email, string Token, string NewPassword);
 

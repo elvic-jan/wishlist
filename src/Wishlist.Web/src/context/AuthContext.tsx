@@ -5,6 +5,8 @@ interface User {
   id: string;
   email: string;
   displayName: string;
+  /** Site admin: shows the Admin menu item. The server checks again on every admin request. */
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {

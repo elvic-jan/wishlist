@@ -34,6 +34,6 @@ public class RegisterUserUseCase(
         }, ct);
 
         await emails.SendEmailConfirmationAsync(user, ct);
-        return await sessions.CreateAsync(user, invitation.GroupId, ct);
+        return await sessions.CreateAsync(user, SignInMethod.SignUp, invitation.GroupId, ct);
     }
 }
