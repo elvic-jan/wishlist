@@ -1,10 +1,11 @@
 using Wishlist.Application.DTOs;
 using Wishlist.Application.Interfaces;
+using Wishlist.Domain.Enums;
 using Wishlist.Domain.Exceptions;
 
 namespace Wishlist.Application.UseCases.Auth;
 
-public class LoginUserUseCase(IUserRepository users, ITokenService tokens, ILoginAttemptLimiter limiter)
+public class LoginUserUseCase(IUserRepository users, AuthSessionFactory sessions, ILoginAttemptLimiter limiter)
 {
     public const string TooManyAttempts =
         "Too many wrong passwords. Try again in 15 minutes, sign in with Face ID or a fingerprint, or reset your password.";
@@ -24,9 +25,6 @@ public class LoginUserUseCase(IUserRepository users, ITokenService tokens, ILogi
             throw new DomainException("Invalid credentials.");
         }
 
-        var accessToken = tokens.GenerateAccessToken(user);
-        var refreshToken = await tokens.CreateRefreshTokenAsync(user.Id, ct);
-
-        return (new AuthResponse(accessToken, new UserDto(user.Id, user.Email, user.DisplayName)), refreshToken);
+        return await sessions.CreateAsync(user, SignInMethod.Password, ct: ct);
     }
 }

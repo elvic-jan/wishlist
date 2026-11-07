@@ -20,13 +20,15 @@ public class TokenService(IConfiguration config, WishlistDbContext db) : ITokenS
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim("displayName", user.DisplayName),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email),
+            new("displayName", user.DisplayName),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+        // Read again on every refresh, so a role change applies within one access-token lifetime.
+        if (user.IsAdmin) claims.Add(new Claim(ClaimTypes.Role, Wishlist.Domain.SiteRoles.Admin));
 
         var expiry = int.Parse(config["Jwt:AccessTokenExpiryMinutes"]!);
         var token = new JwtSecurityToken(

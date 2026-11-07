@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Wishlist.Application.UseCases.Admin;
 using Wishlist.Application.UseCases.Auth;
 using Wishlist.Application.UseCases.Buddies;
 using Wishlist.Application.UseCases.GiftClaims;
@@ -24,6 +25,9 @@ public static class DependencyInjection
         services.AddScoped<EmailConfirmationUseCase>();
         services.AddScoped<RegisterUserUseCase>();
         services.AddScoped<OwnerAccessUseCase>();
+        services.AddScoped<AdminRoleUseCase>();
+        services.AddScoped<GetAdminOverviewUseCase>();
+        services.AddScoped<ListAdminUsersUseCase>();
         services.AddScoped<LoginUserUseCase>();
         services.AddScoped<RefreshTokenUseCase>();
         services.AddScoped<LogoutUserUseCase>();

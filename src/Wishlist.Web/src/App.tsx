@@ -27,6 +27,7 @@ const JoinGroupPage = lazyPage(() => import('@/pages/JoinGroupPage'), 'JoinGroup
 const ImportPage = lazyPage(() => import('@/pages/ImportPage'), 'ImportPage')
 const WhatsNewPage = lazyPage(() => import('@/pages/WhatsNewPage'), 'WhatsNewPage')
 const LicensesPage = lazyPage(() => import('@/pages/LicensesPage'), 'LicensesPage')
+const AdminPage = lazyPage(() => import('@/pages/AdminPage'), 'AdminPage')
 
 /** For pages anyone may open: the app shell when signed in, the sign-in layout otherwise. */
 function AnyoneLayout() {
@@ -79,6 +80,8 @@ export default function App() {
                 <Route path="/wishlists" element={<WishlistsPage />} />
                 <Route path="/wishlist/me" element={<MyWishlistPage />} />
                 <Route path="/wishlist/:userId" element={<MemberWishlistPage />} />
+                {/* The page sends non-admins away; the API refuses them anyway. */}
+                <Route path="/admin" element={<AdminPage />} />
               </Route>
 
               {/* Signed in or not: the update notice links to What's new from sign-in pages too. */}

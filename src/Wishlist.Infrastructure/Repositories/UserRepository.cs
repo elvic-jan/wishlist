@@ -1,23 +1,51 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Wishlist.Application.Interfaces;
+using Wishlist.Domain;
 using Wishlist.Domain.Entities;
 using Wishlist.Infrastructure.Persistence;
 
 namespace Wishlist.Infrastructure.Repositories;
 
-public class UserRepository(UserManager<ApplicationUser> userManager) : IUserRepository
+public class UserRepository(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<Guid>> roleManager) : IUserRepository
 {
     public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var user = await userManager.FindByIdAsync(id.ToString());
-        return user is null ? null : Map(user);
+        return user is null ? null : await MapWithRolesAsync(user);
     }
 
     public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
     {
         var user = await userManager.FindByEmailAsync(email);
-        return user is null ? null : Map(user);
+        return user is null ? null : await MapWithRolesAsync(user);
+    }
+
+    public async Task<bool> SetAdminAsync(Guid userId, bool isAdmin, CancellationToken ct = default)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString())
+            ?? throw new InvalidOperationException("User not found.");
+        if (await userManager.IsInRoleAsync(user, SiteRoles.Admin) == isAdmin) return false;
+
+        IdentityResult result;
+        if (isAdmin)
+        {
+            if (!await roleManager.RoleExistsAsync(SiteRoles.Admin))
+            {
+                var created = await roleManager.CreateAsync(new IdentityRole<Guid>(SiteRoles.Admin) { Id = Guid.NewGuid() });
+                if (!created.Succeeded)
+                    throw new InvalidOperationException(string.Join("; ", created.Errors.Select(e => e.Description)));
+            }
+            result = await userManager.AddToRoleAsync(user, SiteRoles.Admin);
+        }
+        else
+        {
+            result = await userManager.RemoveFromRoleAsync(user, SiteRoles.Admin);
+        }
+
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
+        return true;
     }
 
     public async Task<bool> EmailExistsAsync(string email, CancellationToken ct = default)
@@ -166,6 +194,13 @@ public class UserRepository(UserManager<ApplicationUser> userManager) : IUserRep
 
         var result = await userManager.ResetPasswordAsync(user, token, newPassword);
         return result.Succeeded;
+    }
+
+    private async Task<User> MapWithRolesAsync(ApplicationUser u)
+    {
+        var user = Map(u);
+        user.IsAdmin = await userManager.IsInRoleAsync(u, SiteRoles.Admin);
+        return user;
     }
 
     private static User Map(ApplicationUser u) => new()

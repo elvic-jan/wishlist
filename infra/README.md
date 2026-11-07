@@ -462,6 +462,28 @@ az postgres flexible-server firewall-rule delete -g $RG -s $PG -n owner-access -
 it the link points at your own machine. The job prints whether it created or found the
 account, then the link. Treat the link like a password until it has been used or has expired.
 
+## Site admin
+
+The admin page (`/admin`, "Admin" in the account menu) shows totals, growth and every
+account. Only accounts with the Admin role see it, and only this job gives or takes that
+role. Nothing in the app can.
+
+Run it like the owner-access job above (same firewall rule and connection string), with the
+email of an existing account:
+
+```powershell
+dotnet run --project src/Wishlist.API --launch-profile https -- --job admin --email you@example.com
+dotnet run --project src/Wishlist.API --launch-profile https -- --job admin --email someone@example.com --remove
+```
+
+Put `--remove` last. The change applies when the person's session next renews, within
+15 minutes (or sign out and in again). For **staging**, use the staging database's
+connection string (Neon: `Host=<POSTGRES_HOST>;Database=wishlist;Username=neondb_owner;Password=<password>;SSL Mode=VerifyFull`)
+and no firewall rule. Staging empties its database when it gets a new migration, so run
+the job there again after that.
+
+Sign-in and activity counts on the page start on the day this feature was deployed.
+
 ## Old wishlist site (one-time load)
 
 People can import their wishes from the old site (verlanglijstje) on `/import`. The old

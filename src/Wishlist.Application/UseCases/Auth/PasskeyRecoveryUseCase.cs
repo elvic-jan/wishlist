@@ -1,3 +1,4 @@
+using Wishlist.Domain.Enums;
 using Wishlist.Application.DTOs;
 using Wishlist.Application.Interfaces;
 using Wishlist.Domain.Entities;
@@ -44,7 +45,7 @@ public class PasskeyRecoveryUseCase(
         }, ct);
 
         await emails.SendPasskeyAddedAsync(user, name, ct);
-        return await sessions.CreateAsync(user, ct: ct);
+        return await sessions.CreateAsync(user, SignInMethod.Recovery, ct: ct);
     }
 
     private async Task<User> RequireValidLinkAsync(string? email, string? token, CancellationToken ct)

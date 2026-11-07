@@ -51,7 +51,7 @@ public class PasskeySignUpUseCase(
         }, ct);
 
         await emails.SendEmailConfirmationAsync(user, ct);
-        return await sessions.CreateAsync(user, invitation.GroupId, ct);
+        return await sessions.CreateAsync(user, SignInMethod.SignUp, invitation.GroupId, ct);
     }
 
     private static (string Email, string DisplayName) Normalize(string? email, string? displayName) =>

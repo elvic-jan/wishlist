@@ -12,4 +12,7 @@ public class User
 
     /// <summary>The account can sign in with a password (passkey-only accounts cannot).</summary>
     public bool HasPassword { get; set; }
+
+    /// <summary>The account has the site-wide Admin role (granted only by the admin job).</summary>
+    public bool IsAdmin { get; set; }
 }

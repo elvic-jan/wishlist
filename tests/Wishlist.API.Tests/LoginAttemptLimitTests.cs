@@ -21,7 +21,8 @@ public class LoginAttemptLimitTests
     public LoginAttemptLimitTests()
     {
         var limiter = new LoginAttemptLimiter(NullLogger<LoginAttemptLimiter>.Instance);
-        _login = new LoginUserUseCase(new InMemoryUsers(_store), new NoTokens(), limiter);
+        _login = new LoginUserUseCase(
+            new InMemoryUsers(_store), new AuthSessionFactory(new NoTokens(), new InMemoryActivity(_store)), limiter);
     }
 
     private async Task<User> Account(string email) =>

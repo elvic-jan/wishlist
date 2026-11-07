@@ -41,6 +41,8 @@ public class InMemoryApi : WebApplicationFactory<Program>
             services.AddSingleton<IUnitOfWork, InMemoryUnitOfWork>();
             services.AddSingleton<ITokenService, InMemoryTokens>();
             services.AddSingleton<IPasskeyService, FakePasskeys>();
+            services.AddSingleton<IActivityRecorder, InMemoryActivity>();
+            services.AddSingleton<IAdminQueries, InMemoryAdminQueries>();
             // The real key ring lives in the database; keep test keys in memory.
             services.AddSingleton<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>(
                 new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider());
@@ -96,6 +98,8 @@ public sealed class InMemoryStore
     public ConcurrentDictionary<string, FakePasskey> Passkeys { get; } = new();
     public ConcurrentQueue<EmailMessage> SentEmails { get; } = new();
     public ConcurrentDictionary<string, RefreshToken> RefreshTokens { get; } = new();
+    public ConcurrentQueue<(Guid UserId, SignInMethod Method)> SignIns { get; } = new();
+    public ConcurrentDictionary<(Guid UserId, DateOnly Day), bool> ActiveDays { get; } = new();
 
     /// <summary>Changes whenever reset/confirmation tokens must stop working (like Identity's security stamp).</summary>
     public ConcurrentDictionary<Guid, int> SecurityStamps { get; } = new();
@@ -159,6 +163,14 @@ internal sealed class InMemoryUsers(InMemoryStore store) : IUserRepository
 
     public Task<bool> EmailExistsAsync(string email, CancellationToken ct = default) =>
         Task.FromResult(store.Users.Values.Any(u => u.Email == email));
+
+    public Task<bool> SetAdminAsync(Guid userId, bool isAdmin, CancellationToken ct = default)
+    {
+        var user = store.Users[userId];
+        if (user.IsAdmin == isAdmin) return Task.FromResult(false);
+        user.IsAdmin = isAdmin;
+        return Task.FromResult(true);
+    }
 
     public Task<User> CreateAsync(string email, string displayName, string password, CancellationToken ct = default)
     {
@@ -316,7 +328,9 @@ internal sealed class InMemoryTokens(IConfiguration config, InMemoryStore store)
         var token = new JwtSecurityToken(
             issuer: config["Jwt:Issuer"],
             audience: config["Jwt:Audience"],
-            claims: [new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString())],
+            claims: user.IsAdmin
+                ? [new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()), new Claim(ClaimTypes.Role, Wishlist.Domain.SiteRoles.Admin)]
+                : [new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString())],
             expires: DateTime.UtcNow.AddMinutes(15),
             signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
         return new JwtSecurityTokenHandler().WriteToken(token);
@@ -460,4 +474,42 @@ internal sealed class CapturingEmailSender(InMemoryStore store) : IEmailSender
         store.SentEmails.Enqueue(message);
         return Task.CompletedTask;
     }
+}
+
+public sealed class InMemoryActivity(InMemoryStore store) : IActivityRecorder
+{
+    public Task RecordSignInAsync(Guid userId, SignInMethod method, CancellationToken ct = default)
+    {
+        store.SignIns.Enqueue((userId, method));
+        return RecordActiveDayAsync(userId, ct);
+    }
+
+    public Task RecordActiveDayAsync(Guid userId, CancellationToken ct = default)
+    {
+        store.ActiveDays.TryAdd((userId, DateOnly.FromDateTime(DateTime.UtcNow)), true);
+        return Task.CompletedTask;
+    }
+}
+
+/// <summary>Just enough to check who may read the admin endpoints; the figures are tested against Postgres.</summary>
+internal sealed class InMemoryAdminQueries(InMemoryStore store) : IAdminQueries
+{
+    public Task<Wishlist.Application.DTOs.AdminTotals> GetTotalsAsync(DateTime nowUtc, CancellationToken ct = default) =>
+        Task.FromResult(new Wishlist.Application.DTOs.AdminTotals(store.Users.Count, store.Groups.Count, 0, 0));
+
+    public Task<IReadOnlyList<DateTime>> GetSignUpTimesSinceAsync(DateTime fromUtc, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<DateTime>>(store.Users.Values.Select(u => u.CreatedAt).Where(t => t >= fromUtc).ToList());
+
+    public Task<int> CountActiveUsersAsync(DateOnly from, DateOnly to, CancellationToken ct = default) =>
+        Task.FromResult(store.ActiveDays.Keys.Where(k => k.Day >= from && k.Day <= to).Select(k => k.UserId).Distinct().Count());
+
+    public Task<DateOnly?> GetTrackingSinceAsync(CancellationToken ct = default) =>
+        Task.FromResult(store.ActiveDays.IsEmpty ? null : (DateOnly?)store.ActiveDays.Keys.Min(k => k.Day));
+
+    public Task<IReadOnlyList<Wishlist.Application.DTOs.AdminUserDto>> ListUsersAsync(CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<Wishlist.Application.DTOs.AdminUserDto>>(store.Users.Values
+            .Select(u => new Wishlist.Application.DTOs.AdminUserDto(
+                u.Id, u.DisplayName, u.Email, u.CreatedAt, u.EmailConfirmed, u.HasPassword, false, u.IsAdmin,
+                0, null, store.SignIns.Count(s => s.UserId == u.Id), null))
+            .ToList());
 }
