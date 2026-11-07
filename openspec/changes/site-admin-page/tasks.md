@@ -44,6 +44,6 @@
 ## 7. Release
 
 - [x] 7.1 Add `release-notes/site-admin-page.md` (type `feature`): "New admin page for site administrators - that's not you ;-)" (confirmed by the user)
-- [ ] 7.2 Deploy the branch to staging (`gh workflow run deploy.yml --ref feat/admin-page`), run the admin job there, check the page on desktop and phone width and that a non-admin gets no access
+- [x] 7.2 Deploy the branch to staging (`gh workflow run deploy.yml --ref feat/admin-page`), run the admin job there, check the page on desktop and phone width and that a non-admin gets no access
 - [x] 7.3 Open the PR with "Closes #104" and the release note in the description
 - [ ] 7.4 After the production deploy: run the admin job on production for the owner
