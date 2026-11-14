@@ -16,6 +16,7 @@ import { CircleInvitationsCard } from '@/components/CircleInvitationsCard'
 import client from '@/api/client'
 import { MAX_CIRCLE_NAME } from '@/lib/inputLimits'
 import { apiErrorMessage } from '@/api/errors'
+import { useT } from '@/lib/i18n'
 
 interface Group {
   id: string
@@ -24,6 +25,7 @@ interface Group {
 }
 
 export function HomePage() {
+  const t = useT()
   const [groups, setGroups] = useState<Group[] | null>(null)
   const [newGroupName, setNewGroupName] = useState('')
   const [showCreate, setShowCreate] = useState(false)
@@ -35,11 +37,12 @@ export function HomePage() {
       .then(r => setGroups(r.data))
       .catch((err: unknown) => {
         const msg = apiErrorMessage(err)
-        setError(msg ?? 'Failed to load circles.')
+        setError(msg ?? t('circles.loadFailed'))
       })
 
   useEffect(() => {
     loadGroups()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once
   }, [])
 
   const createGroup = async (e: React.FormEvent) => {
@@ -52,7 +55,7 @@ export function HomePage() {
       setShowCreate(false)
     } catch (err: unknown) {
       const msg = apiErrorMessage(err)
-      setError(msg ?? 'Failed to create circle.')
+      setError(msg ?? t('circles.createFailed'))
     }
   }
 
@@ -61,11 +64,10 @@ export function HomePage() {
       <div className="space-y-1.5">
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" aria-hidden />
-          <h1 className="text-2xl font-semibold tracking-tight">My circles</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('circles.title')}</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Share wishlists with people you know. Create a circle, send the invite
-          link, and you&rsquo;re in.
+          {t('circles.intro')}
         </p>
       </div>
 
@@ -80,7 +82,7 @@ export function HomePage() {
       {!groups ? (
         // Still loading: never show "No circles yet" before the circles arrive.
         error ? null : (
-          <div className="space-y-2" aria-label="Loading circles">
+          <div className="space-y-2" aria-label={t('circles.loading')}>
             <Skeleton className="h-14 w-full" />
             <Skeleton className="h-14 w-full" />
           </div>
@@ -92,15 +94,15 @@ export function HomePage() {
               <Users className="h-6 w-6" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium">No circles yet</p>
+              <p className="text-sm font-medium">{t('circles.empty.title')}</p>
               <p className="text-sm text-muted-foreground">
-                Create your first circle to start sharing.
+                {t('circles.empty.text')}
               </p>
             </div>
             {!showCreate && (
               <Button onClick={() => setShowCreate(true)} className="mt-2">
                 <Plus className="h-4 w-4" />
-                New circle
+                {t('circles.new')}
               </Button>
             )}
           </CardContent>
@@ -112,7 +114,7 @@ export function HomePage() {
               <Link to={`/circles/${g.id}`} className="group block">
                 <Card className="transition-colors hover:border-primary/40 hover:bg-accent/40">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 py-4">
-                    <CardTitle className="text-base font-medium">
+                    <CardTitle translate="no" className="text-base font-medium">
                       {g.name}
                     </CardTitle>
                     <ChevronRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
@@ -127,18 +129,18 @@ export function HomePage() {
       {showCreate ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">New circle</CardTitle>
+            <CardTitle className="text-base">{t('circles.new')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={createGroup} className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="new-group-name">Circle name</Label>
+                <Label htmlFor="new-group-name">{t('circles.name')}</Label>
                 <Input
                   id="new-group-name"
                   value={newGroupName}
                   onChange={e => setNewGroupName(e.target.value)}
                   maxLength={MAX_CIRCLE_NAME}
-                  placeholder="Family, Friends, Work Secret Santa…"
+                  placeholder={t('circles.namePlaceholder')}
                   required
                   autoFocus
                 />
@@ -152,9 +154,9 @@ export function HomePage() {
                     setNewGroupName('')
                   }}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
-                <Button type="submit">Create circle</Button>
+                <Button type="submit">{t('circles.create')}</Button>
               </div>
             </form>
           </CardContent>
@@ -163,7 +165,7 @@ export function HomePage() {
         groups && groups.length > 0 && (
           <Button onClick={() => setShowCreate(true)} variant="outline">
             <Plus className="h-4 w-4" />
-            New circle
+            {t('circles.new')}
           </Button>
         )
       )}

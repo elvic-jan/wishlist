@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import client from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
+import { formatDate as formatLocalDate, Trans, useT } from '@/lib/i18n'
 
 interface GiftClaim {
   id: string
@@ -32,7 +33,7 @@ interface Person {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  return formatLocalDate(new Date(iso))
 }
 
 /** "Keep reservation" is offered once the reminder is due: one month or less left. */
@@ -44,10 +45,11 @@ function canKeep(claim: GiftClaim): boolean {
 }
 
 function StatusBadge({ claim }: { claim: GiftClaim | null }) {
+  const t = useT()
   if (!claim) {
     return (
       <Badge variant="outline" className="font-normal">
-        Available
+        {t('claim.available')}
       </Badge>
     )
   }
@@ -58,7 +60,7 @@ function StatusBadge({ claim }: { claim: GiftClaim | null }) {
     return (
       <Badge variant="secondary" className="font-normal">
         <Check className="h-3 w-3" />
-        Bought
+        {t('claim.bought')}
       </Badge>
     )
   }
@@ -69,18 +71,19 @@ function StatusBadge({ claim }: { claim: GiftClaim | null }) {
         className="font-normal border-primary/40 bg-primary/10 text-primary"
       >
         <Lock className="h-3 w-3" />
-        Reserved by you
+        {t('claim.reservedByYou')}
       </Badge>
     )
   }
   return (
     <Badge variant="outline" className="font-normal text-muted-foreground">
-      Reserved
+      {t('claim.reserved')}
     </Badge>
   )
 }
 
 export function MemberWishlistPage() {
+  const t = useT()
   const { userId } = useParams<{ userId: string }>()
   const { user } = useAuth()
   const { toast } = useToast()
@@ -99,8 +102,9 @@ export function MemberWishlistPage() {
       client
         .get(`/wishlists/${userId}`)
         .then(r => setItems(r.data))
-        .catch(() => setError('Failed to load wishlist.'))
+        .catch(() => setError(t('myWishlist.loadFailed')))
         .finally(() => setLoaded(true)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t is the same function in every language
     [userId],
   )
 
@@ -137,7 +141,7 @@ export function MemberWishlistPage() {
       await client.post(`/wishlists/${userId}/items/${itemId}/claim`)
       load()
     } catch (err) {
-      handleErr(err, 'Failed to reserve.')
+      handleErr(err, t('member.reserveFailed'))
     }
   }
 
@@ -146,7 +150,7 @@ export function MemberWishlistPage() {
       await client.patch(`/wishlists/${userId}/items/${itemId}/claim`)
       load()
     } catch (err) {
-      handleErr(err, 'Failed to update status.')
+      handleErr(err, t('member.statusFailed'))
     }
   }
 
@@ -154,10 +158,10 @@ export function MemberWishlistPage() {
     try {
       const { data } = await client.post<WishlistItem>(`/wishlists/${userId}/items/${itemId}/claim/extend`)
       const until = data.claim?.expiresAt
-      toast({ title: 'Reservation kept', description: until ? `It now ends on ${formatDate(until)}.` : undefined })
+      toast({ title: t('member.kept'), description: until ? t('member.keptUntil', { date: formatDate(until) }) : undefined })
       load()
     } catch (err) {
-      handleErr(err, 'Failed to keep the reservation.')
+      handleErr(err, t('member.keepFailed'))
     }
   }
 
@@ -166,7 +170,7 @@ export function MemberWishlistPage() {
       await client.delete(`/wishlists/${userId}/items/${itemId}/claim`)
       load()
     } catch (err) {
-      handleErr(err, 'Failed to release claim.')
+      handleErr(err, t('member.releaseFailed'))
     }
   }
 
@@ -176,39 +180,37 @@ export function MemberWishlistPage() {
         item.claim.status === 'Reserved' &&
         item.claim.expiresAt && (
           <p className="w-full text-xs text-muted-foreground">
-            Your reservation ends on {formatDate(item.claim.expiresAt)}.
+            {t('member.endsOn', { date: formatDate(item.claim.expiresAt) })}
           </p>
         )}
       {!item.claim && (
         <Button size="sm" onClick={() => reserve(item.id)}>
-          Reserve
+          {t('member.reserve')}
         </Button>
       )}
       {item.claim?.isClaimedByMe && item.claim.status === 'Reserved' && (
         <Button size="sm" onClick={() => markBought(item.id)}>
           <Check className="h-4 w-4" />
-          Mark as bought
+          {t('member.markBought')}
         </Button>
       )}
       {item.claim && canKeep(item.claim) && (
         <Button size="sm" variant="outline" onClick={() => keepReservation(item.id)}>
-          Keep reservation
+          {t('member.keep')}
         </Button>
       )}
       {item.claim?.isClaimedByMe && (
         <Button size="sm" variant="outline" onClick={() => releaseClaim(item.id)}>
-          Release claim
+          {t('member.release')}
         </Button>
       )}
     </CardContent>
   )
 
   const deleteDescription = (item: WishlistItem) => {
-    const name = buddyOf?.displayName ?? 'their'
-    const base = `This removes the item from ${buddyOf ? `${name}’s` : 'the'} wishlist for everyone. It can’t be undone.`
-    if (!item.claim || item.claim.isClaimedByMe) return base
-    const what = item.claim.status === 'Bought' ? 'already bought' : 'reserved'
-    return `Someone has ${what} this gift. ${base}`
+    const text = buddyOf ? t('member.deleteNamed', { name: buddyOf.displayName }) : t('editor.deleteText')
+    if (!item.claim || item.claim.isClaimedByMe) return text
+    return t(item.claim.status === 'Bought' ? 'member.deleteBought' : 'member.deleteReserved', { text })
   }
 
   return (
@@ -218,15 +220,14 @@ export function MemberWishlistPage() {
         <div className="flex items-center gap-2">
           <Gift className="h-5 w-5 text-primary" aria-hidden />
           <h1 className="text-2xl font-semibold tracking-tight">
-            {name ? `${name}’s wishlist` : 'Wishlist'}
+            {name ? <Trans k="member.title" values={{ name }} /> : t('member.titleUnknown')}
           </h1>
         </div>
         {buddyOf && (
           <p className="mt-1.5 flex items-start gap-1.5 text-sm text-muted-foreground">
             <Users className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <span>
-              You&rsquo;re {buddyOf.displayName}&rsquo;s buddy, so you can add, change and remove
-              wishes here. {buddyOf.displayName} won&rsquo;t see what&rsquo;s reserved.
+              <Trans k="member.buddyNote" values={{ name: buddyOf.displayName }} />
             </span>
           </p>
         )}
@@ -244,9 +245,9 @@ export function MemberWishlistPage() {
         onChanged={load}
         itemsPath={`/wishlists/${userId}/items`}
         canEdit={buddyOf !== null}
-        addLabel={buddyOf ? `Add a wish for ${buddyOf.displayName}` : 'Add item'}
-        emptyTitle="Nothing here yet"
-        emptyText="This person hasn’t added any items."
+        addLabel={buddyOf ? t('member.addFor', { name: buddyOf.displayName }) : t('editor.addItem')}
+        emptyTitle={t('member.empty.title')}
+        emptyText={t('member.empty.text')}
         currentUserId={user?.id}
         renderBadge={item => <StatusBadge claim={item.claim} />}
         renderActions={renderActions}

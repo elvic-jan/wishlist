@@ -2,6 +2,7 @@ import * as React from "react"
 import { Eye, EyeOff } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
+import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 type PasswordInputProps = Omit<React.ComponentProps<"input">, "type">
@@ -10,7 +11,8 @@ type PasswordInputProps = Omit<React.ComponentProps<"input">, "type">
 const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
   ({ className, ...props }, ref) => {
     const [visible, setVisible] = React.useState(false)
-    const label = visible ? "Hide password" : "Show password"
+    const t = useT()
+    const label = visible ? t("common.hidePassword") : t("common.showPassword")
 
     return (
       <div className="relative">

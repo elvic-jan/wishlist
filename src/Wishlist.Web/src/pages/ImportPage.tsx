@@ -20,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { BackButton } from '@/components/BackButton'
 import client from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
+import { formatDate as formatLocalDate, plural, pluralKey, Trans, useT } from '@/lib/i18n'
 
 interface Status {
   available: boolean
@@ -47,7 +48,7 @@ const OLD_SITE = 'verlanglijstje.shorturl.com'
 
 
 function formatDate(iso?: string | null): string {
-  return iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
+  return iso ? formatLocalDate(new Date(iso)) : ''
 }
 
 function hostFor(url: string): string {
@@ -60,6 +61,7 @@ function hostFor(url: string): string {
 
 /** Bring your wishes from the old wishlist site, once. */
 export function ImportPage() {
+  const t = useT()
   const [status, setStatus] = useState<Status | null>(null)
   const [userName, setUserName] = useState('')
   const [preview, setPreview] = useState<Preview | null>(null)
@@ -72,7 +74,8 @@ export function ImportPage() {
     client
       .get<Status>('/legacy-import')
       .then(r => setStatus(r.data))
-      .catch(() => setError('Couldn’t check the import. Please try again later.'))
+      .catch(() => setError(t('import.checkFailed')))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- check once
   }, [])
 
   const lookUp = async (e: React.FormEvent) => {
@@ -84,7 +87,7 @@ export function ImportPage() {
       setPreview(data)
       setTicked(new Set(data.items.filter(i => i.suggested).map(i => i.legacyId)))
     } catch (err) {
-      setError(apiErrorMessage(err) ?? 'Couldn’t look up that username.')
+      setError(apiErrorMessage(err) ?? t('import.lookupFailed'))
     } finally {
       setBusy(false)
     }
@@ -110,7 +113,7 @@ export function ImportPage() {
       setStatus(data)
       setPreview(null)
     } catch (err) {
-      setError(apiErrorMessage(err) ?? 'The import didn’t work. Please try again.')
+      setError(apiErrorMessage(err) ?? t('import.failed'))
     } finally {
       setBusy(false)
       setConfirmEmpty(false)
@@ -123,10 +126,10 @@ export function ImportPage() {
         <BackButton />
         <div className="flex items-center gap-2">
           <Download className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-          <h1 className="text-2xl font-semibold tracking-tight">Import from the old site</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('import.title')}</h1>
         </div>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Bring your wishes over from {OLD_SITE}. You can do this once.
+          {t('import.intro', { site: OLD_SITE })}
         </p>
       </div>
 
@@ -136,24 +139,26 @@ export function ImportPage() {
         </Alert>
       )}
 
-      {!status && !error && <Skeleton className="h-40 w-full" aria-label="Loading" />}
+      {!status && !error && <Skeleton className="h-40 w-full" aria-label={t('common.loading')} />}
 
       {status?.imported && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Check className="h-4 w-4 text-primary" aria-hidden />
-              Your wishes are imported
+              {t('import.done.title')}
             </CardTitle>
             <CardDescription>
-              {status.itemCount === 1 ? '1 wish' : `${status.itemCount ?? 0} wishes`} from the old account{' '}
-              <span className="font-medium text-foreground">{status.userName}</span>
-              {status.importedAt && <> on {formatDate(status.importedAt)}</>}.
+              <Trans
+                k={pluralKey(status.importedAt ? 'import.done.textOn' : 'import.done.text', status.itemCount ?? 0)}
+                values={{ count: status.itemCount ?? 0, user: status.userName ?? '', date: formatDate(status.importedAt) }}
+                components={{ b: <span className="font-medium text-foreground" /> }}
+              />
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild>
-              <Link to="/wishlist/me">Open my wishlist</Link>
+              <Link to="/wishlist/me">{t('import.done.open')}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -162,8 +167,8 @@ export function ImportPage() {
       {status && !status.imported && !status.available && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Not available yet</CardTitle>
-            <CardDescription>The old site’s wishes haven’t been loaded yet. Please check back later.</CardDescription>
+            <CardTitle className="text-base">{t('import.unavailable.title')}</CardTitle>
+            <CardDescription>{t('import.unavailable.text')}</CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -171,14 +176,14 @@ export function ImportPage() {
       {status && !status.imported && status.available && !preview && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Your old username</CardTitle>
-            <CardDescription>The name you used to sign in on {OLD_SITE}, for example JOHN.DOE.</CardDescription>
+            <CardTitle className="text-base">{t('import.username.title')}</CardTitle>
+            <CardDescription>{t('import.username.text', { site: OLD_SITE })}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={lookUp} className="flex flex-col gap-3 sm:flex-row">
               <div className="flex-1 space-y-1.5">
                 <Label htmlFor="old-username" className="sr-only">
-                  Old username
+                  {t('import.username.label')}
                 </Label>
                 <Input
                   id="old-username"
@@ -193,7 +198,7 @@ export function ImportPage() {
               </div>
               <Button type="submit" disabled={busy || userName.trim().length === 0}>
                 {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-                Find my wishes
+                {t('import.find')}
               </Button>
             </form>
           </CardContent>
@@ -204,16 +209,15 @@ export function ImportPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">
-              Wishes of {preview.userName}
+              <Trans k="import.preview.title" values={{ user: preview.userName }} />
             </CardTitle>
             <CardDescription>
-              Tick the wishes you want to bring over. Recent ones are ticked already. Reservations from the old
-              site don’t carry over.
+              {t('import.preview.text')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {preview.items.length === 0 ? (
-              <p className="text-sm text-muted-foreground">This old account has no open wishes.</p>
+              <p className="text-sm text-muted-foreground">{t('import.preview.none')}</p>
             ) : (
               <ul className="space-y-2">
                 {preview.items.map(item => (
@@ -237,6 +241,7 @@ export function ImportPage() {
                             {item.urls.map(u => (
                               <span
                                 key={u}
+                                translate="no"
                                 className="inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs text-muted-foreground"
                               >
                                 {hostFor(u)}
@@ -247,7 +252,7 @@ export function ImportPage() {
                         )}
                         {item.changedAt && (
                           <span className="block text-xs text-muted-foreground">
-                            Last changed {formatDate(item.changedAt)}
+                            {t('import.preview.changed', { date: formatDate(item.changedAt) })}
                           </span>
                         )}
                       </span>
@@ -258,11 +263,11 @@ export function ImportPage() {
             )}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <Button variant="ghost" onClick={() => setPreview(null)} disabled={busy}>
-                Not my account
+                {t('import.notMine')}
               </Button>
               <Button onClick={() => (ticked.size === 0 ? setConfirmEmpty(true) : runImport())} disabled={busy}>
                 {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-                {ticked.size === 1 ? 'Import 1 wish' : `Import ${ticked.size} wishes`}
+                {plural('import.run', ticked.size)}
               </Button>
             </div>
           </CardContent>
@@ -272,15 +277,14 @@ export function ImportPage() {
       <AlertDialog open={confirmEmpty} onOpenChange={setConfirmEmpty}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Import nothing?</AlertDialogTitle>
+            <AlertDialogTitle>{t('import.empty.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              No wishes are ticked. This links the old account {preview?.userName} to you without bringing any
-              wishes over, and you can’t import again later.
+              <Trans k="import.empty.text" values={{ user: preview?.userName ?? '' }} />
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Go back</AlertDialogCancel>
-            <AlertDialogAction onClick={runImport}>Import nothing</AlertDialogAction>
+            <AlertDialogCancel>{t('import.empty.back')}</AlertDialogCancel>
+            <AlertDialogAction onClick={runImport}>{t('import.empty.confirm')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getLanguage } from '@/lib/i18n';
 
 let accessToken: string | null = null;
 
@@ -14,6 +15,8 @@ const client = axios.create({
 });
 
 client.interceptors.request.use((config) => {
+  // The server answers (error messages, emails it sends) in the language the app is showing.
+  config.headers['Accept-Language'] = getLanguage();
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }

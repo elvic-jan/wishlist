@@ -6,6 +6,7 @@ import client from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
 import { LastingToast } from '@/components/LastingToast'
 import { applyUpdate, checkForUpdateWithin, useUpdateAvailable } from '@/lib/appUpdate'
+import { useLanguage, useT } from '@/lib/i18n'
 
 interface Message {
   id: string
@@ -42,6 +43,9 @@ function snooze(id: string) {
  * Each can be acted on, put off until next time, or closed for good.
  */
 export function MessageToaster({ hiddenOn = [] }: { hiddenOn?: string[] }) {
+  const t = useT()
+  // The server writes the messages in the language the app is showing.
+  const language = useLanguage()
   const { user } = useAuth()
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -63,7 +67,7 @@ export function MessageToaster({ hiddenOn = [] }: { hiddenOn?: string[] }) {
     return () => {
       cancelled = true
     }
-  }, [user])
+  }, [user, language])
 
   const current = queue[0]
   if (!current || updateAvailable || hiddenOn.includes(pathname)) return null
@@ -84,7 +88,7 @@ export function MessageToaster({ hiddenOn = [] }: { hiddenOn?: string[] }) {
           next()
         }}
       >
-        Remind me next time
+        {t('messages.remindLater')}
       </Button>
       {current.action && (
         <Button

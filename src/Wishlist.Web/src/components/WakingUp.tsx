@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Gift, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 
 /**
  * Shown while the first API call is pending. The backend scales to zero when
@@ -8,6 +9,7 @@ import { cn } from '@/lib/utils'
  * answers well within it) we say so instead of showing a blank page.
  */
 export function WakingUp({ graceMs = 1500, fullScreen = true }: { graceMs?: number; fullScreen?: boolean }) {
+  const t = useT()
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -29,10 +31,10 @@ export function WakingUp({ graceMs = 1500, fullScreen = true }: { graceMs?: numb
       <Gift className="h-8 w-8 text-primary" aria-hidden />
       <div className="flex items-center gap-2 text-sm font-medium text-foreground">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-        Waking up the server…
+        {t('wakingUp.title')}
       </div>
       <p className="max-w-xs text-sm text-muted-foreground">
-        It sleeps when nobody has visited for a while. This can take up to half a minute.
+        {t('wakingUp.text')}
       </p>
     </div>
   )

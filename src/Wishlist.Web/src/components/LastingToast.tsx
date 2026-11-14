@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { X } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 
 /**
  * The card for toasts that stay until handled (messages, the new-version
@@ -20,6 +21,7 @@ export function LastingToast({
   onClose?: () => void
   children: ReactNode
 }) {
+  const t = useT()
   return (
     <div
       role="status"
@@ -38,7 +40,7 @@ export function LastingToast({
               type="button"
               onClick={onClose}
               className="-m-1 rounded-sm p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Close"
+              aria-label={t('common.close')}
             >
               <X className="h-4 w-4" />
             </button>

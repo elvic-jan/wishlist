@@ -19,6 +19,7 @@ import { Separator } from '@/components/ui/separator'
 import { InstallAppLink } from '@/components/InstallApp'
 import { apiErrorMessage, signInWithPasskey } from '@/api/passkeys'
 import { useAuth } from '@/context/AuthContext'
+import { useT } from '@/lib/i18n'
 import {
   isPasskeyCancelled,
   passkeyAutofillSupported,
@@ -33,6 +34,7 @@ function isPasskeyRejected(err: unknown): boolean {
 }
 
 export function LoginPage() {
+  const t = useT()
   const { login, startSession } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -60,10 +62,10 @@ export function LoginPage() {
     setError(
       passkeyErrorMessage(err) ??
         (apiErrorMessage(err)
-          ? 'That passkey isn’t linked to a Kadoozle account. Sign in with your password, or use “Can’t sign in?”.'
-          : 'Signing in with Face ID / fingerprint didn’t work. Please try again.'),
+          ? t('login.passkeyNotLinked')
+          : t('login.passkeyFailed')),
     )
-  }, [])
+  }, [t])
 
   // Offer saved passkeys in the email field's autofill, without a dialog.
   // This runs in the background, so it stays silent unless the server rejects
@@ -128,7 +130,7 @@ export function LoginPage() {
     } catch (err) {
       // Too many wrong passwords: the server explains how to get in another way.
       const res = (err as { response?: { status?: number; data?: { error?: string } } })?.response
-      setError(res?.status === 429 && res.data?.error ? res.data.error : 'Invalid email or password.')
+      setError(res?.status === 429 && res.data?.error ? res.data.error : t('login.invalid'))
     } finally {
       setSubmitting(false)
     }
@@ -137,16 +139,16 @@ export function LoginPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sign in</CardTitle>
+        <CardTitle>{t('login.title')}</CardTitle>
         <CardDescription>
-          Welcome back. Sign in to see your circles and wishlists.
+          {t('login.description')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {resetSuccess && (
           <Alert className="mb-4 border-primary/40">
             <AlertDescription>
-              Password updated. Please sign in with your new password.
+              {t('login.resetSuccess')}
             </AlertDescription>
           </Alert>
         )}
@@ -165,11 +167,11 @@ export function LoginPage() {
               disabled={passkeyBusy}
             >
               <Fingerprint className="mr-2 h-4 w-4" aria-hidden />
-              {passkeyBusy ? 'Waiting for your device…' : 'Sign in with Face ID / fingerprint'}
+              {passkeyBusy ? t('common.waitingForDevice') : t('login.withPasskey')}
             </Button>
             <div className="my-5 flex items-center gap-3">
               <Separator className="flex-1" />
-              <span className="text-xs text-muted-foreground">or use your password</span>
+              <span className="text-xs text-muted-foreground">{t('login.orPassword')}</span>
               <Separator className="flex-1" />
             </div>
           </>
@@ -177,7 +179,7 @@ export function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="login-email">Email</Label>
+            <Label htmlFor="login-email">{t('common.email')}</Label>
             <Input
               id="login-email"
               type="email"
@@ -188,7 +190,7 @@ export function LoginPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="login-password">Password</Label>
+            <Label htmlFor="login-password">{t('common.password')}</Label>
             <PasswordInput
               id="login-password"
               autoComplete="current-password"
@@ -203,7 +205,7 @@ export function LoginPage() {
             className="w-full"
             disabled={submitting}
           >
-            {submitting ? 'Signing in…' : 'Sign in with password'}
+            {submitting ? t('login.signingIn') : t('login.withPassword')}
           </Button>
         </form>
         <div className="mt-4 text-center text-sm">
@@ -211,13 +213,13 @@ export function LoginPage() {
             to="/forgot-password"
             className="text-primary underline-offset-4 hover:underline"
           >
-            Can’t sign in?
+            {t('login.cantSignIn')}
           </Link>
         </div>
       </CardContent>
       <CardFooter className="flex-col gap-3">
         <p className="text-sm text-muted-foreground">
-          New here? Ask a family member for an invite link.
+          {t('login.newHere')}
         </p>
         <InstallAppLink />
       </CardFooter>

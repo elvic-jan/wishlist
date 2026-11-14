@@ -21,6 +21,7 @@ import client from '@/api/client'
 import { MAX_ITEM_DESCRIPTION, MAX_ITEM_TITLE, MAX_URL } from '@/lib/inputLimits'
 import { apiErrorMessage } from '@/api/errors'
 import { useToast } from '@/hooks/use-toast'
+import { Trans, useT } from '@/lib/i18n'
 
 export interface AddedBy {
   userId: string
@@ -100,6 +101,7 @@ export function WishlistEditor<T extends EditableItem>({
   renderActions?: (item: T) => ReactNode
   deleteDescription?: (item: T) => string
 }) {
+  const t = useT()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
   // Where the new-item form is open: at the top or bottom add button.
@@ -120,12 +122,12 @@ export function WishlistEditor<T extends EditableItem>({
   const cleanUrlsForSubmit = (): string[] | null => {
     const cleaned = form.urls.map(u => u.trim()).filter(u => u.length > 0)
     if (cleaned.length > MAX_URLS) {
-      setError(`You can attach at most ${MAX_URLS} URLs.`)
+      setError(t('editor.tooManyUrls', { max: MAX_URLS }))
       return null
     }
     for (const u of cleaned) {
       if (!isValidHttpUrl(u)) {
-        setError('Each URL must start with http:// or https://')
+        setError(t('editor.badUrl'))
         return null
       }
     }
@@ -147,9 +149,9 @@ export function WishlistEditor<T extends EditableItem>({
       setAdding(null)
       onChanged()
       // The item lands at the end of the list, maybe off screen: confirm in place.
-      toast({ title: 'Added', description: form.title })
+      toast({ title: t('editor.added'), description: form.title })
     } catch (err: unknown) {
-      setError(apiErrorMessage(err) ?? 'Failed to add item.')
+      setError(apiErrorMessage(err) ?? t('editor.addFailed'))
     }
   }
 
@@ -167,7 +169,7 @@ export function WishlistEditor<T extends EditableItem>({
       setForm(emptyForm)
       onChanged()
     } catch (err: unknown) {
-      setError(apiErrorMessage(err) ?? 'Failed to save.')
+      setError(apiErrorMessage(err) ?? t('editor.saveFailed'))
     }
   }
 
@@ -176,7 +178,7 @@ export function WishlistEditor<T extends EditableItem>({
     try {
       await client.delete(`${itemsPath}/${id}`)
     } catch (err: unknown) {
-      setError(apiErrorMessage(err) ?? 'Failed to delete.')
+      setError(apiErrorMessage(err) ?? t('editor.deleteFailed'))
     }
     setPendingDeleteId(null)
     onChanged()
@@ -211,12 +213,12 @@ export function WishlistEditor<T extends EditableItem>({
   const renderAddForm = () => (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">New item</CardTitle>
+        <CardTitle className="text-base">{t('editor.newItem')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={addItem} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="new-item-title">Title</Label>
+            <Label htmlFor="new-item-title">{t('editor.title')}</Label>
             <Input
               id="new-item-title"
               value={form.title}
@@ -227,13 +229,13 @@ export function WishlistEditor<T extends EditableItem>({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="new-item-description">Description</Label>
+            <Label htmlFor="new-item-description">{t('editor.description')}</Label>
             <Textarea
               id="new-item-description"
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               maxLength={MAX_ITEM_DESCRIPTION}
-              placeholder="Optional notes for whoever picks this up."
+              placeholder={t('editor.descriptionPlaceholder')}
               rows={2}
             />
           </div>
@@ -247,9 +249,9 @@ export function WishlistEditor<T extends EditableItem>({
                 setForm(emptyForm)
               }}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
-            <Button type="submit">Add item</Button>
+            <Button type="submit">{t('editor.addItem')}</Button>
           </div>
         </form>
       </CardContent>
@@ -258,7 +260,7 @@ export function WishlistEditor<T extends EditableItem>({
 
   const renderUrlEditor = () => (
     <div className="space-y-3">
-      <Label>Links</Label>
+      <Label>{t('editor.links')}</Label>
       <div>
         <Button
           type="button"
@@ -268,7 +270,7 @@ export function WishlistEditor<T extends EditableItem>({
           disabled={form.urls.length >= MAX_URLS}
         >
           <Plus className="h-4 w-4" />
-          Add link
+          {t('editor.addLink')}
           {form.urls.length > 0 && ` (${form.urls.length}/${MAX_URLS})`}
         </Button>
       </div>
@@ -287,7 +289,7 @@ export function WishlistEditor<T extends EditableItem>({
                 variant="ghost"
                 size="icon"
                 onClick={() => removeUrlRow(i)}
-                aria-label="Remove URL"
+                aria-label={t('editor.removeUrl')}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -309,7 +311,7 @@ export function WishlistEditor<T extends EditableItem>({
       )}
 
       {!loaded ? (
-        <div className="space-y-3" aria-label="Loading wishlist">
+        <div className="space-y-3" aria-label={t('editor.loading')}>
           <Skeleton className="h-24 w-full" />
           <Skeleton className="h-24 w-full" />
         </div>
@@ -341,7 +343,7 @@ export function WishlistEditor<T extends EditableItem>({
                   {editingId === item.id ? (
                     <CardContent className="space-y-4 pt-6">
                       <div className="space-y-1.5">
-                        <Label htmlFor={`title-${item.id}`}>Title</Label>
+                        <Label htmlFor={`title-${item.id}`}>{t('editor.title')}</Label>
                         <Input
                           id={`title-${item.id}`}
                           value={form.title}
@@ -350,7 +352,7 @@ export function WishlistEditor<T extends EditableItem>({
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor={`desc-${item.id}`}>Description</Label>
+                        <Label htmlFor={`desc-${item.id}`}>{t('editor.description')}</Label>
                         <Textarea
                           id={`desc-${item.id}`}
                           value={form.description}
@@ -369,9 +371,9 @@ export function WishlistEditor<T extends EditableItem>({
                             setForm(emptyForm)
                           }}
                         >
-                          Cancel
+                          {t('common.cancel')}
                         </Button>
-                        <Button onClick={() => saveEdit(item.id)}>Save</Button>
+                        <Button onClick={() => saveEdit(item.id)}>{t('common.save')}</Button>
                       </div>
                     </CardContent>
                   ) : (
@@ -386,13 +388,13 @@ export function WishlistEditor<T extends EditableItem>({
                             {canEdit && (
                               <>
                                 <Button variant="ghost" size="sm" onClick={() => startEdit(item)}>
-                                  Edit
+                                  {t('common.edit')}
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => setPendingDeleteId(item.id)}
-                                  aria-label={`Delete ${item.title}`}
+                                  aria-label={t('editor.deleteItem', { title: item.title })}
                                   className="text-muted-foreground hover:text-destructive"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -407,8 +409,11 @@ export function WishlistEditor<T extends EditableItem>({
                         {item.addedBy && (
                           <p className="flex items-center gap-1 text-xs text-muted-foreground">
                             <UserRound className="h-3 w-3" aria-hidden />
-                            Added by{' '}
-                            {item.addedBy.userId === currentUserId ? 'you' : item.addedBy.displayName}
+                            {item.addedBy.userId === currentUserId ? (
+                              t('editor.addedByYou')
+                            ) : (
+                              <Trans k="editor.addedBy" values={{ name: item.addedBy.displayName }} />
+                            )}
                           </p>
                         )}
                       </CardHeader>
@@ -421,6 +426,7 @@ export function WishlistEditor<T extends EditableItem>({
                                 href={u}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                translate="no"
                                 className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs text-foreground transition-colors hover:bg-accent"
                               >
                                 {hostFor(u)}
@@ -448,20 +454,22 @@ export function WishlistEditor<T extends EditableItem>({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete &ldquo;{pendingDeleteItem?.title}&rdquo;?</AlertDialogTitle>
+            <AlertDialogTitle>
+              <Trans k="editor.deleteTitle" values={{ title: pendingDeleteItem?.title ?? '' }} />
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingDeleteItem && deleteDescription
                 ? deleteDescription(pendingDeleteItem)
-                : 'This removes the item from the wishlist for everyone. It can’t be undone.'}
+                : t('editor.deleteText')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => pendingDeleteId && performDelete(pendingDeleteId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

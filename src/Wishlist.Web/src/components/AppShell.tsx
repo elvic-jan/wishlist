@@ -13,9 +13,11 @@ import {
 import { Suspense, useState } from 'react'
 import { AccountBanners } from '@/components/AccountBanners'
 import { InstallAppMenuItem, IosInstallHelp } from '@/components/InstallApp'
+import { LanguageMenu } from '@/components/LanguageSwitch'
 import { MessageToaster } from '@/components/MessageToaster'
 import { ModeToggle } from '@/components/ModeToggle'
 import { useAuth } from '@/context/AuthContext'
+import { useT } from '@/lib/i18n'
 import { APP_VERSION } from '@/lib/appUpdate'
 import { cn } from '@/lib/utils'
 
@@ -35,6 +37,7 @@ function navLinkClasses(isActive: boolean): string {
 }
 
 export function AppShell() {
+  const t = useT()
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -66,7 +69,7 @@ export function AppShell() {
                 aria-current={inWishlists ? 'page' : undefined}
                 className={navLinkClasses(inWishlists)}
               >
-                Wishlists
+                {t('nav.wishlists')}
               </Link>
               {/* Highlighted on My circles and on every circle's page. */}
               <Link
@@ -74,7 +77,7 @@ export function AppShell() {
                 aria-current={inCircles ? 'page' : undefined}
                 className={navLinkClasses(inCircles)}
               >
-                Circles
+                {t('nav.circles')}
               </Link>
             </nav>
           </div>
@@ -87,7 +90,7 @@ export function AppShell() {
                   variant="ghost"
                   size="icon"
                   className="rounded-full"
-                  aria-label="Account menu"
+                  aria-label={t('menu.account')}
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-primary/15 text-primary text-xs font-semibold">
@@ -98,11 +101,11 @@ export function AppShell() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel className="flex flex-col gap-0.5">
-                  <span className="text-sm font-medium leading-none">
-                    {user?.displayName ?? 'Signed in'}
+                  <span className="text-sm font-medium leading-none" translate={user ? 'no' : undefined}>
+                    {user?.displayName ?? t('menu.signedIn')}
                   </span>
                   {user?.email && (
-                    <span className="text-xs font-normal text-muted-foreground">
+                    <span className="text-xs font-normal text-muted-foreground" translate="no">
                       {user.email}
                     </span>
                   )}
@@ -111,32 +114,33 @@ export function AppShell() {
                 <InstallAppMenuItem onShowIosHelp={() => setShowIosInstallHelp(true)} />
                 <DropdownMenuItem onClick={() => navigate('/import')}>
                   <Download className="mr-2 h-4 w-4" />
-                  Import from old site
+                  {t('menu.import')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/settings/security')}>
                   <ShieldCheck className="mr-2 h-4 w-4" />
-                  Sign-in &amp; security
+                  {t('menu.security')}
                 </DropdownMenuItem>
                 {user?.isAdmin && (
                   <DropdownMenuItem onClick={() => navigate('/admin')}>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
-                    Admin
+                    {t('menu.admin')}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => navigate('/whats-new')}>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  What's new
+                  {t('menu.whatsNew')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/licenses')}>
                   <Scale className="mr-2 h-4 w-4" />
-                  Open-source licences
+                  {t('menu.licences')}
                 </DropdownMenuItem>
+                <LanguageMenu />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  Sign out
+                  {t('menu.signOut')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <p className="px-2 py-1.5 text-xs text-muted-foreground">Version {APP_VERSION}</p>
+                <p className="px-2 py-1.5 text-xs text-muted-foreground">{t('menu.version', { version: APP_VERSION })}</p>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
