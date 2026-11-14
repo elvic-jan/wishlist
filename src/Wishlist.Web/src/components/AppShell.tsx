@@ -29,7 +29,7 @@ function initialsOf(name: string | undefined): string {
 
 function navLinkClasses(isActive: boolean): string {
   return cn(
-    'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+    'rounded-md px-2 py-1.5 text-sm font-medium transition-colors min-[400px]:px-3',
     isActive
       ? 'bg-primary/10 text-primary'
       : 'text-muted-foreground hover:bg-accent hover:text-foreground',
@@ -53,14 +53,15 @@ export function AppShell() {
   return (
     <div className="min-h-svh bg-background">
       <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-4 px-4 sm:px-6">
-          <div className="flex items-center gap-4 sm:gap-6">
+        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-2 px-4 min-[400px]:gap-4 sm:px-6">
+          <div className="flex items-center gap-2 min-[400px]:gap-4 sm:gap-6">
             <Link
               to="/wishlists"
               className="flex items-center gap-2 text-sm font-semibold tracking-tight text-foreground hover:text-foreground"
             >
               <Gift className="h-5 w-5 text-primary" aria-hidden />
-              <span>Kadoozle</span>
+              {/* The name gives way on narrow phones: the Dutch tabs need the room. */}
+              <span className="sr-only min-[400px]:not-sr-only">Kadoozle</span>
             </Link>
             <nav className="flex items-center gap-1">
               {/* Highlighted on the overview and on every wishlist, mine or someone else's. */}
