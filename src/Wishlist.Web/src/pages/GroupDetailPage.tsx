@@ -26,6 +26,7 @@ import { InviteMenu } from '@/components/InviteMenu'
 import client from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
 import { apiErrorMessage } from '@/api/errors'
+import { useT, UserText } from '@/lib/i18n'
 
 interface Member {
   userId: string
@@ -52,6 +53,7 @@ function RowLink({ to, children }: { to: string; children: React.ReactNode }) {
 }
 
 export function GroupDetailPage() {
+  const t = useT()
   const { groupId } = useParams<{ groupId: string }>()
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -69,10 +71,11 @@ export function GroupDetailPage() {
         setMembers(membersRes.data)
         setCircles(circlesRes.data)
       })
-      .catch(() => !cancelled && setError('Failed to load circle details.'))
+      .catch(() => !cancelled && setError(t('circle.loadFailed')))
     return () => {
       cancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t is the same function in every language
   }, [groupId])
 
   const circleName = circles?.find(c => c.id === groupId)?.name
@@ -89,7 +92,7 @@ export function GroupDetailPage() {
       navigate('/circles')
     } catch (err: unknown) {
       const msg = apiErrorMessage(err)
-      setError(msg ?? 'Failed to leave circle.')
+      setError(msg ?? t('circle.leaveFailed'))
     }
   }
 
@@ -100,9 +103,9 @@ export function GroupDetailPage() {
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5 shrink-0 text-primary" aria-hidden />
           {circleName ? (
-            <h1 className="truncate text-2xl font-semibold tracking-tight">{circleName}</h1>
+            <h1 translate="no" className="truncate text-2xl font-semibold tracking-tight">{circleName}</h1>
           ) : (
-            <Skeleton className="h-8 w-48" aria-label="Loading circle" />
+            <Skeleton className="h-8 w-48" aria-label={t('circle.loading')} />
           )}
         </div>
       </div>
@@ -115,11 +118,11 @@ export function GroupDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Members</CardTitle>
+          <CardTitle className="text-base">{t('circle.members')}</CardTitle>
         </CardHeader>
         <CardContent>
           {!orderedMembers ? (
-            <div className="space-y-2" aria-label="Loading members">
+            <div className="space-y-2" aria-label={t('circle.loadingMembers')}>
               <Skeleton className="h-11 w-full" />
               <Skeleton className="h-11 w-full" />
             </div>
@@ -129,11 +132,13 @@ export function GroupDetailPage() {
                 <li key={m.userId}>
                   {m.userId === user?.id ? (
                     <RowLink to="/wishlist/me">
-                      {m.displayName}{' '}
-                      <span className="font-normal text-muted-foreground">(you)</span>
+                      <UserText>{m.displayName}</UserText>{' '}
+                      <span className="font-normal text-muted-foreground">{t('circle.you')}</span>
                     </RowLink>
                   ) : (
-                    <RowLink to={`/wishlist/${m.userId}`}>{m.displayName}</RowLink>
+                    <RowLink to={`/wishlist/${m.userId}`}>
+                      <UserText>{m.displayName}</UserText>
+                    </RowLink>
                   )}
                 </li>
               ))}
@@ -144,18 +149,20 @@ export function GroupDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Other circles</CardTitle>
+          <CardTitle className="text-base">{t('circle.others')}</CardTitle>
         </CardHeader>
         <CardContent>
           {!circles ? (
-            <Skeleton className="h-11 w-full" aria-label="Loading circles" />
+            <Skeleton className="h-11 w-full" aria-label={t('circles.loading')} />
           ) : otherCircles.length === 0 ? (
-            <p className="text-sm text-muted-foreground">You&rsquo;re not in any other circles.</p>
+            <p className="text-sm text-muted-foreground">{t('circle.noOthers')}</p>
           ) : (
             <ul className="space-y-2">
               {otherCircles.map(c => (
                 <li key={c.id}>
-                  <RowLink to={`/circles/${c.id}`}>{c.name}</RowLink>
+                  <RowLink to={`/circles/${c.id}`}>
+                    <UserText>{c.name}</UserText>
+                  </RowLink>
                 </li>
               ))}
             </ul>
@@ -170,11 +177,11 @@ export function GroupDetailPage() {
           <InviteMenu
             groupId={groupId!}
             circleName={circleName}
-            inviterName={user?.displayName ?? 'Someone'}
+            inviterName={user?.displayName ?? t('common.someone')}
             onLinkCreated={setInviteUrl}
           />
         ) : (
-          <Skeleton className="h-10 w-36" aria-label="Loading" />
+          <Skeleton className="h-10 w-36" aria-label={t('common.loading')} />
         )}
         <Button
           onClick={() => setConfirmLeave(true)}
@@ -182,12 +189,12 @@ export function GroupDetailPage() {
           className="text-destructive hover:bg-destructive/10 hover:text-destructive"
         >
           <LogOut className="h-4 w-4" />
-          Leave circle
+          {t('circle.leave')}
         </Button>
       </div>
 
       {inviteUrl && (
-        <p className="break-all rounded-md border bg-muted/50 p-3 text-xs text-muted-foreground">
+        <p translate="no" className="break-all rounded-md border bg-muted/50 p-3 text-xs text-muted-foreground">
           {inviteUrl}
         </p>
       )}
@@ -195,20 +202,18 @@ export function GroupDetailPage() {
       <AlertDialog open={confirmLeave} onOpenChange={setConfirmLeave}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Leave this circle?</AlertDialogTitle>
+            <AlertDialogTitle>{t('circle.leave.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              You&rsquo;ll lose access to other members&rsquo; wishlists. You
-              can rejoin later if someone shares the invite link with you
-              again.
+              {t('circle.leave.text')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={leaveGroup}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Leave circle
+              {t('circle.leave')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

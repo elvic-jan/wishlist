@@ -22,6 +22,6 @@ public static class InputLimits
     public static void Check(string? value, int max, string label)
     {
         if (value is not null && value.Length > max)
-            throw new DomainException($"{label} can be at most {max} characters.");
+            throw new DomainException("{0} can be at most {1} characters.", new Term(label), max);
     }
 }

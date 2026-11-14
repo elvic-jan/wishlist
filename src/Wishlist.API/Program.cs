@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Wishlist.API;
 using Wishlist.Application;
 using Wishlist.Application.Interfaces;
+using Wishlist.Application.Localization;
 using Wishlist.Application.UseCases.Admin;
 using Wishlist.Application.UseCases.Auth;
 using Wishlist.Application.UseCases.GiftClaims;
@@ -24,6 +25,8 @@ builder.Services.AddSingleton<InviteCodeGuard>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<PasskeyCeremonyCookie>();
 builder.Services.AddSingleton<ISpaTemplate, WebRootSpaTemplate>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ILanguageContext, RequestLanguage>();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 
@@ -183,7 +186,8 @@ if (environmentLabel is not null)
 
 // Invite links get a personal link preview ("Jan invited you to Family…").
 // Unknown, expired or rate-limited codes get the generic one, so a preview
-// never confirms a guessed code. Personal, so never cached.
+// never confirms a guessed code. Personal, so never cached. In the inviter's
+// language: the crawler that reads it has none of its own.
 app.MapGet("/join/{code}", async (
     string code, HttpContext http, ISpaTemplate spa, InviteCodeGuard guard,
     CheckInvitationUseCase checkInvitation, IAppUrlProvider urls, CancellationToken ct) =>
@@ -194,8 +198,8 @@ app.MapGet("/join/{code}", async (
     var preview = invitation is null
         ? null
         : new SpaPage.Preview(
-            $"{invitation.InviterName} invited you to {invitation.CircleName} on Kadoozle",
-            "Join the circle to see each other's wishlists and coordinate gifts.");
+            Texts.T(invitation.InviterLanguage, "{0} invited you to {1} on Kadoozle", invitation.InviterName, invitation.CircleName),
+            Texts.T(invitation.InviterLanguage, "Join the circle to see each other's wishlists and coordinate gifts."));
     return SpaPage.Html(SpaPage.Render(html, urls.PublicBaseUrl, http.Request.Path, preview), SpaPage.Caching.NoStore);
 }).AllowAnonymous();
 

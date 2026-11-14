@@ -10,13 +10,13 @@ public interface IUserRepository
 
     /// <summary>Grants or removes the site-wide Admin role. Returns false when nothing changed.</summary>
     Task<bool> SetAdminAsync(Guid userId, bool isAdmin, CancellationToken ct = default);
-    Task<User> CreateAsync(string email, string displayName, string password, CancellationToken ct = default);
+    Task<User> CreateAsync(string email, string displayName, string password, string? language = null, CancellationToken ct = default);
 
     /// <summary>
     /// Creates an account that signs in with a passkey only. The ID is chosen by
     /// the caller because the passkey was already bound to it during sign-up.
     /// </summary>
-    Task<User> CreateWithoutPasswordAsync(Guid id, string email, string displayName, CancellationToken ct = default);
+    Task<User> CreateWithoutPasswordAsync(Guid id, string email, string displayName, string? language = null, CancellationToken ct = default);
 
     /// <summary>Generates a token for the email-confirmation link.</summary>
     Task<string> GenerateEmailConfirmationTokenAsync(Guid userId, CancellationToken ct = default);
@@ -39,6 +39,9 @@ public interface IUserRepository
     /// <summary>Invalidates every outstanding reset and confirmation token of the user.</summary>
     Task InvalidateSecurityTokensAsync(Guid userId, CancellationToken ct = default);
     Task UpdateDisplayNameAsync(Guid userId, string displayName, CancellationToken ct = default);
+
+    /// <summary>Saves the language the person chose (a supported code).</summary>
+    Task SetLanguageAsync(Guid userId, string language, CancellationToken ct = default);
     /// <summary>
     /// False for a wrong password, an unknown user (<see cref="Guid.Empty"/>) or an
     /// account without a password; all take about as long as a real check.

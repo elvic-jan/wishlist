@@ -127,12 +127,12 @@ public sealed class InMemoryStore
     /// <summary>Makes the next membership insert fail, to exercise rollback.</summary>
     public bool FailNextAddMember { get; set; }
 
-    public User AddUser(string? email = null)
+    public User AddUser(string? email = null, string? language = null)
     {
         var user = new User
         {
             Id = Guid.NewGuid(), Email = email ?? $"{Guid.NewGuid()}@example.com",
-            DisplayName = "Existing", CreatedAt = DateTime.UtcNow, HasPassword = true,
+            DisplayName = "Existing", CreatedAt = DateTime.UtcNow, HasPassword = true, Language = language,
         };
         Users[user.Id] = user;
         return user;
@@ -172,22 +172,22 @@ internal sealed class InMemoryUsers(InMemoryStore store) : IUserRepository
         return Task.FromResult(true);
     }
 
-    public Task<User> CreateAsync(string email, string displayName, string password, CancellationToken ct = default)
+    public Task<User> CreateAsync(string email, string displayName, string password, string? language = null, CancellationToken ct = default)
     {
         var user = new User
         {
-            Id = Guid.NewGuid(), Email = email, DisplayName = displayName, CreatedAt = DateTime.UtcNow, HasPassword = true,
+            Id = Guid.NewGuid(), Email = email, DisplayName = displayName, CreatedAt = DateTime.UtcNow, HasPassword = true, Language = language,
         };
         store.Users[user.Id] = user;
         store.Passwords[user.Id] = password;
         return Task.FromResult(user);
     }
 
-    public Task<User> CreateWithoutPasswordAsync(Guid id, string email, string displayName, CancellationToken ct = default)
+    public Task<User> CreateWithoutPasswordAsync(Guid id, string email, string displayName, string? language = null, CancellationToken ct = default)
     {
         if (store.Users.ContainsKey(id) || store.Users.Values.Any(u => u.Email == email))
             throw new InvalidOperationException("Duplicate user.");
-        var user = new User { Id = id, Email = email, DisplayName = displayName, CreatedAt = DateTime.UtcNow };
+        var user = new User { Id = id, Email = email, DisplayName = displayName, CreatedAt = DateTime.UtcNow, Language = language };
         store.Users[user.Id] = user;
         return Task.FromResult(user);
     }
@@ -223,6 +223,11 @@ internal sealed class InMemoryUsers(InMemoryStore store) : IUserRepository
     public Task UpdateDisplayNameAsync(Guid userId, string displayName, CancellationToken ct = default)
     {
         store.Users[userId].DisplayName = displayName;
+        return Task.CompletedTask;
+    }
+    public Task SetLanguageAsync(Guid userId, string language, CancellationToken ct = default)
+    {
+        store.Users[userId].Language = language;
         return Task.CompletedTask;
     }
     public Task<bool> CheckPasswordAsync(Guid userId, string password, CancellationToken ct = default) =>

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Wishlist.Application.Localization;
 using Wishlist.Domain.Exceptions;
 
 namespace Wishlist.API.Middleware;
@@ -20,16 +21,21 @@ public class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandling
 
     private static Task WriteErrorAsync(HttpContext context, Exception ex)
     {
-        var (status, message) = ex switch
+        var status = ex switch
         {
-            NotFoundException => (StatusCodes.Status404NotFound, ex.Message),
-            ForbiddenException => (StatusCodes.Status403Forbidden, ex.Message),
-            ConflictException => (StatusCodes.Status409Conflict, ex.Message),
-            GoneException => (StatusCodes.Status410Gone, ex.Message),
-            TooManyRequestsException => (StatusCodes.Status429TooManyRequests, ex.Message),
-            DomainException => (StatusCodes.Status400BadRequest, ex.Message),
-            _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
+            NotFoundException => StatusCodes.Status404NotFound,
+            ForbiddenException => StatusCodes.Status403Forbidden,
+            ConflictException => StatusCodes.Status409Conflict,
+            GoneException => StatusCodes.Status410Gone,
+            TooManyRequestsException => StatusCodes.Status429TooManyRequests,
+            DomainException => StatusCodes.Status400BadRequest,
+            _ => StatusCodes.Status500InternalServerError
         };
+        // In the language the app is showing (its Accept-Language).
+        var language = RequestLanguage.Of(context);
+        var message = ex is DomainException error
+            ? Texts.T(language, error)
+            : Texts.T(language, "An unexpected error occurred.");
 
         context.Response.StatusCode = status;
         context.Response.ContentType = "application/json";

@@ -1,5 +1,6 @@
 using Wishlist.Application.DTOs;
 using Wishlist.Application.Interfaces;
+using Wishlist.Application.Localization;
 using Wishlist.Domain.Exceptions;
 
 namespace Wishlist.Application.UseCases.Auth;
@@ -14,6 +15,19 @@ public class UpdateProfileUseCase(IUserRepository users)
         InputLimits.Check(name, InputLimits.DisplayName, "Name");
 
         await users.UpdateDisplayNameAsync(userId, name, ct);
+        var user = await users.GetByIdAsync(userId, ct)
+            ?? throw new NotFoundException("User not found.");
+        return UserDto.From(user);
+    }
+
+    /// <summary>Saves the language the person chose in the app.</summary>
+    public async Task<UserDto> SetLanguageAsync(Guid userId, UpdateLanguageRequest request, CancellationToken ct = default)
+    {
+        var language = Languages.Supported.Contains(request.Language ?? string.Empty)
+            ? request.Language!
+            : throw new DomainException("This language is not available.");
+
+        await users.SetLanguageAsync(userId, language, ct);
         var user = await users.GetByIdAsync(userId, ct)
             ?? throw new NotFoundException("User not found.");
         return UserDto.From(user);

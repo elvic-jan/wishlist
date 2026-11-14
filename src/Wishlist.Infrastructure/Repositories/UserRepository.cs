@@ -53,7 +53,7 @@ public class UserRepository(UserManager<ApplicationUser> userManager, RoleManage
         return await userManager.FindByEmailAsync(email) is not null;
     }
 
-    public async Task<User> CreateAsync(string email, string displayName, string password, CancellationToken ct = default)
+    public async Task<User> CreateAsync(string email, string displayName, string password, string? language = null, CancellationToken ct = default)
     {
         var appUser = new ApplicationUser
         {
@@ -61,7 +61,8 @@ public class UserRepository(UserManager<ApplicationUser> userManager, RoleManage
             Email = email,
             UserName = email,
             DisplayName = displayName,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            Language = language
         };
 
         var result = await userManager.CreateAsync(appUser, password);
@@ -71,7 +72,7 @@ public class UserRepository(UserManager<ApplicationUser> userManager, RoleManage
         return Map(appUser);
     }
 
-    public async Task<User> CreateWithoutPasswordAsync(Guid id, string email, string displayName, CancellationToken ct = default)
+    public async Task<User> CreateWithoutPasswordAsync(Guid id, string email, string displayName, string? language = null, CancellationToken ct = default)
     {
         var appUser = new ApplicationUser
         {
@@ -79,7 +80,8 @@ public class UserRepository(UserManager<ApplicationUser> userManager, RoleManage
             Email = email,
             UserName = email,
             DisplayName = displayName,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            Language = language
         };
 
         var result = await userManager.CreateAsync(appUser);
@@ -156,6 +158,16 @@ public class UserRepository(UserManager<ApplicationUser> userManager, RoleManage
         await userManager.UpdateAsync(user);
     }
 
+    public async Task SetLanguageAsync(Guid userId, string language, CancellationToken ct = default)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString())
+            ?? throw new InvalidOperationException("User not found.");
+        if (user.Language == language) return;
+
+        user.Language = language;
+        await userManager.UpdateAsync(user);
+    }
+
     public async Task<bool> CheckPasswordAsync(Guid userId, string password, CancellationToken ct = default)
     {
         var user = userId == Guid.Empty ? null : await userManager.FindByIdAsync(userId.ToString());
@@ -210,6 +222,7 @@ public class UserRepository(UserManager<ApplicationUser> userManager, RoleManage
         DisplayName = u.DisplayName,
         CreatedAt = u.CreatedAt,
         EmailConfirmed = u.EmailConfirmed,
-        HasPassword = u.PasswordHash is not null
+        HasPassword = u.PasswordHash is not null,
+        Language = u.Language
     };
 }

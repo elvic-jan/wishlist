@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/context/AuthContext'
 import { getAdminOverview, getAdminUsers, type AdminOverview, type AdminUser } from '@/api/admin'
 import { cn } from '@/lib/utils'
+import { getLocale, t, Trans, useT } from '@/lib/i18n'
 
 const NONE = '—'
 
@@ -20,31 +21,32 @@ function normalize(text: string): string {
 
 function formatDate(value: string | null): string {
   if (!value) return NONE
-  return new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(value).toLocaleDateString(getLocale(), { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 /** A yyyy-mm-dd day, shown as that calendar day whatever the viewer's time zone. */
 function formatDay(value: string | null): string {
   if (!value) return NONE
-  return new Date(`${value}T00:00:00Z`).toLocaleDateString(undefined, {
+  return new Date(`${value}T00:00:00Z`).toLocaleDateString(getLocale(), {
     day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
   })
 }
 
 function formatDateTime(value: string | null): string {
   if (!value) return NONE
-  return new Date(value).toLocaleString(undefined, {
+  return new Date(value).toLocaleString(getLocale(), {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   })
 }
 
 function monthLabel(year: number, month: number): string {
-  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString(undefined, {
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString(getLocale(), {
     month: 'short', year: 'numeric', timeZone: 'UTC',
   })
 }
 
 function Change({ current, previous, label }: { current: number; previous: number | null; label: string }) {
+  const t = useT()
   if (previous === null) return <span className="text-xs text-muted-foreground">{NONE} {label}</span>
   const diff = current - previous
   return (
@@ -54,7 +56,7 @@ function Change({ current, previous, label }: { current: number; previous: numbe
         diff > 0 ? 'text-primary' : diff < 0 ? 'text-destructive' : 'text-muted-foreground',
       )}
     >
-      {diff > 0 ? `▲ ${diff}` : diff < 0 ? `▼ ${-diff}` : 'no change'} {label}
+      {diff > 0 ? `▲ ${diff}` : diff < 0 ? `▼ ${-diff}` : t('admin.noChange')} {label}
     </span>
   )
 }
@@ -72,38 +74,39 @@ function Tile({ label, value, children }: { label: string; value: number; childr
 }
 
 function Overview({ overview }: { overview: AdminOverview }) {
+  const t = useT()
   const { totals, active7, active30 } = overview
   const max = Math.max(1, ...overview.signUpsByMonth.map(m => m.count))
 
   return (
     <>
       <section className="space-y-3" aria-labelledby="admin-totals">
-        <h2 id="admin-totals" className="text-lg font-semibold">Totals</h2>
+        <h2 id="admin-totals" className="text-lg font-semibold">{t('admin.totals')}</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Tile label="Users" value={totals.users} />
-          <Tile label="Circles" value={totals.circles} />
-          <Tile label="Wishes" value={totals.wishes} />
-          <Tile label="Active reservations" value={totals.activeReservations} />
+          <Tile label={t('admin.users')} value={totals.users} />
+          <Tile label={t('nav.circles')} value={totals.circles} />
+          <Tile label={t('admin.wishes')} value={totals.wishes} />
+          <Tile label={t('admin.activeReservations')} value={totals.activeReservations} />
         </div>
       </section>
 
       <section className="space-y-3" aria-labelledby="admin-growth">
-        <h2 id="admin-growth" className="text-lg font-semibold">Growth</h2>
+        <h2 id="admin-growth" className="text-lg font-semibold">{t('admin.growth')}</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Tile label="Sign-ups this month" value={overview.signUpsThisMonth}>
-            <Change current={overview.signUpsThisMonth} previous={overview.signUpsLastMonth} label="vs last month" />
+          <Tile label={t('admin.signUpsThisMonth')} value={overview.signUpsThisMonth}>
+            <Change current={overview.signUpsThisMonth} previous={overview.signUpsLastMonth} label={t('admin.vsLastMonth')} />
           </Tile>
-          <Tile label="Active users, last 7 days" value={active7.current}>
-            <Change current={active7.current} previous={active7.previous} label="vs 7 days before" />
+          <Tile label={t('admin.active7')} value={active7.current}>
+            <Change current={active7.current} previous={active7.previous} label={t('admin.vs7')} />
           </Tile>
-          <Tile label="Active users, last 30 days" value={active30.current}>
-            <Change current={active30.current} previous={active30.previous} label="vs 30 days before" />
+          <Tile label={t('admin.active30')} value={active30.current}>
+            <Change current={active30.current} previous={active30.previous} label={t('admin.vs30')} />
           </Tile>
         </div>
 
         <Card>
           <CardContent className="space-y-2 p-4">
-            <p className="text-sm font-medium">Sign-ups per month</p>
+            <p className="text-sm font-medium">{t('admin.signUpsPerMonth')}</p>
             <ul className="space-y-1.5">
               {overview.signUpsByMonth.map(m => (
                 <li key={`${m.year}-${m.month}`} className="flex items-center gap-3 text-sm">
@@ -123,8 +126,8 @@ function Overview({ overview }: { overview: AdminOverview }) {
 
         <p className="text-xs text-muted-foreground">
           {overview.trackingSince
-            ? `Sign-ins and activity tracked since ${formatDay(overview.trackingSince)}.`
-            : 'Sign-ins and activity haven’t been recorded yet.'}
+            ? t('admin.trackedSince', { date: formatDay(overview.trackingSince) })
+            : t('admin.notTracked')}
         </p>
       </section>
     </>
@@ -141,15 +144,16 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function signInOptions(u: AdminUser): string {
-  if (u.hasPassword && u.hasPasskey) return 'Password, passkey'
-  if (u.hasPasskey) return 'Passkey'
-  if (u.hasPassword) return 'Password'
+  if (u.hasPassword && u.hasPasskey) return t('admin.signIn.both')
+  if (u.hasPasskey) return t('security.passkey.default')
+  if (u.hasPassword) return t('common.password')
   return NONE
 }
 
 type SortKey = 'signedUp' | 'lastActive'
 
 function Users({ users }: { users: AdminUser[] }) {
+  const t = useT()
   const [filter, setFilter] = useState('')
   const [sort, setSort] = useState<SortKey>('signedUp')
 
@@ -168,26 +172,26 @@ function Users({ users }: { users: AdminUser[] }) {
 
   return (
     <section className="space-y-3" aria-labelledby="admin-users">
-      <h2 id="admin-users" className="text-lg font-semibold">Users ({users.length})</h2>
+      <h2 id="admin-users" className="text-lg font-semibold">{t('admin.usersCount', { count: users.length })}</h2>
       <div className="flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={filter}
             onChange={e => setFilter(e.target.value)}
-            placeholder="Filter by name or email"
+            placeholder={t('admin.filter')}
             className="pl-9"
-            aria-label="Filter by name or email"
+            aria-label={t('admin.filter')}
           />
         </div>
-        <div className="flex gap-1" role="group" aria-label="Sort users">
+        <div className="flex gap-1" role="group" aria-label={t('admin.sort')}>
           <Button
             variant={sort === 'signedUp' ? 'secondary' : 'ghost'}
             size="sm"
             aria-pressed={sort === 'signedUp'}
             onClick={() => setSort('signedUp')}
           >
-            Newest
+            {t('admin.sort.newest')}
           </Button>
           <Button
             variant={sort === 'lastActive' ? 'secondary' : 'ghost'}
@@ -195,34 +199,36 @@ function Users({ users }: { users: AdminUser[] }) {
             aria-pressed={sort === 'lastActive'}
             onClick={() => setSort('lastActive')}
           >
-            Last active
+            {t('admin.lastActive')}
           </Button>
         </div>
       </div>
 
       {visible.length === 0 ? (
-        <p className="py-4 text-sm text-muted-foreground">Nobody matches &ldquo;{filter}&rdquo;.</p>
+        <p className="py-4 text-sm text-muted-foreground">
+          <Trans k="wishlists.noMatch" values={{ filter }} />
+        </p>
       ) : (
         <ul className="space-y-2">
           {visible.map(u => (
             <li key={u.id} className="space-y-3 rounded-md border px-3 py-3 text-sm">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate font-medium">{u.displayName}</p>
-                  <p className="truncate text-muted-foreground">{u.email}</p>
+                  <p translate="no" className="truncate font-medium">{u.displayName}</p>
+                  <p translate="no" className="truncate text-muted-foreground">{u.email}</p>
                 </div>
                 <div className="flex shrink-0 flex-wrap justify-end gap-1">
-                  {u.isAdmin && <Badge variant="secondary">Admin</Badge>}
-                  {!u.emailConfirmed && <Badge variant="outline">Email not confirmed</Badge>}
+                  {u.isAdmin && <Badge variant="secondary">{t('menu.admin')}</Badge>}
+                  {!u.emailConfirmed && <Badge variant="outline">{t('admin.emailNotConfirmed')}</Badge>}
                 </div>
               </div>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
-                <Field label="Signed up">{formatDate(u.createdAt)}</Field>
-                <Field label="Last active">{formatDay(u.lastActiveOn)}</Field>
-                <Field label="Last sign-in">{formatDateTime(u.lastSignInAt)}</Field>
-                <Field label="Sign-ins">{u.signIns}</Field>
-                <Field label="Circles">{u.circles}</Field>
-                <Field label="Signs in with">
+                <Field label={t('admin.signedUp')}>{formatDate(u.createdAt)}</Field>
+                <Field label={t('admin.lastActive')}>{formatDay(u.lastActiveOn)}</Field>
+                <Field label={t('admin.lastSignIn')}>{formatDateTime(u.lastSignInAt)}</Field>
+                <Field label={t('admin.signIns')}>{u.signIns}</Field>
+                <Field label={t('nav.circles')}>{u.circles}</Field>
+                <Field label={t('admin.signsInWith')}>
                   <span className="inline-flex items-center gap-1">
                     {u.hasPasskey && <KeyRound className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />}
                     {signInOptions(u)}
@@ -238,6 +244,7 @@ function Users({ users }: { users: AdminUser[] }) {
 }
 
 export function AdminPage() {
+  const t = useT()
   const { user } = useAuth()
   const [overview, setOverview] = useState<AdminOverview | null>(null)
   const [users, setUsers] = useState<AdminUser[] | null>(null)
@@ -251,7 +258,8 @@ export function AdminPage() {
         setOverview(o)
         setUsers(u)
       })
-      .catch(() => setError('Failed to load the admin data.'))
+      .catch(() => setError(t('admin.loadFailed')))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t is the same function in every language
   }, [isAdmin])
 
   if (!isAdmin) return <Navigate to="/wishlists" replace />
@@ -261,11 +269,11 @@ export function AdminPage() {
       <div className="space-y-1.5">
         <div className="flex items-center gap-2">
           <LayoutDashboard className="h-5 w-5 text-primary" aria-hidden />
-          <h1 className="text-2xl font-semibold tracking-tight">Admin</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('menu.admin')}</h1>
         </div>
         <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <ShieldCheck className="h-4 w-4" aria-hidden />
-          Only site admins see this page. Read-only.
+          {t('admin.note')}
         </p>
       </div>
 
@@ -277,7 +285,7 @@ export function AdminPage() {
 
       {!overview || !users ? (
         error ? null : (
-          <div className="space-y-3" aria-label="Loading admin data">
+          <div className="space-y-3" aria-label={t('admin.loading')}>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
             </div>

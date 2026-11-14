@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { addPasskey, getSecurityOverview, resendEmailConfirmation, type SecurityOverview } from '@/api/passkeys'
 import { useAuth } from '@/context/AuthContext'
+import { useT } from '@/lib/i18n'
 import { isPasskeyCancelled, passkeyErrorMessage, passkeysSupported } from '@/lib/webauthn'
 
 const dismissKey = (userId: string) => `giftcircles.passkeyPromptDismissed.${userId}`
@@ -31,6 +32,7 @@ function writeDismissed(userId: string) {
  * Face ID / fingerprint. Hidden on the security page, which shows both.
  */
 export function AccountBanners() {
+  const t = useT()
   const { user } = useAuth()
   const { pathname } = useLocation()
   const { toast } = useToast()
@@ -56,10 +58,7 @@ export function AccountBanners() {
   if (!overview.emailConfirmed) {
     return (
       <Banner icon={<Mail className="h-4 w-4" aria-hidden />} onClose={() => setHidden(true)}>
-        <span>
-          Please confirm your email address, so we can help you get back in if you
-          ever lose your phone.
-        </span>
+        <span>{t('banner.confirmEmail')}</span>
         <Button
           size="sm"
           variant="outline"
@@ -68,14 +67,14 @@ export function AccountBanners() {
             setBusy(true)
             try {
               await resendEmailConfirmation()
-              toast({ title: 'Confirmation email sent', description: `Check the inbox of ${user.email}.` })
+              toast({ title: t('banner.confirmEmail.sent'), description: t('banner.confirmEmail.checkInbox', { email: user.email }) })
               setHidden(true)
             } finally {
               setBusy(false)
             }
           }}
         >
-          Send the email again
+          {t('banner.confirmEmail.resend')}
         </Button>
       </Banner>
     )
@@ -88,7 +87,7 @@ export function AccountBanners() {
     }
     return (
       <Banner icon={<Fingerprint className="h-4 w-4" aria-hidden />} onClose={dismiss}>
-        <span>Sign in faster next time with Face ID or your fingerprint.</span>
+        <span>{t('banner.passkey')}</span>
         <div className="flex gap-2">
           <Button
             size="sm"
@@ -97,13 +96,13 @@ export function AccountBanners() {
               setBusy(true)
               try {
                 await addPasskey()
-                toast({ title: 'All set', description: 'Next time, sign in with Face ID or your fingerprint.' })
+                toast({ title: t('banner.passkey.done'), description: t('banner.passkey.doneText') })
                 setHidden(true)
               } catch (err) {
                 if (!isPasskeyCancelled(err)) {
                   toast({
-                    title: 'That didn’t work',
-                    description: passkeyErrorMessage(err) ?? 'You can try again from Sign-in & security.',
+                    title: t('banner.passkey.failed'),
+                    description: passkeyErrorMessage(err) ?? t('banner.passkey.failedText'),
                   })
                 }
               } finally {
@@ -111,10 +110,10 @@ export function AccountBanners() {
               }
             }}
           >
-            {busy ? 'Waiting…' : 'Set up'}
+            {busy ? t('banner.passkey.waiting') : t('banner.passkey.setUp')}
           </Button>
           <Button size="sm" variant="ghost" onClick={dismiss}>
-            Not now
+            {t('banner.passkey.notNow')}
           </Button>
         </div>
       </Banner>
@@ -133,13 +132,14 @@ function Banner({
   onClose: () => void
   children: React.ReactNode
 }) {
+  const t = useT()
   return (
     <div className="mb-6 flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
       <span className="mt-0.5 text-primary">{icon}</span>
       <div className="flex flex-1 flex-wrap items-center justify-between gap-3">{children}</div>
       <button
         type="button"
-        aria-label="Dismiss"
+        aria-label={t('common.dismiss')}
         onClick={onClose}
         className="rounded p-0.5 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >

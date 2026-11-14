@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { resetPassword } from '@/api/auth'
 import { apiErrorMessage, recoverWithPasskey } from '@/api/passkeys'
 import { useAuth } from '@/context/AuthContext'
+import { Trans, useT } from '@/lib/i18n'
 import { isPasskeyCancelled, passkeyErrorMessage, passkeysSupported } from '@/lib/webauthn'
 import { MAX_PASSWORD } from '@/lib/inputLimits'
 
@@ -25,6 +26,7 @@ import { MAX_PASSWORD } from '@/lib/inputLimits'
  * or set a new password.
  */
 export function RecoverPage() {
+  const t = useT()
   const [searchParams] = useSearchParams()
   const email = searchParams.get('email') ?? ''
   const token = searchParams.get('token') ?? ''
@@ -35,20 +37,15 @@ export function RecoverPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Get back into your account</CardTitle>
+          <CardTitle>{t('recover.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Alert variant="destructive">
             <AlertDescription>
-              This link is missing required information. Please request a new one
-              from the{' '}
-              <Link
-                to="/forgot-password"
-                className="text-primary underline-offset-4 hover:underline"
-              >
-                Can&rsquo;t sign in?
-              </Link>{' '}
-              page.
+              <Trans
+                k="recover.missing"
+                components={{ a: <Link to="/forgot-password" className="text-primary underline-offset-4 hover:underline" /> }}
+              />
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -59,9 +56,9 @@ export function RecoverPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{usePassword ? 'Choose a new password' : 'Get back into your account'}</CardTitle>
+        <CardTitle>{usePassword ? t('recover.newPassword.title') : t('recover.title')}</CardTitle>
         <CardDescription>
-          For <strong>{email}</strong>.
+          <Trans k="recover.for" values={{ email }} components={{ b: <strong /> }} />
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -77,7 +74,7 @@ export function RecoverPage() {
               className="text-primary underline-offset-4 hover:underline"
               onClick={() => setUsePassword(p => !p)}
             >
-              {usePassword ? 'Use Face ID / fingerprint instead' : 'Set a new password instead'}
+              {usePassword ? t('register.usePasskey') : t('recover.setPasswordInstead')}
             </button>
           </div>
         )}
@@ -87,7 +84,7 @@ export function RecoverPage() {
           to="/login"
           className="text-sm text-primary underline-offset-4 hover:underline"
         >
-          Back to sign in
+          {t('common.backToSignIn')}
         </Link>
       </CardFooter>
     </Card>
@@ -95,6 +92,7 @@ export function RecoverPage() {
 }
 
 function PasskeyRecovery({ email, token }: { email: string; token: string }) {
+  const t = useT()
   const { startSession } = useAuth()
   const navigate = useNavigate()
   const [error, setError] = useState('')
@@ -108,12 +106,12 @@ function PasskeyRecovery({ email, token }: { email: string; token: string }) {
       navigate('/settings/security?recovered=1')
     } catch (err) {
       if (isPasskeyCancelled(err)) {
-        setError('Face ID / fingerprint was cancelled. Try again, or set a new password instead.')
+        setError(t('recover.cancelled'))
       } else {
         setError(
           passkeyErrorMessage(err) ??
             apiErrorMessage(err) ??
-            'Something went wrong. Please try again.',
+            t('recover.failed'),
         )
       }
     } finally {
@@ -129,19 +127,18 @@ function PasskeyRecovery({ email, token }: { email: string; token: string }) {
         </Alert>
       )}
       <p className="text-sm text-muted-foreground">
-        Set up Face ID, your fingerprint or this device&rsquo;s screen lock to sign
-        in from now on. For your safety, you&rsquo;ll be signed out on every other
-        device.
+        {t('recover.passkeyText')}
       </p>
       <Button type="button" className="w-full" onClick={handleClick} disabled={busy}>
         <Fingerprint className="mr-2 h-4 w-4" aria-hidden />
-        {busy ? 'Waiting for your device…' : 'Use Face ID / fingerprint on this device'}
+        {busy ? t('common.waitingForDevice') : t('recover.usePasskey')}
       </Button>
     </div>
   )
 }
 
 function NewPasswordForm({ email, token }: { email: string; token: string }) {
+  const t = useT()
   const navigate = useNavigate()
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -153,11 +150,11 @@ function NewPasswordForm({ email, token }: { email: string; token: string }) {
     setError('')
 
     if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters.')
+      setError(t('recover.tooShort'))
       return
     }
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match.')
+      setError(t('recover.mismatch'))
       return
     }
 
@@ -166,7 +163,7 @@ function NewPasswordForm({ email, token }: { email: string; token: string }) {
       await resetPassword(email, token, newPassword)
       navigate('/login?reset=success')
     } catch {
-      setError('This link is invalid or has expired. Please request a new one.')
+      setError(t('recover.expired'))
     } finally {
       setSubmitting(false)
     }
@@ -182,7 +179,7 @@ function NewPasswordForm({ email, token }: { email: string; token: string }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />
         <div className="space-y-1.5">
-          <Label htmlFor="reset-new-password">New password</Label>
+          <Label htmlFor="reset-new-password">{t('recover.newPassword')}</Label>
           <PasswordInput
             id="reset-new-password"
             autoComplete="new-password"
@@ -194,7 +191,7 @@ function NewPasswordForm({ email, token }: { email: string; token: string }) {
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="reset-confirm-password">Confirm password</Label>
+          <Label htmlFor="reset-confirm-password">{t('recover.confirmPassword')}</Label>
           <PasswordInput
             id="reset-confirm-password"
             autoComplete="new-password"
@@ -206,7 +203,7 @@ function NewPasswordForm({ email, token }: { email: string; token: string }) {
           />
         </div>
         <Button type="submit" className="w-full" disabled={submitting}>
-          {submitting ? 'Updating…' : 'Set new password'}
+          {submitting ? t('recover.updating') : t('recover.setPassword')}
         </Button>
       </form>
     </>

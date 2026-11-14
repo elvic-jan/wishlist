@@ -206,7 +206,7 @@ public class BuddyTests
             Groups = new Groups(Store);
             var buddies = new Buddies(Store, Groups);
             IEmailSender sender = failEmails ? new FailingSender() : new CapturingEmailSender(Store);
-            var emails = new BuddyEmails(sender, new Urls(), NullLogger<BuddyEmails>.Instance);
+            var emails = new BuddyEmails(sender, new Urls(), new Wishlist.Application.Localization.DefaultLanguageContext(), NullLogger<BuddyEmails>.Instance);
             Manage = new ManageBuddiesUseCase(buddies, Groups, new InMemoryUsers(Store), emails, TimeProvider.System);
             var access = new WishlistAccess(buddies);
             Add = new AddWishlistItemUseCase(Items, access);

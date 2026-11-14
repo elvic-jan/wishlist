@@ -8,7 +8,8 @@ namespace Wishlist.Application.UseCases.Groups;
 /// and who invited them to which circle, before they fill in the sign-up form.
 /// Also feeds the invite link preview. Same 404/410 outcomes as register/join.
 /// </summary>
-public class CheckInvitationUseCase(InvitationResolver invitationResolver, IGroupRepository groups, IUserRepository users)
+public class CheckInvitationUseCase(
+    InvitationResolver invitationResolver, IGroupRepository groups, IUserRepository users, Localization.ILanguageContext language)
 {
     public const string UnknownInviter = "Someone";
 
@@ -20,7 +21,10 @@ public class CheckInvitationUseCase(InvitationResolver invitationResolver, IGrou
 
         return new InvitationStatusDto(
             invitation.ExpiresAt,
-            inviter?.DisplayName ?? UnknownInviter,
-            group?.Name ?? "a circle");
+            inviter?.DisplayName ?? Localization.Texts.T(language.Language, UnknownInviter),
+            group?.Name ?? Localization.Texts.T(language.Language, "a circle"))
+        {
+            InviterLanguage = Localization.Languages.Parse(inviter?.Language) ?? Localization.Languages.Default,
+        };
     }
 }

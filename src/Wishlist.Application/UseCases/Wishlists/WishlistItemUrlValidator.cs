@@ -18,7 +18,7 @@ internal static class WishlistItemUrlValidator
             return Array.Empty<string>();
 
         if (urls.Count > MaxUrls)
-            throw new DomainException($"A wishlist item may have at most {MaxUrls} URLs.");
+            throw new DomainException("A wishlist item may have at most {0} URLs.", MaxUrls);
 
         var cleaned = new List<string>(urls.Count);
         foreach (var raw in urls)

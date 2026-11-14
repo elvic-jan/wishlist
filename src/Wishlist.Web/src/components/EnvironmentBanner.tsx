@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useT } from '@/lib/i18n'
 
 // A test environment (staging) names itself in /healthz; production doesn't.
 // /healthz is never cached by the service worker and needs no database. The
@@ -26,6 +27,7 @@ function remember(label: string | null) {
 
 /** A banner on every page of a test environment, so it's never mistaken for the real app. Can't be dismissed. */
 export function EnvironmentBanner() {
+  const t = useT()
   const [label, setLabel] = useState<string | null>(rememberedLabel)
 
   useEffect(() => {
@@ -53,7 +55,7 @@ export function EnvironmentBanner() {
       role="note"
       className="bg-amber-400 px-4 py-1 text-center text-xs font-semibold uppercase tracking-wide text-black"
     >
-      {label} environment · test data only, not the real Kadoozle
+      {t('environment.banner', { label })}
     </div>
   )
 }

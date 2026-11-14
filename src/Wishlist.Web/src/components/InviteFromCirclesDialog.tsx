@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import client from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
+import { plural, Trans, useT, UserText } from '@/lib/i18n'
 
 interface Candidate {
   userId: string
@@ -74,6 +75,7 @@ export function InviteFromCirclesDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const t = useT()
   const { toast } = useToast()
   const [circles, setCircles] = useState<CandidateCircle[] | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -94,11 +96,12 @@ export function InviteFromCirclesDialog({
         setFilter('')
       })
       .catch(() => {
-        if (!cancelled) toast({ title: 'Couldn’t load the people from your circles.', variant: 'destructive' })
+        if (!cancelled) toast({ title: t('invitePicker.loadFailed'), variant: 'destructive' })
       })
     return () => {
       cancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t is the same function in every language
   }, [open, groupId, toast])
 
   const term = filter.trim().toLocaleLowerCase()
@@ -150,13 +153,13 @@ export function InviteFromCirclesDialog({
         { userIds: [...selected] },
       )
       toast({
-        title: data.invited === 1 ? 'Invitation sent' : `${data.invited} invitations sent`,
-        description: `They’ll get an email and can join ${circleName} from My circles.`,
+        title: plural('invitePicker.sent', data.invited),
+        description: t('invitePicker.sentText', { circle: circleName }),
       })
       onOpenChange(false)
     } catch (err) {
       const msg = apiErrorMessage(err)
-      toast({ title: 'Couldn’t send the invitations', description: msg, variant: 'destructive' })
+      toast({ title: t('invitePicker.sendFailed'), description: msg, variant: 'destructive' })
     } finally {
       setSending(false)
     }
@@ -166,9 +169,9 @@ export function InviteFromCirclesDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[85vh] flex-col gap-4">
         <DialogHeader>
-          <DialogTitle>Invite people from your circles</DialogTitle>
+          <DialogTitle>{t('invitePicker.title')}</DialogTitle>
           <DialogDescription>
-            They&rsquo;ll get an email and can join {circleName} from My circles.
+            <Trans k="invitePicker.sentText" values={{ circle: circleName }} />
           </DialogDescription>
         </DialogHeader>
 
@@ -178,7 +181,7 @@ export function InviteFromCirclesDialog({
           </div>
         ) : circles.length === 0 ? (
           <p className="py-4 text-sm text-muted-foreground">
-            Everyone from your other circles is already in {circleName}.
+            <Trans k="invitePicker.allIn" values={{ circle: circleName }} />
           </p>
         ) : (
           <>
@@ -187,15 +190,17 @@ export function InviteFromCirclesDialog({
               <Input
                 value={filter}
                 onChange={e => setFilter(e.target.value)}
-                placeholder="Filter by name"
+                placeholder={t('invitePicker.filter')}
                 className="pl-9"
-                aria-label="Filter by name"
+                aria-label={t('invitePicker.filter')}
               />
             </div>
 
             <div className="-mx-6 min-h-0 flex-1 overflow-y-auto px-6">
               {visible.length === 0 ? (
-                <p className="py-4 text-sm text-muted-foreground">Nobody matches &ldquo;{filter}&rdquo;.</p>
+                <p className="py-4 text-sm text-muted-foreground">
+                  <Trans k="wishlists.noMatch" values={{ filter }} />
+                </p>
               ) : (
                 <ul className="space-y-2">
                   {visible.map(c => {
@@ -211,7 +216,7 @@ export function InviteFromCirclesDialog({
                             indeterminate={count > 0 && count < selectable.length}
                             disabled={selectable.length === 0}
                             onChange={() => toggleCircle(c.members)}
-                            label={`Select everyone in ${c.name}`}
+                            label={t('invitePicker.selectAll', { circle: c.name })}
                           />
                           <button
                             type="button"
@@ -219,9 +224,9 @@ export function InviteFromCirclesDialog({
                             className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left"
                             aria-expanded={!isCollapsed}
                           >
-                            <span className="min-w-0 truncate text-sm font-medium">{c.name}</span>
+                            <UserText className="min-w-0 truncate text-sm font-medium">{c.name}</UserText>
                             <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
-                              {count > 0 ? `${count} of ${c.members.length}` : c.members.length}
+                              {count > 0 ? t('invitePicker.countOf', { count, total: c.members.length }) : c.members.length}
                               <ChevronDown
                                 className={cn('h-4 w-4 transition-transform', isCollapsed && '-rotate-90')}
                                 aria-hidden
@@ -246,8 +251,8 @@ export function InviteFromCirclesDialog({
                                     disabled={m.invited}
                                     onChange={() => toggle(m.userId)}
                                   />
-                                  <span className="min-w-0 flex-1 truncate">{m.displayName}</span>
-                                  {m.invited && <span className="shrink-0 text-xs">Invited</span>}
+                                  <UserText className="min-w-0 flex-1 truncate">{m.displayName}</UserText>
+                                  {m.invited && <span className="shrink-0 text-xs">{t('invitePicker.invited')}</span>}
                                 </label>
                               </li>
                             ))}
@@ -264,11 +269,11 @@ export function InviteFromCirclesDialog({
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button onClick={invite} disabled={selected.size === 0 || sending}>
             {sending && <Loader2 className="h-4 w-4 animate-spin" />}
-            {selected.size > 0 ? `Invite (${selected.size})` : 'Invite'}
+            {selected.size > 0 ? t('invitePicker.inviteCount', { count: selected.size }) : t('invitePicker.invite')}
           </Button>
         </DialogFooter>
       </DialogContent>

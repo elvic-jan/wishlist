@@ -30,6 +30,8 @@ public class WishlistDbContext(DbContextOptions<WishlistDbContext> options)
     {
         base.OnModelCreating(builder);
 
+        builder.Entity<ApplicationUser>(e => e.Property(u => u.Language).HasMaxLength(8));
+
         builder.Entity<Group>(e =>
         {
             e.HasKey(g => g.Id);
