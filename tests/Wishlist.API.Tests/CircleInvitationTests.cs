@@ -172,7 +172,7 @@ public class CircleInvitationTests
             var groups = new InMemoryGroups(Store);
             var invitations = new Invitations(Store);
             IEmailSender sender = failEmails ? new FailingSender() : new CapturingEmailSender(Store);
-            var emails = new CircleInvitationEmails(sender, new Urls(), NullLogger<CircleInvitationEmails>.Instance);
+            var emails = new CircleInvitationEmails(sender, new Urls(), new Wishlist.Application.Localization.DefaultLanguageContext(), NullLogger<CircleInvitationEmails>.Instance);
             Candidates = new GetInviteCandidatesUseCase(groups, invitations);
             _invite = new InviteFromCirclesUseCase(groups, invitations, new InMemoryUsers(Store), emails, TimeProvider.System);
             Mine = new GetMyCircleInvitationsUseCase(invitations);

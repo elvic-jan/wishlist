@@ -1,18 +1,20 @@
-using System.Net;
 using Microsoft.Extensions.Logging;
 using Wishlist.Application.Interfaces;
+using Wishlist.Application.Localization;
 using Wishlist.Domain.Entities;
 
 namespace Wishlist.Application.UseCases.Auth;
 
 /// <summary>
 /// Account emails that are sent best-effort: a delivery failure is logged and
-/// never fails the operation that triggered it.
+/// never fails the operation that triggered it. They go to the person acting,
+/// so without a saved language they use the language of the request.
 /// </summary>
 public class AccountEmails(
     IUserRepository users,
     IEmailSender emailSender,
     IAppUrlProvider appUrls,
+    ILanguageContext language,
     ILogger<AccountEmails> logger)
 {
     public async Task SendEmailConfirmationAsync(User user, CancellationToken ct = default)
@@ -29,54 +31,38 @@ public class AccountEmails(
         }
 
         var link = $"{BaseUrl}/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
-        await SendAsync(user, new EmailMessage(
-            To: user.Email,
-            Subject: "Confirm your Kadoozle email",
-            PlainTextBody:
-                $"Hi {user.DisplayName},\r\n\r\n" +
+        var mail = Mail(user)
+            .Greeting(user.DisplayName)
+            .Paragraph(
                 "Welcome to Kadoozle! Please confirm this is your email address, so you can " +
-                "get back into your account if you ever lose your phone or forget how you signed in.\r\n\r\n" +
-                $"{link}\r\n\r\n" +
-                "The link works for 3 days. If you didn't create a Kadoozle account, you can ignore this email.\r\n\r\n" +
-                "Thanks,\r\nKadoozle",
-            HtmlBody:
-                $"<p>Hi {WebUtility.HtmlEncode(user.DisplayName)},</p>" +
-                "<p>Welcome to Kadoozle! Please confirm this is your email address, so you can " +
-                "get back into your account if you ever lose your phone or forget how you signed in.</p>" +
-                $"<p><a href=\"{link}\">Confirm my email</a></p>" +
-                "<p>The link works for 3 days. If you didn't create a Kadoozle account, you can ignore this email.</p>" +
-                "<p>Thanks,<br/>Kadoozle</p>"), "email-confirmation", ct);
+                "get back into your account if you ever lose your phone or forget how you signed in.")
+            .Link(link, "Confirm my email")
+            .Paragraph("The link works for 3 days. If you didn't create a Kadoozle account, you can ignore this email.");
+
+        await SendAsync(user, mail.Build(user.Email, mail.T("Confirm your Kadoozle email")), "email-confirmation", ct);
     }
 
     public Task SendPasskeyAddedAsync(User user, string? passkeyName, CancellationToken ct = default)
     {
-        var what = string.IsNullOrWhiteSpace(passkeyName) ? "A new passkey" : $"A new passkey (\"{passkeyName}\")";
-        var whatHtml = string.IsNullOrWhiteSpace(passkeyName)
-            ? "A new passkey"
-            : $"A new passkey (&ldquo;{WebUtility.HtmlEncode(passkeyName)}&rdquo;)";
+        var at = $"{DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC";
         var settings = $"{BaseUrl}/settings/security";
+        var mail = Mail(user).Greeting(user.DisplayName);
+        if (string.IsNullOrWhiteSpace(passkeyName))
+            mail.Paragraph(
+                "A new passkey was just added to your Kadoozle account (at **{0}**). " +
+                "It lets you sign in with Face ID, a fingerprint or your device PIN.", at);
+        else
+            mail.Paragraph(
+                "A new passkey (\"{0}\") was just added to your Kadoozle account (at **{1}**). " +
+                "It lets you sign in with Face ID, a fingerprint or your device PIN.", passkeyName, at);
+        mail.Paragraph("If this was you, there's nothing to do.")
+            .Link(settings,
+                "If it wasn't you, open your sign-in settings, remove the passkey and sign out other devices");
 
-        return SendAsync(user, new EmailMessage(
-            To: user.Email,
-            Subject: "A passkey was added to your Kadoozle account",
-            PlainTextBody:
-                $"Hi {user.DisplayName},\r\n\r\n" +
-                $"{what} was just added to your Kadoozle account (at {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC). " +
-                "It lets you sign in with Face ID, a fingerprint or your device PIN.\r\n\r\n" +
-                "If this was you, there's nothing to do.\r\n\r\n" +
-                "If it wasn't you, open your sign-in settings, remove the passkey and sign out other devices:\r\n" +
-                $"{settings}\r\n\r\n" +
-                "Thanks,\r\nKadoozle",
-            HtmlBody:
-                $"<p>Hi {WebUtility.HtmlEncode(user.DisplayName)},</p>" +
-                $"<p>{whatHtml} was just added to your Kadoozle account " +
-                $"(at <strong>{DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC</strong>). " +
-                "It lets you sign in with Face ID, a fingerprint or your device PIN.</p>" +
-                "<p>If this was you, there's nothing to do.</p>" +
-                "<p>If it wasn't you, open your sign-in settings, remove the passkey and sign out other devices: " +
-                $"<a href=\"{settings}\">{settings}</a></p>" +
-                "<p>Thanks,<br/>Kadoozle</p>"), "passkey-added", ct);
+        return SendAsync(user, mail.Build(user.Email, mail.T("A passkey was added to your Kadoozle account")), "passkey-added", ct);
     }
+
+    private EmailText Mail(User user) => new(Languages.ForEmail(user, null, language.Language));
 
     private string BaseUrl => appUrls.PublicBaseUrl.TrimEnd('/');
 

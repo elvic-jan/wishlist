@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Wishlist.Application.DTOs;
 using Wishlist.Application.Interfaces;
+using Wishlist.Application.Localization;
 
 namespace Wishlist.Application.UseCases.Auth;
 
@@ -15,6 +16,7 @@ public class ResetPasswordUseCase(
     IUserRepository users,
     ITokenService tokens,
     IEmailSender emailSender,
+    ILanguageContext language,
     ILogger<ResetPasswordUseCase> logger)
 {
     public async Task<bool> ExecuteAsync(ResetPasswordRequest request, CancellationToken ct = default)
@@ -51,24 +53,14 @@ public class ResetPasswordUseCase(
         // Out-of-band confirmation so the legitimate inbox owner has a chance
         // to react if the reset was triggered by someone else. Best-effort —
         // a delivery failure here MUST NOT fail the reset.
-        var changedAtUtc = DateTime.UtcNow;
-        var message = new EmailMessage(
-            To: user.Email,
-            Subject: "Your Kadoozle password was changed",
-            PlainTextBody:
-                $"Hi {user.DisplayName},\r\n\r\n" +
-                $"Your Kadoozle account password was just changed (at {changedAtUtc:yyyy-MM-dd HH:mm} UTC).\r\n\r\n" +
-                "If you made this change, no action is needed.\r\n\r\n" +
-                "If you did NOT make this change, request another password reset from the " +
-                "sign-in page right away, and contact support if you cannot regain access.\r\n\r\n" +
-                "Thanks,\r\nKadoozle",
-            HtmlBody:
-                $"<p>Hi {System.Net.WebUtility.HtmlEncode(user.DisplayName)},</p>" +
-                $"<p>Your Kadoozle account password was just changed (at <strong>{changedAtUtc:yyyy-MM-dd HH:mm} UTC</strong>).</p>" +
-                "<p>If you made this change, no action is needed.</p>" +
-                "<p>If you did <strong>not</strong> make this change, request another password reset from the " +
-                "sign-in page right away, and contact support if you cannot regain access.</p>" +
-                "<p>Thanks,<br/>Kadoozle</p>");
+        var mail = new EmailText(Languages.ForEmail(user, null, language.Language))
+            .Greeting(user.DisplayName)
+            .Paragraph("Your Kadoozle account password was just changed (at **{0}**).", $"{DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC")
+            .Paragraph("If you made this change, no action is needed.")
+            .Paragraph(
+                "If you did **not** make this change, request another password reset from the " +
+                "sign-in page right away, and contact support if you cannot regain access.");
+        var message = mail.Build(user.Email, mail.T("Your Kadoozle password was changed"));
 
         try
         {

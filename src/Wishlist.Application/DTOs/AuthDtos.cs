@@ -4,9 +4,11 @@ public record RegisterRequest(string Email, string DisplayName, string Password,
 public record LoginRequest(string Email, string Password);
 public record AuthResponse(string AccessToken, UserDto User, Guid? JoinedGroupId = null);
 public record UpdateProfileRequest(string DisplayName);
-public record UserDto(Guid Id, string Email, string DisplayName, bool IsAdmin = false)
+public record UpdateLanguageRequest(string? Language);
+/// <param name="Language">The saved language ("en", "nl"), or null when the person never chose one.</param>
+public record UserDto(Guid Id, string Email, string DisplayName, bool IsAdmin = false, string? Language = null)
 {
-    public static UserDto From(Wishlist.Domain.Entities.User user) => new(user.Id, user.Email, user.DisplayName, user.IsAdmin);
+    public static UserDto From(Wishlist.Domain.Entities.User user) => new(user.Id, user.Email, user.DisplayName, user.IsAdmin, user.Language);
 }
 public record ForgotPasswordRequest(string Email);
 public record ResetPasswordRequest(string Email, string Token, string NewPassword);

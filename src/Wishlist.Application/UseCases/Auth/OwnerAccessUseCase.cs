@@ -30,7 +30,7 @@ public class OwnerAccessUseCase(IUserRepository users, IAppUrlProvider appUrls)
                 throw new DomainException($"No account has {email}. Pass --name <display name> to create it.");
             InputLimits.Check(name, InputLimits.DisplayName, "Name");
 
-            user = await users.CreateWithoutPasswordAsync(Guid.NewGuid(), email, name, ct);
+            user = await users.CreateWithoutPasswordAsync(Guid.NewGuid(), email, name, ct: ct);
             // The operator typed the address, so it counts as proved.
             await users.MarkEmailConfirmedAsync(user.Id, ct);
         }

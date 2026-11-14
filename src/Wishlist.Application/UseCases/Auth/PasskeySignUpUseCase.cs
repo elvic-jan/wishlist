@@ -1,5 +1,6 @@
 using Wishlist.Application.DTOs;
 using Wishlist.Application.Interfaces;
+using Wishlist.Application.Localization;
 using Wishlist.Domain.Entities;
 using Wishlist.Domain.Enums;
 using Wishlist.Domain.Exceptions;
@@ -21,7 +22,8 @@ public class PasskeySignUpUseCase(
     IInvitationRepository invitations,
     IUnitOfWork unitOfWork,
     AuthSessionFactory sessions,
-    AccountEmails emails)
+    AccountEmails emails,
+    ILanguageContext language)
 {
     public async Task<PasskeyOptions> BeginAsync(PasskeySignUpOptionsRequest request, CancellationToken ct = default)
     {
@@ -44,7 +46,7 @@ public class PasskeySignUpUseCase(
         User user = null!;
         await unitOfWork.ExecuteInTransactionAsync(async innerCt =>
         {
-            user = await users.CreateWithoutPasswordAsync(verified.User.Id, email, displayName, innerCt);
+            user = await users.CreateWithoutPasswordAsync(verified.User.Id, email, displayName, language.Language, innerCt);
             await passkeys.AddAsync(user.Id, verified.Credential, PasskeyNames.Clean(request.PasskeyName), innerCt);
             await groups.AddMemberAsync(invitation.GroupId, user.Id, GroupMemberRole.Member, innerCt);
             await invitations.MarkUsedAsync(invitation.Id, innerCt);

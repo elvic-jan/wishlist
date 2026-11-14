@@ -1,6 +1,6 @@
-using System.Net;
 using Microsoft.Extensions.Logging;
 using Wishlist.Application.Interfaces;
+using Wishlist.Application.Localization;
 using Wishlist.Domain.Entities;
 using Wishlist.Domain.Enums;
 using Wishlist.Domain.Exceptions;
@@ -36,7 +36,7 @@ public class InviteFromCirclesUseCase(
     {
         var ids = (request.UserIds ?? []).Distinct().ToList();
         if (ids.Count == 0 || ids.Count > MaxPerRequest)
-            throw new DomainException($"Pick between 1 and {MaxPerRequest} people.");
+            throw new DomainException("Pick between 1 and {0} people.", MaxPerRequest);
 
         if (!await groups.IsMemberAsync(groupId, userId, ct))
             throw new ForbiddenException("You are not a member of this circle.");
@@ -113,25 +113,16 @@ public class AnswerCircleInvitationUseCase(
 }
 
 /// <summary>Tells an existing user they've been invited to a circle. Best-effort.</summary>
-public class CircleInvitationEmails(IEmailSender emailSender, IAppUrlProvider appUrls, ILogger<CircleInvitationEmails> logger)
+public class CircleInvitationEmails(IEmailSender emailSender, IAppUrlProvider appUrls, ILanguageContext language, ILogger<CircleInvitationEmails> logger)
 {
     public async Task SendInvitationAsync(User invitee, User inviter, Group circle, CancellationToken ct = default)
     {
         var link = $"{appUrls.PublicBaseUrl.TrimEnd('/')}/circles";
-        var message = new EmailMessage(
-            To: invitee.Email,
-            Subject: $"{inviter.DisplayName} invited you to join {circle.Name}",
-            PlainTextBody:
-                $"Hi {invitee.DisplayName},\r\n\r\n" +
-                $"{inviter.DisplayName} invited you to join the circle \"{circle.Name}\" on Kadoozle. " +
-                "Open Kadoozle to join or decline:\r\n" +
-                $"{link}\r\n\r\n" +
-                "Thanks,\r\nKadoozle",
-            HtmlBody:
-                $"<p>Hi {Html(invitee.DisplayName)},</p>" +
-                $"<p>{Html(inviter.DisplayName)} invited you to join the circle <strong>{Html(circle.Name)}</strong> on Kadoozle.</p>" +
-                $"<p><a href=\"{link}\">Open Kadoozle to join or decline</a></p>" +
-                "<p>Thanks,<br/>Kadoozle</p>");
+        var mail = new EmailText(Languages.ForEmail(invitee, inviter, language.Language))
+            .Greeting(invitee.DisplayName)
+            .Paragraph("{0} invited you to join the circle **{1}** on Kadoozle.", inviter.DisplayName, circle.Name)
+            .Link(link, "Open Kadoozle to join or decline");
+        var message = mail.Build(invitee.Email, mail.T("{0} invited you to join {1}", inviter.DisplayName, circle.Name));
 
         try
         {
@@ -142,6 +133,4 @@ public class CircleInvitationEmails(IEmailSender emailSender, IAppUrlProvider ap
             logger.LogWarning(ex, "Failed to send the circle invitation email to user {UserId}.", invitee.Id);
         }
     }
-
-    private static string Html(string text) => WebUtility.HtmlEncode(text);
 }

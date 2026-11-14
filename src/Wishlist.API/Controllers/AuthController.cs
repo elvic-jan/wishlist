@@ -86,14 +86,14 @@ public class AuthController(
         // existence (we did not even attempt a lookup).
         if (string.IsNullOrWhiteSpace(request?.Email))
         {
-            return BadRequest(new { error = "A valid email address is required." });
+            return BadRequest(new { error = RequestLanguage.T(HttpContext, "A valid email address is required.") });
         }
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
         if (!await forgotPasswordRateLimiter.TryAcquireAsync(request.Email, ip, ct))
         {
             return StatusCode(StatusCodes.Status429TooManyRequests,
-                new { error = "Too many password-reset requests. Please try again later." });
+                new { error = RequestLanguage.T(HttpContext, "Too many password-reset requests. Please try again later.") });
         }
 
         // Use case is enumeration-safe: both branches (user exists / does not)
@@ -113,7 +113,7 @@ public class AuthController(
             // Single generic error for every failure mode (bad email, expired
             // token, replayed token, weak new password) so we never leak which
             // specific check failed.
-            return BadRequest(new { error = "Invalid or expired token." });
+            return BadRequest(new { error = RequestLanguage.T(HttpContext, "Invalid or expired token.") });
         }
 
         return NoContent();
@@ -133,4 +133,10 @@ public class AuthController(
     [HttpPatch("me")]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request, CancellationToken ct)
         => Ok(await updateProfile.ExecuteAsync(User.GetUserId(), request, ct));
+
+    /// <summary>Saves the language the person chose, so it follows them to other devices and into their emails.</summary>
+    [Authorize]
+    [HttpPut("me/language")]
+    public async Task<IActionResult> UpdateLanguage([FromBody] UpdateLanguageRequest request, CancellationToken ct)
+        => Ok(await updateProfile.SetLanguageAsync(User.GetUserId(), request, ct));
 }

@@ -579,6 +579,10 @@ namespace Wishlist.Infrastructure.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Language")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
 

@@ -224,7 +224,7 @@ public class LegacyImportTests
 
         private IMessageDefinition[] Definitions => [new LegacyImportMessage(Legacy), new WhatsNewNovember2026Message()];
 
-        public Task<IReadOnlyList<MessageDto>> Messages() => new GetMyMessagesUseCase(Definitions, States, Clock).ExecuteAsync(UserId);
+        public Task<IReadOnlyList<MessageDto>> Messages() => new GetMyMessagesUseCase(Definitions, States, Clock, new Wishlist.Application.Localization.DefaultLanguageContext()).ExecuteAsync(UserId);
 
         public Task Dismiss(string id) => new DismissMessageUseCase(Definitions, States, Clock).ExecuteAsync(UserId, id);
     }
