@@ -50,6 +50,6 @@
 
 ## 7. Release
 
-- [ ] 7.1 Add `release-notes/translations.md` (type `feature`) with the English and Dutch wording approved by the user
-- [ ] 7.2 Open the pull request with "Closes #105" and the release note in the description
+- [x] 7.1 Add `release-notes/translations.md` (type `feature`) with the English and Dutch wording approved by the user
+- [x] 7.2 Open the pull request with "Closes #105" and the release note in the description
 - [ ] 7.3 Check on staging in both languages before merge
