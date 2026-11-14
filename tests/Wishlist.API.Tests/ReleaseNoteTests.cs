@@ -27,7 +27,21 @@ public partial class ReleaseNoteTests
         Assert.True(match.Success, $"{name}: start with a '---' header holding 'type: feature', 'type: fix' or 'type: major', then '---' and the note.");
         var lines = match.Groups["body"].Value.Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
         Assert.True(lines.Count > 0, $"{name}: write at least one note under the header.");
-        Assert.All(lines, l => Assert.True(l.Length <= 200, $"{name}: keep each note to 200 characters or fewer: \"{l}\""));
+        Assert.All(lines, l => Assert.True(l.Length <= 200, $"{name}: keep each line to 200 characters or fewer: \"{l}\""));
+
+        // Each note: an English line, then its Dutch line ("nl: …").
+        Assert.False(lines[0].StartsWith("nl:"), $"{name}: start with the English note; its Dutch translation goes on the next line as 'nl: …'.");
+        for (var i = 0; i < lines.Count; i++)
+        {
+            if (lines[i].StartsWith("nl:"))
+            {
+                Assert.True(lines[i].Length > "nl:".Length + 1, $"{name}: the 'nl:' line is empty.");
+                Assert.False(lines[i - 1].StartsWith("nl:"), $"{name}: two 'nl:' lines in a row; each note gets one.");
+                continue;
+            }
+            Assert.True(i + 1 < lines.Count && lines[i + 1].StartsWith("nl:"),
+                $"{name}: add the Dutch translation of \"{lines[i]}\" on the next line, as 'nl: …' (see release-notes/README.md).");
+        }
     }
 
     private static string NotesDir()
