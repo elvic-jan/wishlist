@@ -244,7 +244,7 @@ public class ReservationExpiryTests
             Giver = _store.AddUser("giver@example.test");
             OtherGiver = _store.AddUser("other@example.test");
             IEmailSender sender = failEmails ? new FailingSender() : new CapturingEmailSender(_store);
-            _reservationEmails = new ReservationEmails(sender, new Urls(), NullLogger<ReservationEmails>.Instance);
+            _reservationEmails = new ReservationEmails(sender, new Urls(), new Wishlist.Application.Localization.DefaultLanguageContext(), NullLogger<ReservationEmails>.Instance);
         }
 
         public Clock Clock { get; }

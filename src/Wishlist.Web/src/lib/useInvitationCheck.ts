@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import client from '@/api/client'
 import { inviteErrorMessage } from '@/lib/inviteErrors'
+import { t } from '@/lib/i18n'
 
 export type InvitationCheck =
   | { state: 'checking' }
@@ -27,7 +28,7 @@ export function useInvitationCheck(code: string | undefined): InvitationCheck {
         if (!cancelled)
           setResult({
             code,
-            check: { state: 'invalid', message: inviteErrorMessage(err, 'This invitation link doesn’t work.') },
+            check: { state: 'invalid', message: inviteErrorMessage(err, t('invite.error.broken')) },
           })
       })
     return () => {

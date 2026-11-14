@@ -1,6 +1,9 @@
+import { plural, t } from '@/lib/i18n'
+
 /**
  * The invitation text every share option uses (share sheet, WhatsApp, email),
- * so people get the same friendly message whichever way it's sent.
+ * so people get the same friendly message whichever way it's sent. Written in
+ * the language the inviter is using.
  */
 export interface InviteMessage {
   /** Title for the share sheet and the email subject. */
@@ -25,10 +28,8 @@ export function buildInviteMessage(
   now = Date.now(),
 ): InviteMessage {
   const days = daysLeft(expiresAt, now)
-  const subject = `Join my ${circleName} circle on Kadoozle`
-  const text =
-    `${inviterName} invited you to the ${circleName} circle on Kadoozle, where we share wishlists. ` +
-    `The link works for ${days} ${days === 1 ? 'day' : 'days'}:`
+  const subject = t('invite.share.subject', { circle: circleName })
+  const text = plural('invite.share.text', days, { inviter: inviterName, circle: circleName })
   const textWithLink = `${text} ${url}`
 
   return {

@@ -11,6 +11,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import client from '@/api/client'
+import { useT, UserText } from '@/lib/i18n'
 
 interface Person {
   userId: string
@@ -25,6 +26,7 @@ export function BuddiesDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const t = useT()
   const { toast } = useToast()
   const [buddies, setBuddies] = useState<Person[] | null>(null)
   const [candidates, setCandidates] = useState<Person[]>([])
@@ -40,7 +42,8 @@ export function BuddiesDialog({
           setBuddies(b.data)
           setCandidates(c.data)
         })
-        .catch(() => toast({ title: 'Couldn’t load your buddies.', variant: 'destructive' })),
+        .catch(() => toast({ title: t('buddies.loadFailed'), variant: 'destructive' })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t is the same function in every language
     [toast],
   )
 
@@ -61,14 +64,14 @@ export function BuddiesDialog({
   }
 
   const add = (p: Person) =>
-    run(p, () => client.post('/wishlists/me/buddies', { userId: p.userId }), `Couldn’t add ${p.displayName}.`)
+    run(p, () => client.post('/wishlists/me/buddies', { userId: p.userId }), t('buddies.addFailed', { name: p.displayName }))
 
   const remove = (p: Person) =>
-    run(p, () => client.delete(`/wishlists/me/buddies/${p.userId}`), `Couldn’t remove ${p.displayName}.`)
+    run(p, () => client.delete(`/wishlists/me/buddies/${p.userId}`), t('buddies.removeFailed', { name: p.displayName }))
 
   const row = (p: Person, action: 'add' | 'remove') => (
     <li key={p.userId} className="flex items-center justify-between gap-3 py-1.5">
-      <span className="min-w-0 truncate text-sm">{p.displayName}</span>
+      <UserText className="min-w-0 truncate text-sm">{p.displayName}</UserText>
       <Button
         size="sm"
         variant={action === 'add' ? 'outline' : 'ghost'}
@@ -83,7 +86,7 @@ export function BuddiesDialog({
         ) : (
           <UserMinus className="h-4 w-4" />
         )}
-        {action === 'add' ? 'Make buddy' : 'Remove'}
+        {action === 'add' ? t('buddies.make') : t('buddies.remove')}
       </Button>
     </li>
   )
@@ -92,10 +95,9 @@ export function BuddiesDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Your buddies</DialogTitle>
+          <DialogTitle>{t('buddies.title')}</DialogTitle>
           <DialogDescription>
-            Buddies can add, change and remove wishes on your list, for example when they know what
-            you&rsquo;d like. You still won&rsquo;t see what&rsquo;s been reserved.
+            {t('buddies.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -106,28 +108,28 @@ export function BuddiesDialog({
         ) : (
           <div className="space-y-4">
             <section className="space-y-1">
-              <h3 className="text-sm font-medium">Your buddies</h3>
+              <h3 className="text-sm font-medium">{t('buddies.title')}</h3>
               {buddies.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No buddies yet.</p>
+                <p className="text-sm text-muted-foreground">{t('buddies.none')}</p>
               ) : (
                 <ul>{buddies.map(p => row(p, 'remove'))}</ul>
               )}
             </section>
             <Separator />
             <section className="space-y-1">
-              <h3 className="text-sm font-medium">People in your circles</h3>
+              <h3 className="text-sm font-medium">{t('buddies.candidates')}</h3>
               {candidates.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   {buddies.length === 0
-                    ? 'Invite people to a circle first; then you can pick buddies from them.'
-                    : 'Everyone in your circles is already your buddy.'}
+                    ? t('buddies.inviteFirst')
+                    : t('buddies.allAdded')}
                 </p>
               ) : (
                 <ul>{candidates.map(p => row(p, 'add'))}</ul>
               )}
             </section>
             <p className="text-xs text-muted-foreground">
-              We&rsquo;ll email them to let them know. Removing a buddy keeps the wishes they added.
+              {t('buddies.footnote')}
             </p>
           </div>
         )}

@@ -30,7 +30,11 @@ public class RefreshTokenPostgresTests
 
         await db.Database.EnsureDeletedAsync();
         await db.GetService<IMigrator>().MigrateAsync(MigrationBeforeHashing);
+        // Today's user model writes columns this old schema doesn't have yet:
+        // lend it the column while the users are made, then take it away again.
+        await db.Database.ExecuteSqlRawAsync("""ALTER TABLE "AspNetUsers" ADD "Language" character varying(8)""");
         var user = await NewUser(services, "old@example.test");
+        await db.Database.ExecuteSqlRawAsync("""ALTER TABLE "AspNetUsers" DROP COLUMN "Language" """);
         const string plain = "an-old-plain-refresh-token";
         await db.Database.ExecuteSqlAsync($"""
             INSERT INTO "RefreshTokens" ("Id", "UserId", "Token", "ExpiresAt", "CreatedAt")

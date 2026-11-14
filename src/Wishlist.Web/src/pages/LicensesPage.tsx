@@ -3,6 +3,7 @@ import { Scale } from 'lucide-react'
 import { BackButton } from '@/components/BackButton'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/context/AuthContext'
+import { Trans, useT } from '@/lib/i18n'
 
 interface LicensedPackage {
   name: string
@@ -18,6 +19,7 @@ interface LicensedPackage {
  * /licenses.json.
  */
 export function LicensesPage() {
+  const t = useT()
   const { user } = useAuth()
   const [packages, setPackages] = useState<LicensedPackage[] | null>(null)
   const [failed, setFailed] = useState(false)
@@ -43,22 +45,23 @@ export function LicensesPage() {
         <BackButton fallback={user ? '/wishlists' : '/login'} />
         <div className="flex items-center gap-2">
           <Scale className="h-5 w-5 text-primary" aria-hidden />
-          <h1 className="text-2xl font-semibold tracking-tight">Open-source licences</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('menu.licences')}</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Kadoozle is built with open-source software. Thank you to everyone who makes these projects.
+          {t('licences.intro')}
         </p>
         <p className="text-sm text-muted-foreground">
-          The logo and icons come from{' '}
-          <a href="https://lucide.dev" target="_blank" rel="noreferrer" className="underline underline-offset-4 hover:text-foreground">
-            Lucide
-          </a>{' '}
-          (ISC licence).
+          <Trans
+            k="licences.icons"
+            components={{
+              a: <a href="https://lucide.dev" target="_blank" rel="noreferrer" className="underline underline-offset-4 hover:text-foreground" />,
+            }}
+          />
         </p>
       </div>
 
       {failed ? (
-        <p className="text-sm text-muted-foreground">The list of licences couldn't be loaded. Please try again later.</p>
+        <p className="text-sm text-muted-foreground">{t('licences.failed')}</p>
       ) : packages === null ? (
         <div className="space-y-3">
           <Skeleton className="h-12 w-full" />
@@ -66,7 +69,7 @@ export function LicensesPage() {
           <Skeleton className="h-12 w-full" />
         </div>
       ) : (
-        <ul className="divide-y rounded-md border">
+        <ul className="divide-y rounded-md border" translate="no">
           {packages.map(pkg => (
             <li key={`${pkg.name}@${pkg.version}`}>
               <details className="group">

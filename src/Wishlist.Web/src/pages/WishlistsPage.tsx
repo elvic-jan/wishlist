@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import client from '@/api/client'
+import { Trans, useT } from '@/lib/i18n'
 
 export interface SharedCircle {
   id: string
@@ -36,6 +37,7 @@ function CircleBadge({ title, children }: { title: string; children: React.React
   return (
     <span
       title={title}
+      translate="no"
       className={cn(
         badgeVariants({ variant: 'secondary' }),
         'max-w-[9rem] font-normal hover:bg-secondary sm:max-w-[12rem]',
@@ -48,6 +50,7 @@ function CircleBadge({ title, children }: { title: string; children: React.React
 
 /** The circles shared with a person: matching circles first, at most MAX_BADGES, then "+N more". */
 function CircleBadges({ circles, term }: { circles: SharedCircle[]; term: string }) {
+  const t = useT()
   const ordered = term
     ? [
         ...circles.filter(c => normalize(c.name).includes(term)),
@@ -65,13 +68,14 @@ function CircleBadges({ circles, term }: { circles: SharedCircle[]; term: string
         </CircleBadge>
       ))}
       {hidden.length > 0 && (
-        <CircleBadge title={hidden.map(c => c.name).join(', ')}>+{hidden.length} more</CircleBadge>
+        <CircleBadge title={hidden.map(c => c.name).join(', ')}>{t('wishlists.more', { count: hidden.length })}</CircleBadge>
       )}
     </span>
   )
 }
 
 export function WishlistsPage() {
+  const t = useT()
   const [people, setPeople] = useState<ConnectedPerson[] | null>(null)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('')
@@ -80,7 +84,8 @@ export function WishlistsPage() {
     client
       .get<ConnectedPerson[]>('/wishlists/people')
       .then(r => setPeople(r.data))
-      .catch(() => setError('Failed to load wishlists.'))
+      .catch(() => setError(t('wishlists.loadFailed')))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once
   }, [])
 
   const term = normalize(filter.trim())
@@ -99,17 +104,17 @@ export function WishlistsPage() {
       <div className="space-y-1.5">
         <div className="flex items-center gap-2">
           <Gift className="h-5 w-5 text-primary" aria-hidden />
-          <h1 className="text-2xl font-semibold tracking-tight">Wishlists</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('nav.wishlists')}</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Everyone you share a circle with. Open a name to see their wishlist.
+          {t('wishlists.intro')}
         </p>
       </div>
 
       <Link to="/wishlist/me" className={cn(rowClasses, 'font-medium')}>
         <span className="flex items-center gap-2">
           <Gift className="h-4 w-4 text-primary" aria-hidden />
-          My wishlist
+          {t('myWishlist.title')}
         </span>
         <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
       </Link>
@@ -123,7 +128,7 @@ export function WishlistsPage() {
       {!people ? (
         // Still loading: never show "Nobody here yet" before the list arrives.
         error ? null : (
-          <div className="space-y-2" aria-label="Loading wishlists">
+          <div className="space-y-2" aria-label={t('wishlists.loading')}>
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
@@ -136,13 +141,13 @@ export function WishlistsPage() {
               <Users className="h-6 w-6" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium">Nobody here yet</p>
+              <p className="text-sm font-medium">{t('wishlists.empty.title')}</p>
               <p className="text-sm text-muted-foreground">
-                Other people&rsquo;s wishlists show up here once you share a circle with them.
+                {t('wishlists.empty.text')}
               </p>
             </div>
             <Button asChild variant="outline" className="mt-2">
-              <Link to="/circles">Go to My circles</Link>
+              <Link to="/circles">{t('wishlists.goToCircles')}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -153,21 +158,23 @@ export function WishlistsPage() {
             <Input
               value={filter}
               onChange={e => setFilter(e.target.value)}
-              placeholder="Filter by name or circle"
+              placeholder={t('wishlists.filter')}
               className="pl-9"
-              aria-label="Filter by name or circle"
+              aria-label={t('wishlists.filter')}
             />
           </div>
 
           {visible!.length === 0 ? (
-            <p className="py-4 text-sm text-muted-foreground">Nobody matches &ldquo;{filter}&rdquo;.</p>
+            <p className="py-4 text-sm text-muted-foreground">
+              <Trans k="wishlists.noMatch" values={{ filter }} />
+            </p>
           ) : (
             <ul className="space-y-2">
               {visible!.map(p => (
                 <li key={p.userId}>
                   <Link to={`/wishlist/${p.userId}`} className={rowClasses}>
                     <span className="min-w-0 space-y-1.5">
-                      <span className="block truncate font-medium">{p.displayName}</span>
+                      <span translate="no" className="block truncate font-medium">{p.displayName}</span>
                       <CircleBadges circles={p.circles} term={term} />
                     </span>
                     <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />

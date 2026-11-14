@@ -31,7 +31,7 @@ public class AccountSecurityController(
     public async Task<IActionResult> Add([FromBody] PasskeyAddBody body, CancellationToken ct)
     {
         var state = ceremonies.Take(Request, Response, PasskeyCeremony.Add);
-        if (state is null) return BadRequest(new { error = "The passkey request expired. Please try again." });
+        if (state is null) return BadRequest(new { error = RequestLanguage.T(HttpContext, "The passkey request expired. Please try again.") });
 
         var passkey = await security.CompleteAddPasskeyAsync(User.GetUserId(), body.CredentialJson, state, body.Name, ct);
         return StatusCode(StatusCodes.Status201Created, passkey);

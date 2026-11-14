@@ -18,6 +18,7 @@ import { WakingUp } from '@/components/WakingUp'
 import { Fingerprint } from 'lucide-react'
 import { signUpWithPasskey } from '@/api/passkeys'
 import { useAuth } from '@/context/AuthContext'
+import { Trans, useT } from '@/lib/i18n'
 import { inviteErrorMessage } from '@/lib/inviteErrors'
 import { useInvitationCheck } from '@/lib/useInvitationCheck'
 import { isPasskeyCancelled, passkeyErrorMessage, passkeysSupported } from '@/lib/webauthn'
@@ -40,18 +41,18 @@ function InvitedRegistration({ inviteCode }: { inviteCode: string }) {
 }
 
 function InvitationOnly() {
+  const t = useT()
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Invitation only</CardTitle>
+        <CardTitle>{t('register.invitationOnly.title')}</CardTitle>
         <CardDescription>
-          Accounts are created from an invite link. Ask a family member to send
-          you one from their circle page.
+          {t('register.invitationOnly.text')}
         </CardDescription>
       </CardHeader>
       <CardFooter>
         <Button asChild variant="outline" className="w-full">
-          <Link to="/login">Sign in</Link>
+          <Link to="/login">{t('login.title')}</Link>
         </Button>
       </CardFooter>
     </Card>
@@ -59,6 +60,7 @@ function InvitationOnly() {
 }
 
 function RegisterForm({ inviteCode }: { inviteCode: string }) {
+  const t = useT()
   const { register, startSession } = useAuth()
   const navigate = useNavigate()
   const canUsePasskeys = passkeysSupported()
@@ -85,9 +87,9 @@ function RegisterForm({ inviteCode }: { inviteCode: string }) {
       }
     } catch (err: unknown) {
       if (!usePassword && isPasskeyCancelled(err)) {
-        setError('Face ID / fingerprint was cancelled. Try again, or use a password instead.')
+        setError(t('register.cancelled'))
       } else {
-        setError(passkeyErrorMessage(err) ?? inviteErrorMessage(err, 'Registration failed.'))
+        setError(passkeyErrorMessage(err) ?? inviteErrorMessage(err, t('register.failed')))
       }
     } finally {
       setSubmitting(false)
@@ -97,9 +99,9 @@ function RegisterForm({ inviteCode }: { inviteCode: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Create account</CardTitle>
+        <CardTitle>{t('register.title')}</CardTitle>
         <CardDescription>
-          You’ve been invited to join a circle. Create your account to accept.
+          {t('register.description')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -110,7 +112,7 @@ function RegisterForm({ inviteCode }: { inviteCode: string }) {
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="register-display-name">Display name</Label>
+            <Label htmlFor="register-display-name">{t('register.displayName')}</Label>
             <Input
               id="register-display-name"
               autoComplete="name"
@@ -121,7 +123,7 @@ function RegisterForm({ inviteCode }: { inviteCode: string }) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="register-email">Email</Label>
+            <Label htmlFor="register-email">{t('common.email')}</Label>
             <Input
               id="register-email"
               type="email"
@@ -135,7 +137,7 @@ function RegisterForm({ inviteCode }: { inviteCode: string }) {
           {usePassword ? (
             <>
               <div className="space-y-1.5">
-                <Label htmlFor="register-password">Password</Label>
+                <Label htmlFor="register-password">{t('common.password')}</Label>
                 <PasswordInput
                   id="register-password"
                   autoComplete="new-password"
@@ -146,22 +148,21 @@ function RegisterForm({ inviteCode }: { inviteCode: string }) {
                   minLength={8}
                 />
                 <p className="text-xs text-muted-foreground">
-                  At least 8 characters.
+                  {t('register.passwordHint')}
                 </p>
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? 'Creating account…' : 'Create account'}
+                {submitting ? t('register.creating') : t('register.title')}
               </Button>
             </>
           ) : (
             <>
               <Button type="submit" className="w-full" disabled={submitting}>
                 <Fingerprint className="mr-2 h-4 w-4" aria-hidden />
-                {submitting ? 'Waiting for your device…' : 'Create account with Face ID / fingerprint'}
+                {submitting ? t('common.waitingForDevice') : t('register.withPasskey')}
               </Button>
               <p className="text-xs text-muted-foreground">
-                Your phone or computer will ask for Face ID, your fingerprint or
-                its screen lock. No password to remember.
+                {t('register.passkeyHint')}
               </p>
             </>
           )}
@@ -176,20 +177,24 @@ function RegisterForm({ inviteCode }: { inviteCode: string }) {
                 setUsePassword(p => !p)
               }}
             >
-              {usePassword ? 'Use Face ID / fingerprint instead' : 'Use a password instead'}
+              {usePassword ? t('register.usePasskey') : t('register.usePassword')}
             </button>
           </div>
         )}
       </CardContent>
       <CardFooter className="justify-center">
         <p className="text-sm text-muted-foreground">
-          Already have an account?{' '}
-          <Link
-            to={inviteCode ? `/login?redirect=/join/${inviteCode}` : '/login'}
-            className="text-primary underline-offset-4 hover:underline"
-          >
-            Sign in
-          </Link>
+          <Trans
+            k="register.haveAccount"
+            components={{
+              a: (
+                <Link
+                  to={inviteCode ? `/login?redirect=/join/${inviteCode}` : '/login'}
+                  className="text-primary underline-offset-4 hover:underline"
+                />
+              ),
+            }}
+          />
         </p>
       </CardFooter>
     </Card>

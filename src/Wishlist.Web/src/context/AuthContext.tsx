@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import client, { refreshAccessToken, setAccessToken } from '../api/client';
+import { getLanguage, parseLanguage, setLanguage } from '@/lib/i18n';
 
 interface User {
   id: string;
@@ -7,6 +8,8 @@ interface User {
   displayName: string;
   /** Site admin: shows the Admin menu item. The server checks again on every admin request. */
   isAdmin?: boolean;
+  /** The language saved on the account ("en", "nl"); null when never chosen. */
+  language?: string | null;
 }
 
 interface AuthContextType {
@@ -33,6 +36,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [restoring, setRestoring] = useState(true);
 
+  // Someone signed in: their saved language wins on this device. An account
+  // without one gets the language this device is showing, so their emails match.
+  const adopt = useCallback((signedIn: User) => {
+    setUser(signedIn);
+    const saved = parseLanguage(signedIn.language);
+    if (saved) {
+      setLanguage(saved);
+      return;
+    }
+    client
+      .put<User>('/auth/me/language', { language: getLanguage() })
+      .then(({ data }) => setUser(current => (current?.id === data.id ? data : current)))
+      .catch(() => undefined);
+  }, []);
+
   // The access token lives only in memory, so a reload starts signed out.
   // The HttpOnly refresh cookie (if any) gets us a new one.
   useEffect(() => {
@@ -40,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshAccessToken()
       .then(() => client.get<User>('/auth/me'))
       .then(({ data }) => {
-        if (!cancelled) setUser(data);
+        if (!cancelled) adopt(data);
       })
       .catch(() => {
         setAccessToken(null);
@@ -51,22 +69,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [adopt]);
 
   const login = useCallback(async (email: string, password: string) => {
     const { data } = await client.post('/auth/login', { email, password });
     setAccessToken(data.accessToken);
-    setUser(data.user);
-  }, []);
+    adopt(data.user);
+  }, [adopt]);
 
   const register = useCallback(
     async (email: string, displayName: string, password: string, inviteCode: string) => {
       const { data } = await client.post('/auth/register', { email, displayName, password, inviteCode });
       setAccessToken(data.accessToken);
-      setUser(data.user);
+      adopt(data.user);
       return data.joinedGroupId as string;
     },
-    [],
+    [adopt],
   );
 
   const logout = useCallback(async () => {
@@ -77,8 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const startSession = useCallback((result: { accessToken: string; user: User }) => {
     setAccessToken(result.accessToken);
-    setUser(result.user);
-  }, []);
+    adopt(result.user);
+  }, [adopt]);
 
   return (
     <AuthContext.Provider value={{ user, restoring, login, register, logout, setUser, startSession }}>

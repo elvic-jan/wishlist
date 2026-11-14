@@ -1,5 +1,6 @@
 using Wishlist.Application.DTOs;
 using Wishlist.Application.Interfaces;
+using Wishlist.Application.Localization;
 using Wishlist.Domain.Entities;
 using Wishlist.Domain.Enums;
 using Wishlist.Domain.Exceptions;
@@ -13,7 +14,8 @@ public class RegisterUserUseCase(
     RegistrationGate gate,
     IUnitOfWork unitOfWork,
     AuthSessionFactory sessions,
-    AccountEmails emails)
+    AccountEmails emails,
+    ILanguageContext language)
 {
     public async Task<(AuthResponse Response, string RefreshToken)> ExecuteAsync(RegisterRequest request, CancellationToken ct = default)
     {
@@ -28,7 +30,7 @@ public class RegisterUserUseCase(
         User user = null!;
         await unitOfWork.ExecuteInTransactionAsync(async innerCt =>
         {
-            user = await users.CreateAsync(request.Email, request.DisplayName, request.Password, innerCt);
+            user = await users.CreateAsync(request.Email, request.DisplayName, request.Password, language.Language, innerCt);
             await groups.AddMemberAsync(invitation.GroupId, user.Id, GroupMemberRole.Member, innerCt);
             await invitations.MarkUsedAsync(invitation.Id, innerCt);
         }, ct);

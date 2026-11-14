@@ -16,7 +16,7 @@ public sealed class InviteCodeGuard(IInviteCodeAttemptLimiter limiter)
         var ip = http.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
         if (limiter.IsBlocked(ip))
         {
-            return new ObjectResult(new { error = "Too many invitation attempts. Please try again later." })
+            return new ObjectResult(new { error = RequestLanguage.T(http, "Too many invitation attempts. Please try again later.") })
             {
                 StatusCode = StatusCodes.Status429TooManyRequests,
             };

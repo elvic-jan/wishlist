@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { Gift } from 'lucide-react'
 import { Link, Outlet } from 'react-router-dom'
+import { LanguageLinks } from '@/components/LanguageSwitch'
 
 export function AuthLayout() {
   return (
@@ -20,6 +21,7 @@ export function AuthLayout() {
             <Outlet />
           </Suspense>
         </div>
+        <LanguageLinks className="mt-8" />
       </main>
     </div>
   )

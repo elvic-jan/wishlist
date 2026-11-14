@@ -31,9 +31,13 @@ public class ReservationPostgresTests
         await db.Database.EnsureDeletedAsync();
         await db.GetService<IMigrator>().MigrateAsync(MigrationBeforeExpiry);
 
+        // Today's user model writes columns this old schema doesn't have yet:
+        // lend it the column while the users are made, then take it away again.
+        await db.Database.ExecuteSqlRawAsync("""ALTER TABLE "AspNetUsers" ADD "Language" character varying(8)""");
         var users = services.GetRequiredService<IUserRepository>();
         var owner = await users.CreateAsync("owner@example.test", "Owner", "Passw0rd!long");
         var giver = await users.CreateAsync("giver@example.test", "Giver", "Passw0rd!long");
+        await db.Database.ExecuteSqlRawAsync("""ALTER TABLE "AspNetUsers" DROP COLUMN "Language" """);
         // Plain SQL: today's repository writes columns this old schema doesn't have yet.
         var reservedItemId = Guid.NewGuid();
         var boughtItemId = Guid.NewGuid();

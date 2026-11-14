@@ -13,8 +13,10 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { requestPasswordReset } from '@/api/auth'
+import { Trans, useT } from '@/lib/i18n'
 
 export function ForgotPasswordPage() {
+  const t = useT()
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
@@ -30,9 +32,9 @@ export function ForgotPasswordPage() {
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status
       if (status === 429) {
-        setError('Too many requests. Please wait a few minutes and try again.')
+        setError(t('forgot.tooMany'))
       } else {
-        setError('Something went wrong. Please try again in a moment.')
+        setError(t('forgot.failed'))
       }
     } finally {
       setSubmitting(false)
@@ -43,37 +45,34 @@ export function ForgotPasswordPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Check your inbox</CardTitle>
+          <CardTitle>{t('forgot.sent.title')}</CardTitle>
           <CardDescription>
-            If we can send recovery mail for <strong>{email}</strong>, a link is
-            on its way. Open it within 30 minutes on the phone or computer you
-            want to use.
+            <Trans k="forgot.sent.text" values={{ email }} components={{ b: <strong /> }} />
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
-            Didn&rsquo;t get an email? Check your spam folder, then{' '}
-            <button
-              type="button"
-              onClick={() => setSubmitted(false)}
-              className="text-primary underline-offset-4 hover:underline"
-            >
-              request another one
-            </button>
-            .
+            <Trans
+              k="forgot.sent.noEmail"
+              components={{
+                a: (
+                  <button
+                    type="button"
+                    onClick={() => setSubmitted(false)}
+                    className="text-primary underline-offset-4 hover:underline"
+                  />
+                ),
+              }}
+            />
           </p>
-          <p>
-            If you signed up with Face ID or a fingerprint and never confirmed
-            your email address, we can&rsquo;t send a link. Ask someone in your
-            circle to send you a new invite instead.
-          </p>
+          <p>{t('forgot.sent.unconfirmed')}</p>
         </CardContent>
         <CardFooter className="justify-center">
           <Link
             to="/login"
             className="text-sm text-primary underline-offset-4 hover:underline"
           >
-            Back to sign in
+            {t('common.backToSignIn')}
           </Link>
         </CardFooter>
       </Card>
@@ -83,10 +82,9 @@ export function ForgotPasswordPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Can&rsquo;t sign in?</CardTitle>
+        <CardTitle>{t('forgot.title')}</CardTitle>
         <CardDescription>
-          Lost your phone, or forgot your password? Enter the email address on
-          your account and we&rsquo;ll send you a link to get back in.
+          {t('forgot.description')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -97,7 +95,7 @@ export function ForgotPasswordPage() {
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="forgot-email">Email</Label>
+            <Label htmlFor="forgot-email">{t('common.email')}</Label>
             <Input
               id="forgot-email"
               type="email"
@@ -108,7 +106,7 @@ export function ForgotPasswordPage() {
             />
           </div>
           <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? 'Sending…' : 'Email me a link'}
+            {submitting ? t('forgot.sending') : t('forgot.submit')}
           </Button>
         </form>
       </CardContent>
@@ -117,7 +115,7 @@ export function ForgotPasswordPage() {
           to="/login"
           className="text-sm text-primary underline-offset-4 hover:underline"
         >
-          Back to sign in
+          {t('common.backToSignIn')}
         </Link>
       </CardFooter>
     </Card>

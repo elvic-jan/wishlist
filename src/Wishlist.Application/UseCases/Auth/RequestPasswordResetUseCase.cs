@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Wishlist.Application.DTOs;
 using Wishlist.Application.Interfaces;
+using Wishlist.Application.Localization;
 
 namespace Wishlist.Application.UseCases.Auth;
 
@@ -14,6 +15,7 @@ public class RequestPasswordResetUseCase(
     IUserRepository users,
     IEmailSender emailSender,
     IAppUrlProvider appUrls,
+    ILanguageContext language,
     ILogger<RequestPasswordResetUseCase> logger)
 {
     // Constant-time-ish delay for the "no user" branch so response timing
@@ -49,25 +51,16 @@ public class RequestPasswordResetUseCase(
 
         var resetUrl = RecoveryLink.Build(appUrls.PublicBaseUrl, user.Email, token);
 
-        var message = new EmailMessage(
-            To: user.Email,
-            Subject: "Get back into your Kadoozle account",
-            PlainTextBody:
-                $"Hi {user.DisplayName},\r\n\r\n" +
+        var mail = new EmailText(Languages.ForEmail(user, null, language.Language))
+            .Greeting(user.DisplayName)
+            .Paragraph(
                 "We received a request to get back into your Kadoozle account. " +
-                "If you did not make this request, you can safely ignore this email.\r\n\r\n" +
+                "If you did not make this request, you can safely ignore this email.")
+            .Paragraph(
                 "Open the link below within the next 30 minutes, on the phone or computer you want to use. " +
-                "You can then sign in with Face ID or a fingerprint on that device, or set a new password:\r\n" +
-                $"{resetUrl}\r\n\r\n" +
-                "Thanks,\r\nKadoozle",
-            HtmlBody:
-                $"<p>Hi {System.Net.WebUtility.HtmlEncode(user.DisplayName)},</p>" +
-                "<p>We received a request to get back into your Kadoozle account. " +
-                "If you did not make this request, you can safely ignore this email.</p>" +
-                "<p>Open the link below within the next 30 minutes, on the phone or computer you want to use. " +
-                "You can then sign in with Face ID or a fingerprint on that device, or set a new password:</p>" +
-                $"<p><a href=\"{resetUrl}\">{resetUrl}</a></p>" +
-                "<p>Thanks,<br/>Kadoozle</p>");
+                "You can then sign in with Face ID or a fingerprint on that device, or set a new password:")
+            .Link(resetUrl);
+        var message = mail.Build(user.Email, mail.T("Get back into your Kadoozle account"));
 
         try
         {

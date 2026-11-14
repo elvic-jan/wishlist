@@ -12,6 +12,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import client from '@/api/client'
 import { buildInviteMessage } from '@/lib/inviteMessage'
+import { useT } from '@/lib/i18n'
 import { InviteFromCirclesDialog } from '@/components/InviteFromCirclesDialog'
 
 interface Invitation {
@@ -37,6 +38,7 @@ export function InviteMenu({
   /** Lets the page show the latest link, for copying by hand. */
   onLinkCreated?: (url: string) => void
 }) {
+  const t = useT()
   const { toast } = useToast()
   const [invitation, setInvitation] = useState<Invitation | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -48,7 +50,7 @@ export function InviteMenu({
       setInvitation(data)
       onLinkCreated?.(data.inviteUrl)
     } catch {
-      toast({ title: 'Couldn’t create an invite link', variant: 'destructive' })
+      toast({ title: t('inviteMenu.linkFailed'), variant: 'destructive' })
     }
   }
 
@@ -63,7 +65,7 @@ export function InviteMenu({
     } catch (err) {
       // Closing the share sheet is not an error.
       if ((err as DOMException)?.name !== 'AbortError')
-        toast({ title: 'Couldn’t open sharing', description: 'Try WhatsApp, Email or Copy link.', variant: 'destructive' })
+        toast({ title: t('inviteMenu.shareFailed'), description: t('inviteMenu.shareFailedText'), variant: 'destructive' })
     }
   }
 
@@ -71,9 +73,9 @@ export function InviteMenu({
     if (!invitation) return
     try {
       await navigator.clipboard.writeText(invitation.inviteUrl)
-      toast({ title: 'Invite link copied', description: 'Send it to whoever you want to add.' })
+      toast({ title: t('inviteMenu.copied'), description: t('inviteMenu.copiedText') })
     } catch {
-      toast({ title: 'Couldn’t copy the link', description: 'Select the link below and copy it.', variant: 'destructive' })
+      toast({ title: t('inviteMenu.copyFailed'), description: t('inviteMenu.copyFailedText'), variant: 'destructive' })
     }
   }
 
@@ -85,22 +87,22 @@ export function InviteMenu({
         <DropdownMenuTrigger asChild>
           <Button variant="outline">
             <UserPlus className="h-4 w-4" />
-            Invite people
+            {t('inviteMenu.invite')}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
           <DropdownMenuItem onSelect={() => setPickerOpen(true)}>
             <Users className="h-4 w-4" />
-            People from my circles
+            {t('inviteMenu.fromCircles')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
             {ready ? (
-              'Send a new invite link'
+              t('inviteMenu.sendLink')
             ) : (
               <>
                 <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-                Creating invite link…
+                {t('inviteMenu.creating')}
               </>
             )}
           </DropdownMenuLabel>
@@ -108,7 +110,7 @@ export function InviteMenu({
           {canShareNatively && (
             <DropdownMenuItem disabled={!ready} onSelect={share}>
               <Share2 className="h-4 w-4" />
-              Share…
+              {t('inviteMenu.share')}
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
@@ -125,11 +127,11 @@ export function InviteMenu({
             }}
           >
             <Mail className="h-4 w-4" />
-            Email
+            {t('inviteMenu.email')}
           </DropdownMenuItem>
           <DropdownMenuItem disabled={!ready} onSelect={copy}>
             <Copy className="h-4 w-4" />
-            Copy link
+            {t('inviteMenu.copy')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

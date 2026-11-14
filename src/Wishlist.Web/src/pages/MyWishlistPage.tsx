@@ -8,12 +8,14 @@ import { BuddiesDialog } from '@/components/BuddiesDialog'
 import { WishlistEditor, type EditableItem } from '@/components/WishlistEditor'
 import { useAuth } from '@/context/AuthContext'
 import client from '@/api/client'
+import { useT } from '@/lib/i18n'
 
 interface WishlistItem extends EditableItem {
   createdAt: string
 }
 
 export function MyWishlistPage() {
+  const t = useT()
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [items, setItems] = useState<WishlistItem[]>([])
@@ -38,11 +40,12 @@ export function MyWishlistPage() {
     client
       .get('/wishlists/me')
       .then(r => setItems(r.data))
-      .catch(() => setError('Failed to load wishlist.'))
+      .catch(() => setError(t('myWishlist.loadFailed')))
       .finally(() => setLoaded(true))
 
   useEffect(() => {
     load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once
   }, [])
 
   return (
@@ -52,16 +55,15 @@ export function MyWishlistPage() {
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Gift className="h-5 w-5 text-primary" aria-hidden />
-            <h1 className="text-2xl font-semibold tracking-tight">My wishlist</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{t('myWishlist.title')}</h1>
           </div>
           <Button variant="outline" size="sm" onClick={() => setBuddiesOpen(true)}>
             <Users className="h-4 w-4" />
-            Buddies
+            {t('myWishlist.buddies')}
           </Button>
         </div>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          People in your circles will see this list, but you won&rsquo;t see who
-          has reserved what.
+          {t('myWishlist.intro')}
         </p>
       </div>
 
@@ -77,13 +79,11 @@ export function MyWishlistPage() {
         onChanged={load}
         itemsPath="/wishlists/me/items"
         canEdit
-        addLabel="Add item"
-        emptyTitle="No items yet"
-        emptyText="Add the first thing you’d love to receive."
+        addLabel={t('editor.addItem')}
+        emptyTitle={t('myWishlist.empty.title')}
+        emptyText={t('myWishlist.empty.text')}
         currentUserId={user?.id}
-        deleteDescription={() =>
-          'This removes the item from your wishlist for everyone. It can’t be undone.'
-        }
+        deleteDescription={() => t('myWishlist.deleteText')}
       />
 
       <BuddiesDialog open={buddiesOpen} onOpenChange={setBuddiesOpen} />

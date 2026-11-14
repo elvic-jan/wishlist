@@ -1,4 +1,5 @@
 using Wishlist.Application.Interfaces;
+using Wishlist.Application.Localization;
 using Wishlist.Domain.Exceptions;
 
 namespace Wishlist.Application.Messages;
@@ -8,7 +9,9 @@ public record MessageAction(string Label, string Url);
 /// <summary>
 /// A message shown to users as a lasting toast until they act on it or dismiss
 /// it. Add one by writing a class and registering it in DependencyInjection;
-/// the id must never change, because dismissals are stored against it.
+/// the id must never change, because dismissals are stored against it. Title,
+/// text and action label are written in English and translated in
+/// <see cref="DutchTexts"/>.
 /// </summary>
 public interface IMessageDefinition
 {
@@ -30,7 +33,8 @@ public interface IMessageDefinition
 public record MessageDto(string Id, string Title, string Text, MessageAction? Action);
 
 /// <summary>The messages for a user: in their date window, meant for them, not dismissed. In registration order.</summary>
-public class GetMyMessagesUseCase(IEnumerable<IMessageDefinition> definitions, IUserMessageStateRepository states, TimeProvider time)
+public class GetMyMessagesUseCase(
+    IEnumerable<IMessageDefinition> definitions, IUserMessageStateRepository states, TimeProvider time, ILanguageContext language)
 {
     public async Task<IReadOnlyList<MessageDto>> ExecuteAsync(Guid userId, CancellationToken ct = default)
     {
@@ -43,10 +47,12 @@ public class GetMyMessagesUseCase(IEnumerable<IMessageDefinition> definitions, I
             if (m.ShowFrom is { } from && now < from) continue;
             if (m.ShowUntil is { } until && now >= until) continue;
             if (!await m.AppliesToAsync(userId, ct)) continue;
-            result.Add(new MessageDto(m.Id, m.Title, m.Text, m.Action));
+            result.Add(new MessageDto(m.Id, T(m.Title), T(m.Text), m.Action is { } action ? action with { Label = T(action.Label) } : null));
         }
         return result;
     }
+
+    private string T(string english) => Texts.T(language.Language, english);
 }
 
 /// <summary>Hides a message from the user for good (also used when they take its action).</summary>

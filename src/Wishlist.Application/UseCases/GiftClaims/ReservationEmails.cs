@@ -1,73 +1,57 @@
-using System.Globalization;
-using System.Net;
 using Microsoft.Extensions.Logging;
 using Wishlist.Application.Interfaces;
+using Wishlist.Application.Localization;
 using Wishlist.Domain.Entities;
 
 namespace Wishlist.Application.UseCases.GiftClaims;
 
 /// <summary>
 /// Emails to the person who reserved a gift. They go only to the reserver and
-/// never mention other givers, so nothing reaches the wishlist's owner.
+/// never mention other givers, so nothing reaches the wishlist's owner. Sent
+/// by the monthly run, so in the reserver's saved language, else English.
 /// </summary>
-public class ReservationEmails(IEmailSender emailSender, IAppUrlProvider appUrls, ILogger<ReservationEmails> logger)
+public class ReservationEmails(IEmailSender emailSender, IAppUrlProvider appUrls, ILanguageContext language, ILogger<ReservationEmails> logger)
 {
     /// <summary>Returns whether the email was handed to the email service.</summary>
     public Task<bool> SendReminderAsync(User reserver, User owner, ReservationNotice notice, CancellationToken ct = default)
     {
-        var link = WishlistLink(owner);
-        var until = FormatDate(notice.ExpiresAt);
+        var mail = Mail(reserver);
+        var until = mail.Date(notice.ExpiresAt);
         var item = notice.ItemTitle;
 
-        return SendAsync(reserver, new EmailMessage(
-            To: reserver.Email,
-            Subject: $"Your reservation of \"{item}\" ends on {until}",
-            PlainTextBody:
-                $"Hi {reserver.DisplayName},\r\n\r\n" +
-                $"A while ago you reserved \"{item}\" on {owner.DisplayName}'s wishlist. " +
-                $"The reservation is still open and ends on {until}. After that, others can reserve it again.\r\n\r\n" +
-                "Open the wishlist to keep your reservation, mark the gift as bought, or release it:\r\n" +
-                $"{link}\r\n\r\n" +
-                "Thanks,\r\nKadoozle",
-            HtmlBody:
-                $"<p>Hi {Html(reserver.DisplayName)},</p>" +
-                $"<p>A while ago you reserved <strong>{Html(item)}</strong> on {Html(owner.DisplayName)}&rsquo;s wishlist. " +
-                $"The reservation is still open and ends on <strong>{until}</strong>. After that, others can reserve it again.</p>" +
-                "<p>Open the wishlist to keep your reservation, mark the gift as bought, or release it:</p>" +
-                $"<p><a href=\"{link}\">Open {Html(owner.DisplayName)}&rsquo;s wishlist</a></p>" +
-                "<p>Thanks,<br/>Kadoozle</p>"), "reservation-reminder", ct);
+        mail.Greeting(reserver.DisplayName)
+            .Paragraph(
+                "A while ago you reserved **{0}** on {1}'s wishlist. " +
+                "The reservation is still open and ends on **{2}**. After that, others can reserve it again.",
+                item, owner.DisplayName, until)
+            .Paragraph("Open the wishlist to keep your reservation, mark the gift as bought, or release it.")
+            .Link(WishlistLink(owner), "Open {0}'s wishlist", owner.DisplayName);
+
+        return SendAsync(reserver,
+            mail.Build(reserver.Email, mail.T("Your reservation of \"{0}\" ends on {1}", item, until)),
+            "reservation-reminder", ct);
     }
 
     /// <summary>Returns whether the email was handed to the email service.</summary>
     public Task<bool> SendExpiredAsync(User reserver, User owner, ReservationNotice notice, CancellationToken ct = default)
     {
-        var link = WishlistLink(owner);
         var item = notice.ItemTitle;
+        var mail = Mail(reserver)
+            .Greeting(reserver.DisplayName)
+            .Paragraph(
+                "Your reservation of **{0}** on {1}'s wishlist has ended, so others in the circle can reserve it now.",
+                item, owner.DisplayName)
+            .Paragraph("If you still want to give it, open the wishlist and reserve it again while it's free.")
+            .Link(WishlistLink(owner), "Open {0}'s wishlist", owner.DisplayName);
 
-        return SendAsync(reserver, new EmailMessage(
-            To: reserver.Email,
-            Subject: $"Your reservation of \"{item}\" has ended",
-            PlainTextBody:
-                $"Hi {reserver.DisplayName},\r\n\r\n" +
-                $"Your reservation of \"{item}\" on {owner.DisplayName}'s wishlist has ended, " +
-                "so others in the circle can reserve it now.\r\n\r\n" +
-                "If you still want to give it, open the wishlist and reserve it again while it's free:\r\n" +
-                $"{link}\r\n\r\n" +
-                "Thanks,\r\nKadoozle",
-            HtmlBody:
-                $"<p>Hi {Html(reserver.DisplayName)},</p>" +
-                $"<p>Your reservation of <strong>{Html(item)}</strong> on {Html(owner.DisplayName)}&rsquo;s wishlist has ended, " +
-                "so others in the circle can reserve it now.</p>" +
-                "<p>If you still want to give it, open the wishlist and reserve it again while it&rsquo;s free:</p>" +
-                $"<p><a href=\"{link}\">Open {Html(owner.DisplayName)}&rsquo;s wishlist</a></p>" +
-                "<p>Thanks,<br/>Kadoozle</p>"), "reservation-expired", ct);
+        return SendAsync(reserver,
+            mail.Build(reserver.Email, mail.T("Your reservation of \"{0}\" has ended", item)),
+            "reservation-expired", ct);
     }
 
+    private EmailText Mail(User reserver) => new(Languages.ForEmail(reserver, null, language.Language));
+
     private string WishlistLink(User owner) => $"{appUrls.PublicBaseUrl.TrimEnd('/')}/wishlist/{owner.Id}";
-
-    private static string FormatDate(DateTime utc) => utc.ToString("d MMMM yyyy", CultureInfo.InvariantCulture);
-
-    private static string Html(string text) => WebUtility.HtmlEncode(text);
 
     private async Task<bool> SendAsync(User reserver, EmailMessage message, string kind, CancellationToken ct)
     {

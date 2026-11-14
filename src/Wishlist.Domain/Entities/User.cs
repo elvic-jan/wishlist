@@ -15,4 +15,7 @@ public class User
 
     /// <summary>The account has the site-wide Admin role (granted only by the admin job).</summary>
     public bool IsAdmin { get; set; }
+
+    /// <summary>The language the person chose ("en", "nl"); null until they have used the app since languages exist.</summary>
+    public string? Language { get; set; }
 }

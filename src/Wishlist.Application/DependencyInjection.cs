@@ -1,4 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Wishlist.Application.Localization;
 using Wishlist.Application.UseCases.Admin;
 using Wishlist.Application.UseCases.Auth;
 using Wishlist.Application.UseCases.Buddies;
@@ -15,6 +17,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
+        // The API replaces this with the language of the request.
+        services.TryAddScoped<ILanguageContext, DefaultLanguageContext>();
+
         services.AddScoped<RegistrationGate>();
         services.AddScoped<AuthSessionFactory>();
         services.AddScoped<AccountEmails>();

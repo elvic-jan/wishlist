@@ -3,6 +3,7 @@ import { Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LastingToast } from '@/components/LastingToast'
 import { applyUpdate, useUpdateAvailable } from '@/lib/appUpdate'
+import { useT } from '@/lib/i18n'
 
 /**
  * Shown once a newer release is deployed. It can't be put off, so nobody keeps
@@ -10,6 +11,7 @@ import { applyUpdate, useUpdateAvailable } from '@/lib/appUpdate'
  * version first, so the page lists that version's notes.
  */
 export function UpdateToaster() {
+  const t = useT()
   const available = useUpdateAvailable()
   const [refreshing, setRefreshing] = useState(false)
   if (!available) return null
@@ -20,12 +22,12 @@ export function UpdateToaster() {
   }
 
   return (
-    <LastingToast icon={Sparkles} title="A new version of Kadoozle is available">
+    <LastingToast icon={Sparkles} title={t('update.title')}>
       <Button size="sm" variant="outline" disabled={refreshing} onClick={() => update('/whats-new')}>
-        What's new
+        {t('menu.whatsNew')}
       </Button>
       <Button size="sm" disabled={refreshing} onClick={() => update()}>
-        Refresh
+        {t('update.refresh')}
       </Button>
     </LastingToast>
   )

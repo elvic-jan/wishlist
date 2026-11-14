@@ -7,6 +7,8 @@
  * get the manual conversion below.
  */
 
+import { t } from '@/lib/i18n'
+
 type Json = Record<string, unknown>
 
 /**
@@ -85,11 +87,11 @@ export function passkeyErrorMessage(err: unknown): string | null {
   if (isPasskeyCancelled(err)) return null
   if (err instanceof DOMException) {
     if (err.name === 'InvalidStateError')
-      return 'This device already has a passkey for your account.'
+      return t('passkey.error.exists')
     if (err.name === 'SecurityError')
-      return 'Face ID / fingerprint sign-in isn’t available on this web address. Open Kadoozle at kadoozle.app and try again.'
+      return t('passkey.error.address')
     if (err.name === 'NotSupportedError')
-      return 'This browser can’t use Face ID or fingerprint sign-in. Use your password instead.'
+      return t('passkey.error.unsupported')
   }
   return null
 }
@@ -99,12 +101,12 @@ export function guessDeviceName(): string {
   const ua = navigator.userAgent
   if (/iPhone/.test(ua)) return 'iPhone'
   if (/iPad/.test(ua)) return 'iPad'
-  if (/Android/.test(ua)) return 'Android phone'
+  if (/Android/.test(ua)) return t('device.androidPhone')
   if (/Macintosh/.test(ua)) return navigator.maxTouchPoints > 1 ? 'iPad' : 'Mac'
-  if (/Windows/.test(ua)) return 'Windows PC'
+  if (/Windows/.test(ua)) return t('device.windowsPc')
   if (/CrOS/.test(ua)) return 'Chromebook'
-  if (/Linux/.test(ua)) return 'Linux PC'
-  return 'This device'
+  if (/Linux/.test(ua)) return t('device.linuxPc')
+  return t('device.this')
 }
 
 // ---- conversion -------------------------------------------------------------

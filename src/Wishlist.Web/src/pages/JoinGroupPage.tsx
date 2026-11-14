@@ -14,12 +14,14 @@ import { InvalidInvitation } from '@/components/InvalidInvitation'
 import { WakingUp } from '@/components/WakingUp'
 import client from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
+import { Trans, useT } from '@/lib/i18n'
 import { inviteErrorMessage } from '@/lib/inviteErrors'
 import { useInvitationCheck } from '@/lib/useInvitationCheck'
 
 type JoinStatus = 'joining' | 'done' | 'error' | 'unauthenticated'
 
 export function JoinGroupPage() {
+  const t = useT()
   const { code } = useParams<{ code: string }>()
   const { user, restoring } = useAuth()
   const navigate = useNavigate()
@@ -39,9 +41,10 @@ export function JoinGroupPage() {
         setTimeout(() => navigate('/circles'), 2000)
       })
       .catch((err: unknown) => {
-        setError(inviteErrorMessage(err, 'Failed to join circle. The link may have expired.'))
+        setError(inviteErrorMessage(err, t('join.failed')))
         setStatus('error')
       })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- joining must not run again when the language changes
   }, [code, user, navigate])
 
   // Signed-out visitors get the code checked before they're offered sign-up;
@@ -57,18 +60,18 @@ export function JoinGroupPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {invitation.inviterName} invited you to {invitation.circleName}
+            <Trans k="join.invited" values={{ inviter: invitation.inviterName, circle: invitation.circleName }} />
           </CardTitle>
           <CardDescription>
-            Create an account to join the circle, or sign in if you already have one.
+            {t('join.invitedText')}
           </CardDescription>
         </CardHeader>
         <CardFooter className="flex-col gap-2">
           <Button asChild className="w-full">
-            <Link to={`/register?invite=${code}`}>Create account</Link>
+            <Link to={`/register?invite=${code}`}>{t('register.title')}</Link>
           </Button>
           <Button asChild variant="outline" className="w-full">
-            <Link to={`/login?redirect=/join/${code}`}>Sign in</Link>
+            <Link to={`/login?redirect=/join/${code}`}>{t('login.title')}</Link>
           </Button>
         </CardFooter>
       </Card>
@@ -79,8 +82,8 @@ export function JoinGroupPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Joining circle…</CardTitle>
-          <CardDescription>This will only take a moment.</CardDescription>
+          <CardTitle>{t('join.joining')}</CardTitle>
+          <CardDescription>{t('join.moment')}</CardDescription>
         </CardHeader>
       </Card>
     )
@@ -90,8 +93,8 @@ export function JoinGroupPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>You&rsquo;re in!</CardTitle>
-          <CardDescription>Taking you to the home page…</CardDescription>
+          <CardTitle>{t('join.done')}</CardTitle>
+          <CardDescription>{t('join.redirecting')}</CardDescription>
         </CardHeader>
       </Card>
     )
@@ -100,7 +103,7 @@ export function JoinGroupPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Couldn&rsquo;t join</CardTitle>
+        <CardTitle>{t('join.error.title')}</CardTitle>
       </CardHeader>
       <CardContent>
         <Alert variant="destructive">
@@ -109,7 +112,7 @@ export function JoinGroupPage() {
       </CardContent>
       <CardFooter className="justify-center">
         <Button asChild variant="outline">
-          <Link to="/">Go home</Link>
+          <Link to="/">{t('join.goHome')}</Link>
         </Button>
       </CardFooter>
     </Card>

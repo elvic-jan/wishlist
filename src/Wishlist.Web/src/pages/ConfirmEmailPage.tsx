@@ -11,9 +11,11 @@ import {
 import { WakingUp } from '@/components/WakingUp'
 import { confirmEmail } from '@/api/passkeys'
 import { useAuth } from '@/context/AuthContext'
+import { useT } from '@/lib/i18n'
 
 /** Where the "Confirm your Kadoozle email" link leads. */
 export function ConfirmEmailPage() {
+  const t = useT()
   const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const userId = searchParams.get('userId') ?? ''
@@ -36,17 +38,17 @@ export function ConfirmEmailPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{state === 'confirmed' ? 'Email confirmed' : 'This link doesn’t work'}</CardTitle>
+        <CardTitle>{state === 'confirmed' ? t('confirmEmail.done.title') : t('confirmEmail.failed.title')}</CardTitle>
         <CardDescription>
           {state === 'confirmed'
-            ? 'Thanks! If you ever lose your phone or can’t sign in, we can now help you get back in by email.'
-            : 'The confirmation link is invalid or has expired. You can send a new one from your sign-in settings.'}
+            ? t('confirmEmail.done.text')
+            : t('confirmEmail.failed.text')}
         </CardDescription>
       </CardHeader>
       <CardFooter>
         <Button asChild className="w-full">
           <Link to={user ? (state === 'confirmed' ? '/' : '/settings/security') : '/login'}>
-            {user ? (state === 'confirmed' ? 'Go to my circles' : 'Open sign-in settings') : 'Sign in'}
+            {user ? (state === 'confirmed' ? t('confirmEmail.goToCircles') : t('confirmEmail.openSettings')) : t('login.title')}
           </Link>
         </Button>
       </CardFooter>

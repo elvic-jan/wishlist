@@ -35,7 +35,7 @@ public class PasskeyAuthController(
     public async Task<IActionResult> SignIn([FromBody] PasskeyCredentialBody body, CancellationToken ct)
     {
         var state = ceremonies.Take(Request, Response, PasskeyCeremony.SignIn);
-        if (state is null) return BadRequest(new { error = CeremonyExpired });
+        if (state is null) return BadRequest(new { error = RequestLanguage.T(HttpContext, CeremonyExpired) });
 
         var (response, refreshToken) = await signIn.CompleteAsync(body.CredentialJson, state, ct);
         RefreshTokenCookie.Set(Response, refreshToken);
@@ -58,7 +58,7 @@ public class PasskeyAuthController(
         async Task<IActionResult> Attempt()
         {
             var state = ceremonies.Take(Request, Response, PasskeyCeremony.SignUp);
-            if (state is null) return BadRequest(new { error = CeremonyExpired });
+            if (state is null) return BadRequest(new { error = RequestLanguage.T(HttpContext, CeremonyExpired) });
 
             var request = new PasskeySignUpRequest(
                 body.Email, body.DisplayName, body.InviteCode, body.CredentialJson, body.PasskeyName);
@@ -80,7 +80,7 @@ public class PasskeyAuthController(
     public async Task<IActionResult> Recover([FromBody] PasskeyRecoveryBody body, CancellationToken ct)
     {
         var state = ceremonies.Take(Request, Response, PasskeyCeremony.Recovery);
-        if (state is null) return BadRequest(new { error = CeremonyExpired });
+        if (state is null) return BadRequest(new { error = RequestLanguage.T(HttpContext, CeremonyExpired) });
 
         var request = new PasskeyRecoveryRequest(body.Email, body.Token, body.CredentialJson, body.PasskeyName);
         var (response, refreshToken) = await recovery.CompleteAsync(request, state, ct);
@@ -92,7 +92,7 @@ public class PasskeyAuthController(
     public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request, CancellationToken ct) =>
         await emailConfirmation.ConfirmAsync(request, ct)
             ? NoContent()
-            : BadRequest(new { error = "This confirmation link is invalid or has expired." });
+            : BadRequest(new { error = RequestLanguage.T(HttpContext, "This confirmation link is invalid or has expired.") });
 
     private OkObjectResult Options(PasskeyCeremony ceremony, PasskeyOptions options)
     {

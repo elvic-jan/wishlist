@@ -46,7 +46,7 @@ public class SeedTestDataUseCase(
         foreach (var (tag, name) in People)
         {
             var user = await users.GetByEmailAsync(AddressFor(inbox, tag), ct)
-                ?? await users.CreateWithoutPasswordAsync(Guid.NewGuid(), AddressFor(inbox, tag), name, ct);
+                ?? await users.CreateWithoutPasswordAsync(Guid.NewGuid(), AddressFor(inbox, tag), name, ct: ct);
             await users.MarkEmailConfirmedAsync(user.Id, ct);
             ids[tag] = user.Id;
         }

@@ -30,12 +30,12 @@ import {
   type SecurityOverview,
 } from '@/api/passkeys'
 import { useAuth } from '@/context/AuthContext'
+import { formatDate, Trans, useT } from '@/lib/i18n'
 import { isFirefoxAndroid, passkeyErrorMessage, passkeysSupported } from '@/lib/webauthn'
-
-const dateFormat = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 
 /** "Sign-in & security": passkeys, password, email confirmation and other devices. */
 export function SecurityPage() {
+  const t = useT()
   const { user } = useAuth()
   const { toast } = useToast()
   const [searchParams] = useSearchParams()
@@ -50,7 +50,8 @@ export function SecurityPage() {
     () =>
       getSecurityOverview()
         .then(setOverview)
-        .catch(() => setError('Couldn’t load your sign-in settings.')),
+        .catch(() => setError(t('security.loadFailed'))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t is the same function in every language
     [],
   )
 
@@ -58,10 +59,11 @@ export function SecurityPage() {
     let cancelled = false
     getSecurityOverview()
       .then(data => !cancelled && setOverview(data))
-      .catch(() => !cancelled && setError('Couldn’t load your sign-in settings.'))
+      .catch(() => !cancelled && setError(t('security.loadFailed')))
     return () => {
       cancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once
   }, [])
 
   const handleAdd = async () => {
@@ -70,11 +72,11 @@ export function SecurityPage() {
     try {
       await addPasskey()
       await load()
-      toast({ title: 'Face ID / fingerprint added', description: 'You can use it next time you sign in.' })
+      toast({ title: t('security.added'), description: t('security.addedText') })
     } catch (err) {
       const message = passkeyErrorMessage(err) ?? apiErrorMessage(err)
       if (message) setError(message)
-      else if (!(err instanceof DOMException)) setError('The passkey couldn’t be added. Please try again.')
+      else if (!(err instanceof DOMException)) setError(t('security.addFailed'))
     } finally {
       setAdding(false)
     }
@@ -86,9 +88,9 @@ export function SecurityPage() {
     try {
       await removePasskey(toRemove.id)
       await load()
-      toast({ title: 'Passkey removed' })
+      toast({ title: t('security.removed') })
     } catch (err) {
-      setError(apiErrorMessage(err) ?? 'The passkey couldn’t be removed.')
+      setError(apiErrorMessage(err) ?? t('security.removeFailed'))
     } finally {
       setToRemove(null)
     }
@@ -98,18 +100,18 @@ export function SecurityPage() {
     setConfirmSignOut(false)
     try {
       await signOutOtherDevices()
-      toast({ title: 'Signed out on other devices', description: 'This device stays signed in.' })
+      toast({ title: t('security.signedOutOthers'), description: t('security.signedOutOthersText') })
     } catch {
-      setError('Couldn’t sign out other devices. Please try again.')
+      setError(t('security.signOutFailed'))
     }
   }
 
   const handleResend = async () => {
     try {
       await resendEmailConfirmation()
-      toast({ title: 'Confirmation email sent', description: `Check the inbox of ${user?.email}.` })
+      toast({ title: t('banner.confirmEmail.sent'), description: t('banner.confirmEmail.checkInbox', { email: user?.email ?? '' }) })
     } catch {
-      setError('Couldn’t send the email. Please try again later.')
+      setError(t('security.resendFailed'))
     }
   }
 
@@ -121,20 +123,19 @@ export function SecurityPage() {
         <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2">
           <Link to="/circles">
             <ArrowLeft className="h-4 w-4" />
-            Back
+            {t('common.back')}
           </Link>
         </Button>
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 text-primary" aria-hidden />
-          <h1 className="text-2xl font-semibold tracking-tight">Sign-in &amp; security</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('menu.security')}</h1>
         </div>
       </div>
 
       {recovered && (
         <Alert className="border-primary/40">
           <AlertDescription>
-            You&rsquo;re back in, and you&rsquo;ve been signed out on every other device.
-            If you lost a phone or computer, remove its passkey below.
+            {t('security.recovered')}
           </AlertDescription>
         </Alert>
       )}
@@ -146,18 +147,16 @@ export function SecurityPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Face ID &amp; fingerprint (passkeys)</CardTitle>
+          <CardTitle className="text-base">{t('security.passkeys.title')}</CardTitle>
           <CardDescription>
-            Sign in with Face ID, your fingerprint or your device&rsquo;s screen lock.
-            Passkeys saved in iCloud Keychain, Google Password Manager or a password
-            manager also work on your other devices.
+            {t('security.passkeys.text')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {!overview ? (
             <Skeleton className="h-12 w-full" />
           ) : overview.passkeys.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No passkeys yet.</p>
+            <p className="text-sm text-muted-foreground">{t('security.passkeys.none')}</p>
           ) : (
             <ul className="divide-y">
               {overview.passkeys.map(p => (
@@ -174,23 +173,20 @@ export function SecurityPage() {
           {passkeysSupported() ? (
             <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={handleAdd} disabled={adding}>
               <Fingerprint className="mr-2 h-4 w-4" aria-hidden />
-              {adding ? 'Waiting for your device…' : 'Add Face ID / fingerprint on this device'}
+              {adding ? t('common.waitingForDevice') : t('security.passkeys.add')}
             </Button>
           ) : isFirefoxAndroid() ? (
             <p className="text-sm text-muted-foreground">
-              Face ID / fingerprint sign-in doesn&rsquo;t work in Firefox on Android.
-              Use Chrome on this phone to add it, or sign in with your password.
+              {t('security.passkeys.firefoxAndroid')}
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">
-              This browser can&rsquo;t create passkeys. Try on your phone, or a recent
-              version of Chrome, Edge, Safari or Firefox.
+              {t('security.passkeys.unsupported')}
             </p>
           )}
           {overview && onlyWayIn && overview.passkeys.length === 1 && (
             <p className="text-xs text-muted-foreground">
-              This is your only way to sign in, so it can&rsquo;t be removed. Add
-              another device first.
+              {t('security.passkeys.onlyWay')}
             </p>
           )}
         </CardContent>
@@ -198,41 +194,37 @@ export function SecurityPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Password</CardTitle>
+          <CardTitle className="text-base">{t('common.password')}</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
           {!overview ? (
             <Skeleton className="h-5 w-48" />
           ) : overview.hasPassword ? (
-            <p>You can also sign in with your password.</p>
+            <p>{t('security.password.has')}</p>
           ) : (
-            <p>
-              You don&rsquo;t have a password; you sign in with Face ID or a fingerprint.
-              If you&rsquo;d like one, use &ldquo;Can&rsquo;t sign in?&rdquo; on the sign-in
-              page and choose &ldquo;Set a new password&rdquo;.
-            </p>
+            <p>{t('security.password.none')}</p>
           )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Email</CardTitle>
+          <CardTitle className="text-base">{t('common.email')}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center justify-between gap-3 text-sm">
           <div className="flex items-center gap-2">
             <Mail className="h-4 w-4 text-muted-foreground" aria-hidden />
-            <span>{user?.email}</span>
+            <span translate="no">{user?.email}</span>
             {overview &&
               (overview.emailConfirmed ? (
-                <Badge variant="secondary">Confirmed</Badge>
+                <Badge variant="secondary">{t('security.email.confirmed')}</Badge>
               ) : (
-                <Badge variant="outline">Not confirmed</Badge>
+                <Badge variant="outline">{t('security.email.notConfirmed')}</Badge>
               ))}
           </div>
           {overview && !overview.emailConfirmed && (
             <Button type="button" variant="outline" size="sm" onClick={handleResend}>
-              Send confirmation email
+              {t('security.email.send')}
             </Button>
           )}
         </CardContent>
@@ -240,16 +232,15 @@ export function SecurityPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Other devices</CardTitle>
+          <CardTitle className="text-base">{t('security.others.title')}</CardTitle>
           <CardDescription>
-            Lost a phone, or signed in on someone else&rsquo;s computer? Sign out
-            everywhere except here.
+            {t('security.others.text')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Button type="button" variant="outline" onClick={() => setConfirmSignOut(true)}>
             <LogOut className="mr-2 h-4 w-4" aria-hidden />
-            Sign out all other devices
+            {t('security.others.signOut')}
           </Button>
         </CardContent>
       </Card>
@@ -257,16 +248,14 @@ export function SecurityPage() {
       <AlertDialog open={toRemove !== null} onOpenChange={open => !open && setToRemove(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove this passkey?</AlertDialogTitle>
+            <AlertDialogTitle>{t('security.remove.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              &ldquo;{toRemove?.name ?? 'Passkey'}&rdquo; won&rsquo;t sign you in to
-              Kadoozle any more. You can still delete it from your device&rsquo;s
-              password manager afterwards.
+              <Trans k="security.remove.text" values={{ name: toRemove?.name ?? t('security.passkey.default') }} />
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRemove}>Remove</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRemove}>{t('security.remove.confirm')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -274,15 +263,14 @@ export function SecurityPage() {
       <AlertDialog open={confirmSignOut} onOpenChange={setConfirmSignOut}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Sign out all other devices?</AlertDialogTitle>
+            <AlertDialogTitle>{t('security.signOut.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Everywhere else, you&rsquo;ll need Face ID, a fingerprint or your
-              password to sign in again. This device stays signed in.
+              {t('security.signOut.text')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSignOutOthers}>Sign out others</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSignOutOthers}>{t('security.signOut.confirm')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -301,6 +289,7 @@ function PasskeyRow({
   onRemove: () => void
   onRenamed: () => Promise<void>
 }) {
+  const t = useT()
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(passkey.name ?? '')
   const [saving, setSaving] = useState(false)
@@ -323,21 +312,21 @@ function PasskeyRow({
       {editing ? (
         <form onSubmit={save} className="flex flex-1 items-center gap-2">
           <Input
-            aria-label="Passkey name"
+            aria-label={t('security.passkey.name')}
             value={name}
             maxLength={100}
             autoFocus
             onChange={e => setName(e.target.value)}
             className="h-8"
           />
-          <Button type="submit" size="icon" variant="ghost" aria-label="Save name" disabled={saving}>
+          <Button type="submit" size="icon" variant="ghost" aria-label={t('security.passkey.saveName')} disabled={saving}>
             <Check className="h-4 w-4" />
           </Button>
           <Button
             type="button"
             size="icon"
             variant="ghost"
-            aria-label="Cancel renaming"
+            aria-label={t('security.passkey.cancelRename')}
             onClick={() => {
               setName(passkey.name ?? '')
               setEditing(false)
@@ -351,22 +340,24 @@ function PasskeyRow({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <Fingerprint className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-              <span className="truncate text-sm font-medium">{passkey.name ?? 'Passkey'}</span>
-              {passkey.isBackedUp && <Badge variant="secondary">Synced</Badge>}
+              <span className="truncate text-sm font-medium" translate="no">
+                {passkey.name ?? t('security.passkey.default')}
+              </span>
+              {passkey.isBackedUp && <Badge variant="secondary">{t('security.passkey.synced')}</Badge>}
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Added {dateFormat.format(new Date(passkey.createdAt))}
+              {t('security.passkey.added', { date: formatDate(new Date(passkey.createdAt)) })}
             </p>
           </div>
           <div className="flex items-center gap-1">
-            <Button type="button" size="icon" variant="ghost" aria-label="Rename passkey" onClick={() => setEditing(true)}>
+            <Button type="button" size="icon" variant="ghost" aria-label={t('security.passkey.rename')} onClick={() => setEditing(true)}>
               <Pencil className="h-4 w-4" />
             </Button>
             <Button
               type="button"
               size="icon"
               variant="ghost"
-              aria-label="Remove passkey"
+              aria-label={t('security.passkey.remove')}
               disabled={!canRemove}
               onClick={onRemove}
             >

@@ -6,6 +6,9 @@
 // - A release's notes are the release-notes/*.md files that exist at its tag
 //   but not at the tag before. So the files never move, and nothing is
 //   committed back to main.
+// - Each note is one English line, followed by its translations ("nl: …").
+//   A file's text is read from HEAD when it still exists there, so wording
+//   and translations fixed later also show for earlier releases.
 // - The next version bumps the last tag by the highest type among the new
 //   files: major > feature (minor) > fix (patch). No files: patch.
 //   No tag at all: 1.0.0.
@@ -20,9 +23,22 @@ import { dirname } from 'node:path'
 
 const DIR = 'release-notes'
 const TYPES = ['fix', 'feature', 'major']
+// The languages a note is translated into (English is the note line itself).
+const TRANSLATIONS = ['nl']
 
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim()
 const lines = text => text.split('\n').map(l => l.trim()).filter(Boolean)
+
+/** [{ en, nl }]: each English line with the translation lines that follow it. */
+function parseNotes(body) {
+  const notes = []
+  for (const line of lines(body)) {
+    const translation = line.match(/^([a-z]{2}):\s*(.+)$/)
+    if (translation && TRANSLATIONS.includes(translation[1]) && notes.length > 0) notes.at(-1)[translation[1]] = translation[2]
+    else notes.push({ en: line })
+  }
+  return notes
+}
 
 const parse = v => v.slice(1).split('.').map(Number)
 const compare = (a, b) => {
@@ -40,7 +56,7 @@ function notesAt(ref) {
     const text = git('show', `${ref}:${DIR}/${file}`).replace(/\r\n/g, '\n')
     const m = text.match(/^---\n\s*type:\s*(feature|fix|major)\s*\n---\n([\s\S]*)$/)
     if (!m) throw new Error(`${DIR}/${file} at ${ref}: malformed (see ${DIR}/README.md)`)
-    notes.set(file, { type: m[1], lines: lines(m[2]) })
+    notes.set(file, { type: m[1], lines: parseNotes(m[2]) })
   }
   return notes
 }
@@ -61,7 +77,8 @@ function newNotes(ref, previous) {
   return [...after]
     .filter(([file]) => !before.has(file))
     .sort(([fa, a], [fb, b]) => TYPES.indexOf(b.type) - TYPES.indexOf(a.type) || fa.localeCompare(fb))
-    .map(([, note]) => note)
+    // The release keeps its type; the text is today's (see the top of this file).
+    .map(([file, note]) => ({ ...note, lines: current.get(file)?.lines ?? note.lines }))
 }
 
 function bump(version, notes) {
@@ -71,6 +88,8 @@ function bump(version, notes) {
   if (highest === 1) return `v${major}.${minor + 1}.0`
   return `v${major}.${minor}.${patch + 1}`
 }
+
+const current = notesAt('HEAD')
 
 const tags = lines(git('tag', '--list', 'v*', '--merged', 'HEAD'))
   .filter(t => /^v\d+\.\d+\.\d+$/.test(t))
@@ -115,8 +134,9 @@ if (json) {
 
 const notesFile = option('--notes')
 if (notesFile) {
-  const current = releases.find(r => r.version === version)
-  const body = current.notes.length ? current.notes.map(n => `- ${n}`).join('\n') : '- Small fixes and improvements'
+  // The GitHub Release is in English.
+  const release = releases.find(r => r.version === version)
+  const body = release.notes.length ? release.notes.map(n => `- ${n.en}`).join('\n') : '- Small fixes and improvements'
   writeFileSync(notesFile, body + '\n')
 }
 

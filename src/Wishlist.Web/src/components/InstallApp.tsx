@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { promptInstall, useInstallOffer } from '@/lib/installPrompt'
+import { Trans, useT } from '@/lib/i18n'
 
 /**
  * "Install app" in the account menu; renders nothing where it can't help.
@@ -18,19 +19,21 @@ import { promptInstall, useInstallOffer } from '@/lib/installPrompt'
  * closes), so the caller renders <IosInstallHelp> and passes the opener.
  */
 export function InstallAppMenuItem({ onShowIosHelp }: { onShowIosHelp: () => void }) {
+  const t = useT()
   const offer = useInstallOffer()
   if (offer !== 'prompt' && offer !== 'ios') return null
 
   return (
     <DropdownMenuItem onSelect={() => (offer === 'prompt' ? void promptInstall() : onShowIosHelp())}>
       <Smartphone className="mr-2 h-4 w-4" />
-      Install app
+      {t('install.menuItem')}
     </DropdownMenuItem>
   )
 }
 
 /** A quiet "Install the app" link, for pages outside the app shell. */
 export function InstallAppLink() {
+  const t = useT()
   const offer = useInstallOffer()
   const [showIosHelp, setShowIosHelp] = useState(false)
 
@@ -44,7 +47,7 @@ export function InstallAppLink() {
         onClick={() => (offer === 'prompt' ? void promptInstall() : setShowIosHelp(true))}
       >
         <Smartphone className="h-4 w-4" aria-hidden />
-        Install Kadoozle on this phone
+        {t('install.link')}
       </button>
       <IosInstallHelp open={showIosHelp} onOpenChange={setShowIosHelp} />
     </>
@@ -52,41 +55,49 @@ export function InstallAppLink() {
 }
 
 export function IosInstallHelp({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const t = useT()
+  const bold = { b: <strong /> }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Kadoozle to your home screen</DialogTitle>
+          <DialogTitle>{t('install.ios.title')}</DialogTitle>
           <DialogDescription>
-            It then opens like an app, full screen, straight from its own icon.
+            {t('install.ios.description')}
           </DialogDescription>
         </DialogHeader>
         <ol className="space-y-3 text-sm">
           <li className="flex items-start gap-3">
             <Step n={1} />
             <span>
-              Tap the <strong>Share</strong> button{' '}
-              <Share className="inline h-4 w-4 align-text-bottom text-primary" aria-label="Share" />{' '}
-              in the browser&rsquo;s toolbar (at the bottom on iPhone, at the top on iPad).
+              <Trans
+                k="install.ios.step1"
+                components={{
+                  ...bold,
+                  icon: <Share className="inline h-4 w-4 align-text-bottom text-primary" aria-label={t('install.ios.share')} />,
+                }}
+              />
             </span>
           </li>
           <li className="flex items-start gap-3">
             <Step n={2} />
             <span>
-              Scroll down and tap <strong>Add to Home Screen</strong>{' '}
-              <SquarePlus className="inline h-4 w-4 align-text-bottom text-primary" aria-hidden />.
+              <Trans
+                k="install.ios.step2"
+                components={{ ...bold, icon: <SquarePlus className="inline h-4 w-4 align-text-bottom text-primary" aria-hidden /> }}
+              />
             </span>
           </li>
           <li className="flex items-start gap-3">
             <Step n={3} />
             <span>
-              Tap <strong>Add</strong>. Kadoozle appears on your home screen.
+              <Trans k="install.ios.step3" components={bold} />
             </span>
           </li>
         </ol>
         <DialogFooter>
           <Button type="button" onClick={() => onOpenChange(false)}>
-            Got it
+            {t('install.ios.gotIt')}
           </Button>
         </DialogFooter>
       </DialogContent>
