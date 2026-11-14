@@ -378,7 +378,7 @@ export function WishlistEditor<T extends EditableItem>({
                     <>
                       <CardHeader className="space-y-2">
                         <div className="flex items-start justify-between gap-3">
-                          <CardTitle className="min-w-0 break-words text-base font-medium">
+                          <CardTitle translate="no" className="min-w-0 break-words text-base font-medium">
                             {item.title}
                           </CardTitle>
                           <div className="flex shrink-0 items-center gap-1">
@@ -402,7 +402,7 @@ export function WishlistEditor<T extends EditableItem>({
                           </div>
                         </div>
                         {item.description && (
-                          <p className="text-sm text-muted-foreground">{item.description}</p>
+                          <p translate="no" className="text-sm text-muted-foreground">{item.description}</p>
                         )}
                         {item.addedBy && (
                           <p className="flex items-center gap-1 text-xs text-muted-foreground">

@@ -12,8 +12,16 @@ Every text the app produces SHALL be available in English and Dutch: pages, dial
 - **THEN** the error shown is in Dutch
 
 #### Scenario: User content is untouched
-- **WHEN** a Dutch-language person views a wish titled "Board game" in a circle named "Family"
-- **THEN** the title and circle name are shown exactly as entered
+- **WHEN** a Dutch-language person views a wish titled "Board game" with the description "The big box edition" in a circle named "Family"
+- **THEN** the title, description and circle name are shown exactly as entered
+
+#### Scenario: Gift title and description in emails
+- **WHEN** a Dutch email mentions a wish titled "Board game"
+- **THEN** the title appears exactly as entered
+
+#### Scenario: Browser translation leaves gifts alone
+- **WHEN** a browser's built-in page translation is applied to a wishlist
+- **THEN** the title and description of each wish are marked as not to be translated (`translate="no"`)
 
 #### Scenario: Missing translation is caught before release
 - **WHEN** a change adds an app text without a Dutch translation

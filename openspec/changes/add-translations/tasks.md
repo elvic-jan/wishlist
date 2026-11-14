@@ -30,6 +30,7 @@
 - [ ] 4.3 Convert the signed-in pages (wishlists, my wishlist, member wishlist, circles home, circle detail, security, import, admin, licences, what's new)
 - [ ] 4.4 Convert helper texts (`inviteMessage`, `inviteErrors`, `webauthn`, `appUpdate`, API error fallbacks) and all `Intl` formatters
 - [ ] 4.5 Write the Dutch catalog using the confirmed glossary
+- [ ] 4.7 Mark wish titles and descriptions (and other user-entered text) `translate="no"` wherever they are shown
 - [ ] 4.6 Sweep for leftover literals (JSX text, `title`, `placeholder`, `aria-label`, toast texts)
 
 ## 5. Release notes

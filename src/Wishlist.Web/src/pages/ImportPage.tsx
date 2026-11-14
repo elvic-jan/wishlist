@@ -226,9 +226,9 @@ export function ImportPage() {
                         onChange={() => toggle(item.legacyId)}
                       />
                       <span className="min-w-0 flex-1 space-y-1">
-                        <span className="block text-sm font-medium">{item.title}</span>
+                        <span translate="no" className="block text-sm font-medium">{item.title}</span>
                         {item.description && (
-                          <span className="line-clamp-2 block whitespace-pre-line text-sm text-muted-foreground">
+                          <span translate="no" className="line-clamp-2 block whitespace-pre-line text-sm text-muted-foreground">
                             {item.description}
                           </span>
                         )}
