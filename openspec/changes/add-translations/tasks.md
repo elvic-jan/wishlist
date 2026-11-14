@@ -45,11 +45,11 @@
 - [x] 6.1 Server tests: language parsing, saving the account language, error response in Dutch, email language fallback (recipient → sender → English), registration stores the language
 - [x] 6.2 Test that every user-facing server template has a Dutch entry and no Dutch entry is orphaned
 - [x] 6.3 `npm run build`, `npm run lint`, `dotnet test` green
-- [ ] 6.4 Walk the app in Dutch and English in the browser (desktop and 375px), including switching and a reload (done for the signed-out pages and What's new on a local build; the signed-in pages need a database, so they are checked on staging in 7.3)
+- [x] 6.4 Walk the app in Dutch and English in the browser (desktop and 375px), including switching and a reload (signed-out pages and What's new on a local build; the signed-in pages on staging)
 - [x] 6.5 Update the README sections that describe texts, emails or release notes
 
 ## 7. Release
 
 - [x] 7.1 Add `release-notes/translations.md` (type `feature`) with the English and Dutch wording approved by the user
 - [x] 7.2 Open the pull request with "Closes #105" and the release note in the description
-- [ ] 7.3 Check on staging in both languages before merge
+- [x] 7.3 Check on staging in both languages before merge
