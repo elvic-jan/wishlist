@@ -25,7 +25,7 @@ Product decisions (user, 2026-11-14): English + Dutch; browser language with a s
 *Why not react-i18next / FormatJS:* two languages and ~600 strings don't need them; they add bundle weight and a runtime we would mostly configure away. Typed keys give the safety we need. Both catalogs are bundled (a few kB gzipped), so switching is instant and works offline.
 
 ### 2. Language resolution on the web
-Order: account language (when signed in and set) → `localStorage` `kadoozle-language` → first supported entry of `navigator.languages` → `en`. Changing the switch writes `localStorage`, sets `<html lang>`, and when signed in calls `PUT /api/account/language`. On sign-in or session restore: an account with a language overrides the device; an account without one is given the device's current language (so emails match what the person sees). `Intl.DateTimeFormat` and friends take the active language instead of `undefined`.
+Order: account language (when signed in and set) → `localStorage` `kadoozle-language` → first supported entry of `navigator.languages` → `en`. Changing the switch writes `localStorage`, sets `<html lang>`, and when signed in calls `PUT /api/auth/me/language`. On sign-in or session restore: an account with a language overrides the device; an account without one is given the device's current language (so emails match what the person sees). `Intl.DateTimeFormat` and friends take the active language instead of `undefined`.
 
 ### 3. The server learns the request language from `Accept-Language`
 The axios client (and the few raw `fetch` calls to the API) send `Accept-Language: <active language>`. A small `RequestLanguage` service in the API resolves, in order: the signed-in user's saved language is **not** consulted per request (no extra query); the header is the truth for responses, since the client already folds the account language into it. Unsupported or missing → `en`.
@@ -43,7 +43,7 @@ The axios client (and the few raw `fetch` calls to the API) send `Accept-Languag
 *Why server-side rather than error codes translated on the web:* the server must translate anyway (emails, previews), and codes would mean touching every throw site and every catch on the web.
 
 ### 5. The account's language
-`User.Language` (`varchar(8)`, nullable; null = never chosen). EF migration, no backfill. The user payload returned by sign-in/refresh/me includes `language`. `PUT /api/account/language { language }` validates against the supported list. Registration (password and passkey) stores the request language, so a new account's first emails are right.
+`User.Language` (`varchar(8)`, nullable; null = never chosen). EF migration, no backfill. The user payload returned by sign-in/refresh/me includes `language`. `PUT /api/auth/me/language { language }` validates against the supported list. Registration (password and passkey) stores the request language, so a new account's first emails are right.
 
 ### 6. Email language rule in one place
 `EmailLanguage.For(recipient, sender?)` = `recipient.Language ?? sender?.Language ?? en`. Uses:

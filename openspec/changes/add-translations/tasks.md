@@ -3,7 +3,7 @@
 - [x] 1.1 Add `Language` (supported codes `en`, `nl`; parse from a tag such as `nl-BE`; fallback `en`) and `Texts.T(language, template, args)` with the Dutch dictionary in `Wishlist.Application/Localization`
 - [x] 1.2 Add nullable `User.Language`, EF configuration (max length 8) and a migration
 - [x] 1.3 Add `RequestLanguage` in the API (from `Accept-Language`), registered per request
-- [x] 1.4 Include `language` in the signed-in user payload; add `PUT /api/account/language` (validates the supported list)
+- [x] 1.4 Include `language` in the signed-in user payload; add `PUT /api/auth/me/language` (validates the supported list)
 - [x] 1.5 Store the request language on new accounts (password and passkey registration)
 
 ## 2. Server texts
@@ -20,7 +20,7 @@
 - [x] 3.1 Add `src/lib/i18n` (`en.ts`, `nl.ts` typed against `en`, `LanguageProvider`, `useT`, `t`, plural and rich-text helpers)
 - [x] 3.2 Resolve the language (account → stored → browser → `en`), set `<html lang>`, persist to `localStorage`
 - [x] 3.3 Send `Accept-Language` from the API client and raw API `fetch` calls
-- [x] 3.4 Sync with the account on sign-in / session restore and on switching (`PUT /api/account/language`)
+- [x] 3.4 Sync with the account on sign-in / session restore and on switching (`PUT /api/auth/me/language`)
 - [x] 3.5 Add the language switch to the account menu and to the signed-out pages
 
 ## 4. Web texts
