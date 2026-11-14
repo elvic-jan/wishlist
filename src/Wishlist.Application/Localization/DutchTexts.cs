@@ -6,7 +6,7 @@ namespace Wishlist.Application.Localization;
 /// text exactly as written in the code (see <see cref="Texts"/>); a test fails
 /// when a user-facing text has no entry here, or an entry matches nothing.
 ///
-/// Wording: informal ("je"). Glossary: wishlist = verlanglijst, wish = wens,
+/// Wording: informal ("je"). Glossary: wishlist = verlanglijst, wish = cadeau,
 /// circle = kring, buddy = buddy, gift = cadeau, reserve = reserveren,
 /// passkey = passkey, sign in = aanmelden, invite = uitnodigen.
 /// </summary>
@@ -24,7 +24,7 @@ public static class DutchTexts
         ["Invalid or expired refresh token."] = "Je sessie is verlopen. Meld je opnieuw aan.",
         ["Invalid registration data."] = "De gegevens voor je account kloppen niet.",
         ["Invitation not found."] = "Uitnodiging niet gevonden.",
-        ["Item title cannot be empty."] = "Geef de wens een titel.",
+        ["Item title cannot be empty."] = "Geef het cadeau een titel.",
         ["Message not found."] = "Bericht niet gevonden.",
         ["Name cannot be empty."] = "Vul een naam in.",
         ["No active claim on this item."] = "Dit cadeau is niet gereserveerd.",
@@ -42,16 +42,16 @@ public static class DutchTexts
             "Deze reservering is afgelopen. Reserveer het cadeau opnieuw als het nog vrij is.",
         ["Title cannot be empty."] = "Vul een titel in.",
         ["Transfer ownership or remove all members before leaving as owner."] =
-            "Als eigenaar kan je de kring pas verlaten als je ze overdraagt of alle leden verwijdert.",
+            "Als eigenaar kan je de kring pas verlaten als je hem overdraagt of alle leden verwijdert.",
         ["URL must be an absolute http or https URL."] = "Een link moet beginnen met http:// of https://.",
         ["Use your own wishlist to change your own wishes."] =
-            "Pas je eigen wensen aan op je eigen verlanglijst.",
+            "Pas je eigen cadeaus aan op je eigen verlanglijst.",
         ["User not found."] = "Gebruiker niet gevonden.",
-        ["Wishlist item not found."] = "Wens niet gevonden.",
+        ["Wishlist item not found."] = "Cadeau niet gevonden.",
         ["You are not a buddy for this wishlist."] = "Je bent geen buddy voor deze verlanglijst.",
         ["You are not a member of this circle."] = "Je bent geen lid van deze kring.",
-        ["You can only delete your own wishlist items."] = "Je kan alleen je eigen wensen verwijderen.",
-        ["You can only edit your own wishlist items."] = "Je kan alleen je eigen wensen aanpassen.",
+        ["You can only delete your own wishlist items."] = "Je kan alleen je eigen cadeaus verwijderen.",
+        ["You can only edit your own wishlist items."] = "Je kan alleen je eigen cadeaus aanpassen.",
         ["You can only invite people from your circles."] = "Je kan alleen mensen uit je kringen uitnodigen.",
         ["You can only keep your own reservation."] = "Je kan alleen je eigen reservering behouden.",
         ["You can only pick someone you share a circle with."] =
@@ -64,10 +64,10 @@ public static class DutchTexts
         ["You must be a member of this circle to generate an invitation."] =
             "Je moet lid zijn van deze kring om iemand uit te nodigen.",
         ["You've already imported your wishes from the old site."] =
-            "Je hebt je wensen van de oude site al geïmporteerd.",
+            "Je hebt je cadeaus van de oude site al geïmporteerd.",
         ["Your details changed while the passkey was being created. Please try again."] =
             "Je gegevens zijn gewijzigd terwijl de passkey werd gemaakt. Probeer het opnieuw.",
-        ["A wishlist item may have at most {0} URLs."] = "Een wens kan hoogstens {0} links hebben.",
+        ["A wishlist item may have at most {0} URLs."] = "Een cadeau kan hoogstens {0} links hebben.",
         ["Pick between 1 and {0} people."] = "Kies tussen 1 en {0} mensen.",
         ["{0} can be at most {1} characters."] = "{0} mag hoogstens {1} tekens lang zijn.",
         ["This language is not available."] = "Deze taal is niet beschikbaar.",
@@ -78,7 +78,7 @@ public static class DutchTexts
             "Te veel aanvragen om je wachtwoord te herstellen. Probeer het later opnieuw.",
         ["Invalid or expired token."] = "Deze link is ongeldig of verlopen.",
         ["Too many invitation attempts. Please try again later."] =
-            "Te veel pogingen met een uitnodiging. Probeer het later opnieuw.",
+            "Te veel pogingen. Probeer het later opnieuw.",
         ["This confirmation link is invalid or has expired."] = "Deze bevestigingslink is ongeldig of verlopen.",
 
         // What a too-long value is called in "{0} can be at most {1} characters."
@@ -123,7 +123,7 @@ public static class DutchTexts
         ["If it wasn't you, open your sign-in settings, remove the passkey and sign out other devices"] =
             "Was jij dit niet? Open dan je aanmeldinstellingen, verwijder de passkey en meld andere toestellen af",
 
-        ["Get back into your Kadoozle account"] = "Opnieuw toegang tot je Kadoozle-account",
+        ["Get back into your Kadoozle account"] = "Toegang tot je Kadoozle-account herstellen",
         ["We received a request to get back into your Kadoozle account. " +
          "If you did not make this request, you can safely ignore this email."] =
             "We kregen een vraag om opnieuw toegang te krijgen tot je Kadoozle-account. " +
@@ -146,7 +146,7 @@ public static class DutchTexts
         ["{0} made you a **buddy** for their wishlist on Kadoozle. " +
          "You can now add, change and remove wishes on their list, for example when you know what they'd like."] =
             "{0} maakte je **buddy** voor zijn of haar verlanglijst op Kadoozle. " +
-            "Je kan nu wensen toevoegen, aanpassen en verwijderen op die lijst, bijvoorbeeld als je weet wat {0} graag wil.",
+            "Je kan nu cadeaus toevoegen, aanpassen en verwijderen op die lijst, bijvoorbeeld als je weet wat {0} graag wil.",
         ["Open {0}'s wishlist"] = "Open de verlanglijst van {0}",
 
         ["Your reservation of \"{0}\" ends on {1}"] = "Je reservering van \"{0}\" loopt af op {1}",
@@ -160,7 +160,7 @@ public static class DutchTexts
         ["Your reservation of **{0}** on {1}'s wishlist has ended, so others in the circle can reserve it now."] =
             "Je reservering van **{0}** op de verlanglijst van {1} is afgelopen. Anderen in de kring kunnen het nu reserveren.",
         ["If you still want to give it, open the wishlist and reserve it again while it's free."] =
-            "Wil je het nog altijd geven? Open dan de verlanglijst en reserveer het opnieuw zolang het vrij is.",
+            "Wil je het nog altijd geven? Open dan de verlanglijst en reserveer het opnieuw zolang het nog vrij is.",
 
         ["{0} invited you to join {1}"] = "{0} nodigt je uit voor {1}",
         ["{0} invited you to join the circle **{1}** on Kadoozle."] =
@@ -168,21 +168,21 @@ public static class DutchTexts
         ["Open Kadoozle to join or decline"] = "Open Kadoozle om lid te worden of te weigeren",
 
         // ── Lasting-toast messages ──────────────────────────────────────────
-        ["Bring your wishes from the old site"] = "Breng je wensen mee van de oude site",
+        ["Bring your wishes from the old site"] = "Breng je cadeaus mee van de oude site",
         ["Had a wishlist on verlanglijstje? Import your wishes into Kadoozle in a few taps, so you don't have to type them again."] =
-            "Had je een lijst op verlanglijstje? Importeer je wensen in een paar tikken in Kadoozle, dan hoef je ze niet opnieuw te typen.",
-        ["Import my wishes"] = "Mijn wensen importeren",
+            "Had je een lijst op verlanglijstje? Importeer je cadeaus in een paar tikken in Kadoozle, dan hoef je ze niet opnieuw te typen.",
+        ["Import my wishes"] = "Mijn cadeaus importeren",
         ["GiftCircles is now Kadoozle"] = "GiftCircles heet nu Kadoozle",
         ["Same app, new name and address: kadoozle.app. Passkeys from the old address no longer work, so add a new one. " +
          "If you had the app on your home screen, remove it and add Kadoozle again."] =
             "Dezelfde app, met een nieuwe naam en een nieuw adres: kadoozle.app. Passkeys van het oude adres werken niet meer, voeg dus een nieuwe toe. " +
-            "Stond de app op je startscherm? Verwijder ze dan en voeg Kadoozle opnieuw toe.",
+            "Stond de app op je startscherm? Verwijder hem dan en voeg Kadoozle opnieuw toe.",
         ["Add a passkey"] = "Een passkey toevoegen",
         ["New: wishlist buddies"] = "Nieuw: buddy's voor je verlanglijst",
         ["Let someone you trust keep your wishlist up to date. Pick your buddies on My wishlist: " +
          "they can add, change and remove wishes for you. Handy for kids, grandparents, or a partner who knows what you like."] =
             "Laat iemand die je vertrouwt je verlanglijst bijhouden. Kies je buddy's op Mijn verlanglijst: " +
-            "zij kunnen wensen voor jou toevoegen, aanpassen en verwijderen. Handig voor kinderen, grootouders of een partner die weet wat je graag hebt.",
+            "zij kunnen cadeaus voor jou toevoegen, aanpassen en verwijderen. Handig voor kinderen, grootouders of een partner die weet wat je graag hebt.",
         ["Pick my buddies"] = "Mijn buddy's kiezen",
         ["What's new"] = "Wat is er nieuw",
         ["Invite people straight to WhatsApp or by email with \"Invite people\" on a circle. " +

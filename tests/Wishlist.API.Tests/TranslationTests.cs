@@ -171,9 +171,9 @@ public partial class TranslationTests(InMemoryApi api) : IClassFixture<InMemoryA
         await Send(client, HttpMethod.Post, "/api/auth/forgot-password", new { email = unset.Email }, language: "nl", ip: NewIp());
         await Send(client, HttpMethod.Post, "/api/auth/forgot-password", new { email = unset.Email }, language: "en", ip: NewIp());
 
-        Assert.Equal("Opnieuw toegang tot je Kadoozle-account", Assert.Single(api.Store.EmailsTo(dutch.Email)).Subject);
+        Assert.Equal("Toegang tot je Kadoozle-account herstellen", Assert.Single(api.Store.EmailsTo(dutch.Email)).Subject);
         Assert.Equal(
-            ["Opnieuw toegang tot je Kadoozle-account", "Get back into your Kadoozle account"],
+            ["Toegang tot je Kadoozle-account herstellen", "Get back into your Kadoozle account"],
             api.Store.EmailsTo(unset.Email).Select(m => m.Subject));
     }
 
