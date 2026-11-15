@@ -25,6 +25,31 @@ public class WishlistDbContext(DbContextOptions<WishlistDbContext> options)
     public DbSet<CircleInvitation> CircleInvitations => Set<CircleInvitation>();
     public DbSet<SignInEvent> SignInEvents => Set<SignInEvent>();
     public DbSet<UserActivityDay> UserActivityDays => Set<UserActivityDay>();
+    public DbSet<Drawing> Drawings => Set<Drawing>();
+    public DbSet<DrawingParticipant> DrawingParticipants => Set<DrawingParticipant>();
+    public DbSet<DrawingExclusion> DrawingExclusions => Set<DrawingExclusion>();
+    public DbSet<DrawingAssignment> DrawingAssignments => Set<DrawingAssignment>();
+
+    /// <summary>
+    /// The circles that connect their members today: every permanent circle, and
+    /// drawings that are neither cancelled nor more than a month past their end date.
+    /// Wishlist access, reservations, buddies and the people list go through these.
+    /// </summary>
+    public IQueryable<Guid> ConnectingGroupIds(DateOnly today)
+    {
+        var oldestActiveEnd = today.AddMonths(-Drawing.VisibleMonths);
+        return Groups
+            .Where(g => g.Kind == GroupKind.Circle || Drawings.Any(d =>
+                d.GroupId == g.Id && d.CancelledAt == null && d.EndDate >= oldestActiveEnd))
+            .Select(g => g.Id);
+    }
+
+    /// <summary>Memberships of <see cref="ConnectingGroupIds"/>.</summary>
+    public IQueryable<GroupMember> ConnectingMemberships(DateOnly today)
+    {
+        var groupIds = ConnectingGroupIds(today);
+        return GroupMembers.Where(m => groupIds.Contains(m.GroupId));
+    }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -36,6 +61,49 @@ public class WishlistDbContext(DbContextOptions<WishlistDbContext> options)
         {
             e.HasKey(g => g.Id);
             e.Property(g => g.Name).IsRequired().HasMaxLength(200);
+            e.Property(g => g.Kind).HasConversion<string>().HasMaxLength(20);
+        });
+
+        // Secret Santa drawings: everything goes with the drawing's circle.
+        builder.Entity<Drawing>(e =>
+        {
+            e.HasKey(d => d.GroupId);
+            e.Property(d => d.Budget).HasMaxLength(200);
+            e.HasOne<Group>().WithOne().HasForeignKey<Drawing>(d => d.GroupId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(d => d.OrganizerId).OnDelete(DeleteBehavior.SetNull);
+            e.HasIndex(d => d.OrganizerId);
+        });
+
+        builder.Entity<DrawingParticipant>(e =>
+        {
+            e.HasKey(p => p.Id);
+            e.Property(p => p.Name).IsRequired().HasMaxLength(100);
+            e.Property(p => p.Email).HasMaxLength(256);
+            e.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(p => p.InviteCode).IsRequired().HasMaxLength(64);
+            e.HasIndex(p => p.InviteCode).IsUnique();
+            e.HasIndex(p => new { p.GroupId, p.UserId }).IsUnique();
+            e.HasIndex(p => p.UserId);
+            e.HasOne<Drawing>().WithMany().HasForeignKey(p => p.GroupId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<DrawingExclusion>(e =>
+        {
+            e.HasKey(x => new { x.GroupId, x.FirstParticipantId, x.SecondParticipantId });
+            e.HasOne<Drawing>().WithMany().HasForeignKey(x => x.GroupId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<DrawingParticipant>().WithMany().HasForeignKey(x => x.FirstParticipantId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<DrawingParticipant>().WithMany().HasForeignKey(x => x.SecondParticipantId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<DrawingAssignment>(e =>
+        {
+            e.HasKey(a => a.GiverParticipantId);
+            e.HasIndex(a => a.ReceiverParticipantId).IsUnique();
+            e.HasIndex(a => a.GroupId);
+            e.HasOne<Drawing>().WithMany().HasForeignKey(a => a.GroupId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<DrawingParticipant>().WithMany().HasForeignKey(a => a.GiverParticipantId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<DrawingParticipant>().WithMany().HasForeignKey(a => a.ReceiverParticipantId).OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<GroupMember>(e =>

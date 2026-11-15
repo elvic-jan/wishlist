@@ -18,8 +18,7 @@ public class PasskeySignUpUseCase(
     RegistrationGate gate,
     IPasskeyService passkeys,
     IUserRepository users,
-    IGroupRepository groups,
-    IInvitationRepository invitations,
+    NewAccountInvitation newAccountInvitation,
     IUnitOfWork unitOfWork,
     AuthSessionFactory sessions,
     AccountEmails emails,
@@ -48,8 +47,7 @@ public class PasskeySignUpUseCase(
         {
             user = await users.CreateWithoutPasswordAsync(verified.User.Id, email, displayName, language.Language, innerCt);
             await passkeys.AddAsync(user.Id, verified.Credential, PasskeyNames.Clean(request.PasskeyName), innerCt);
-            await groups.AddMemberAsync(invitation.GroupId, user.Id, GroupMemberRole.Member, innerCt);
-            await invitations.MarkUsedAsync(invitation.Id, innerCt);
+            await newAccountInvitation.RedeemAsync(invitation, user.Id, innerCt);
         }, ct);
 
         await emails.SendEmailConfirmationAsync(user, ct);

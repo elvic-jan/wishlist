@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Wishlist.Application.Interfaces;
 using Wishlist.Domain.Entities;
+using Wishlist.Domain.Enums;
 using Wishlist.Infrastructure.Persistence;
 
 namespace Wishlist.Infrastructure.Repositories;
@@ -14,7 +15,7 @@ public class CircleInvitationRepository(WishlistDbContext db) : ICircleInvitatio
 
         var rows = await db.GroupMembers
             .Where(mine => mine.UserId == callerId && mine.GroupId != groupId)
-            .Join(db.Groups, mine => mine.GroupId, g => g.Id, (mine, g) => g)
+            .Join(db.Groups.Where(g => g.Kind == GroupKind.Circle), mine => mine.GroupId, g => g.Id, (mine, g) => g)
             .Join(db.GroupMembers, g => g.Id, m => m.GroupId, (g, m) => new { Group = g, m.UserId })
             .Where(x => x.UserId != callerId && !targetMembers.Contains(x.UserId))
             .Join(db.Users, x => x.UserId, u => u.Id, (x, u) => new
@@ -47,7 +48,8 @@ public class CircleInvitationRepository(WishlistDbContext db) : ICircleInvitatio
 
     public async Task<IReadOnlySet<Guid>> GetCircleMatesAsync(Guid userId, IReadOnlyCollection<Guid> userIds, CancellationToken ct = default)
     {
-        var myGroups = db.GroupMembers.Where(m => m.UserId == userId).Select(m => m.GroupId);
+        var circles = db.Groups.Where(g => g.Kind == GroupKind.Circle).Select(g => g.Id);
+        var myGroups = db.GroupMembers.Where(m => m.UserId == userId && circles.Contains(m.GroupId)).Select(m => m.GroupId);
         return (await db.GroupMembers
             .Where(m => myGroups.Contains(m.GroupId) && userIds.Contains(m.UserId))
             .Select(m => m.UserId)

@@ -14,6 +14,8 @@ public static class InputLimits
     public const int Email = 256;
     public const int Password = 256;
     public const int CircleName = 200;
+    public const int DrawingTitle = 200;
+    public const int DrawingBudget = 200;
     public const int ItemTitle = 300;
     public const int ItemDescription = 5000;
     public const int Url = 2048;

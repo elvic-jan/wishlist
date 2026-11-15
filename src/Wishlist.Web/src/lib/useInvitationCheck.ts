@@ -3,10 +3,25 @@ import client from '@/api/client'
 import { inviteErrorMessage } from '@/lib/inviteErrors'
 import { t } from '@/lib/i18n'
 
+export interface ValidInvitation {
+  state: 'valid'
+  inviterName: string
+  circleName: string
+  /** A circle's shared link, or someone's personal Secret Santa invitation. */
+  kind: 'circle' | 'drawing'
+  /** For a drawing: the name and address the organizer typed. */
+  name: string | null
+  email: string | null
+  /** The drawing invitation belongs to an existing account: answer it by signing in. */
+  signInRequired: boolean
+}
+
 export type InvitationCheck =
   | { state: 'checking' }
-  | { state: 'valid'; inviterName: string; circleName: string }
+  | ValidInvitation
   | { state: 'invalid'; message: string }
+
+type CheckResponse = Omit<ValidInvitation, 'state' | 'kind'> & { kind?: 'circle' | 'drawing' }
 
 /**
  * Validates an invite code up front, so a visitor with a dead link is told
@@ -19,10 +34,21 @@ export function useInvitationCheck(code: string | undefined): InvitationCheck {
     if (!code) return
     let cancelled = false
     client
-      .get<{ inviterName: string; circleName: string }>(`/invitations/${code}`)
+      .get<CheckResponse>(`/invitations/${code}`)
       .then(({ data }) => {
         if (!cancelled)
-          setResult({ code, check: { state: 'valid', inviterName: data.inviterName, circleName: data.circleName } })
+          setResult({
+            code,
+            check: {
+              state: 'valid',
+              inviterName: data.inviterName,
+              circleName: data.circleName,
+              kind: data.kind ?? 'circle',
+              name: data.name ?? null,
+              email: data.email ?? null,
+              signInRequired: data.signInRequired ?? false,
+            },
+          })
       })
       .catch((err: unknown) => {
         if (!cancelled)

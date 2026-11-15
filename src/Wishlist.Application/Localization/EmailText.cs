@@ -23,6 +23,8 @@ public sealed partial class EmailText(string language)
 
     public string Date(DateTime utc) => utc.ToString("d MMMM yyyy", Languages.Culture(language));
 
+    public string Date(DateOnly date) => date.ToString("d MMMM yyyy", Languages.Culture(language));
+
     public EmailText Greeting(string displayName) => Paragraph("Hi {0},", displayName);
 
     public EmailText Paragraph(string english, params object?[] arguments)

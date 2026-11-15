@@ -221,6 +221,128 @@ namespace Wishlist.Infrastructure.Migrations
                     b.ToTable("CircleInvitations");
                 });
 
+            modelBuilder.Entity("Wishlist.Domain.Entities.Drawing", b =>
+                {
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Budget")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DrawnAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid?>("OrganizerId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("GroupId");
+
+                    b.HasIndex("OrganizerId");
+
+                    b.ToTable("Drawings");
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.DrawingAssignment", b =>
+                {
+                    b.Property<Guid>("GiverParticipantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ReceiverParticipantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("GiverParticipantId");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("ReceiverParticipantId")
+                        .IsUnique();
+
+                    b.ToTable("DrawingAssignments");
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.DrawingExclusion", b =>
+                {
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("FirstParticipantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SecondParticipantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("GroupId", "FirstParticipantId", "SecondParticipantId");
+
+                    b.HasIndex("FirstParticipantId");
+
+                    b.HasIndex("SecondParticipantId");
+
+                    b.ToTable("DrawingExclusions");
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.DrawingParticipant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AnsweredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("InviteCode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InviteCode")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("GroupId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("DrawingParticipants");
+                });
+
             modelBuilder.Entity("Wishlist.Domain.Entities.GiftClaim", b =>
                 {
                     b.Property<Guid>("Id")
@@ -265,6 +387,11 @@ namespace Wishlist.Infrastructure.Migrations
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -749,6 +876,76 @@ namespace Wishlist.Infrastructure.Migrations
                         .HasForeignKey("InviteeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.Drawing", b =>
+                {
+                    b.HasOne("Wishlist.Domain.Entities.Group", null)
+                        .WithOne()
+                        .HasForeignKey("Wishlist.Domain.Entities.Drawing", "GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Wishlist.Infrastructure.Persistence.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.DrawingAssignment", b =>
+                {
+                    b.HasOne("Wishlist.Domain.Entities.DrawingParticipant", null)
+                        .WithMany()
+                        .HasForeignKey("GiverParticipantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Wishlist.Domain.Entities.Drawing", null)
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Wishlist.Domain.Entities.DrawingParticipant", null)
+                        .WithMany()
+                        .HasForeignKey("ReceiverParticipantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.DrawingExclusion", b =>
+                {
+                    b.HasOne("Wishlist.Domain.Entities.DrawingParticipant", null)
+                        .WithMany()
+                        .HasForeignKey("FirstParticipantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Wishlist.Domain.Entities.Drawing", null)
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Wishlist.Domain.Entities.DrawingParticipant", null)
+                        .WithMany()
+                        .HasForeignKey("SecondParticipantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Wishlist.Domain.Entities.DrawingParticipant", b =>
+                {
+                    b.HasOne("Wishlist.Domain.Entities.Drawing", null)
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Wishlist.Infrastructure.Persistence.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Wishlist.Domain.Entities.GiftClaim", b =>

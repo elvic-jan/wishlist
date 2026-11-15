@@ -37,6 +37,7 @@ interface Member {
 interface Circle {
   id: string
   name: string
+  kind?: string
 }
 
 /** A full-width row that opens something; shows just a label. */
@@ -68,8 +69,13 @@ export function GroupDetailPage() {
     Promise.all([client.get<Member[]>(`/groups/${groupId}/members`), client.get<Circle[]>('/groups/me')])
       .then(([membersRes, circlesRes]) => {
         if (cancelled) return
+        // A Secret Santa drawing has its own page.
+        if (circlesRes.data.some(c => c.id === groupId && c.kind === 'drawing')) {
+          navigate(`/drawings/${groupId}`, { replace: true })
+          return
+        }
         setMembers(membersRes.data)
-        setCircles(circlesRes.data)
+        setCircles(circlesRes.data.filter(c => (c.kind ?? 'circle') === 'circle'))
       })
       .catch(() => !cancelled && setError(t('circle.loadFailed')))
     return () => {

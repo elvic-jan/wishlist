@@ -21,7 +21,9 @@ public class GroupsController(
     GetInviteCandidatesUseCase inviteCandidates,
     InviteFromCirclesUseCase inviteFromCircles,
     GetMyCircleInvitationsUseCase myCircleInvitations,
-    AnswerCircleInvitationUseCase answerCircleInvitation) : ControllerBase
+    AnswerCircleInvitationUseCase answerCircleInvitation,
+    InvitationResolver invitationResolver,
+    Wishlist.Application.UseCases.Drawings.AnswerDrawingUseCase answerDrawing) : ControllerBase
 {
     [HttpGet("groups/me")]
     public async Task<IActionResult> MyGroups(CancellationToken ct)
@@ -53,8 +55,19 @@ public class GroupsController(
     public Task<IActionResult> Join(string code, CancellationToken ct) =>
         inviteCodeGuard.RunAsync(HttpContext, async () =>
         {
-            await joinGroup.ExecuteAsync(User.GetUserId(), code, ct);
-            return Ok();
+            var groupId = await joinGroup.ExecuteAsync(User.GetUserId(), code, ct);
+            return Ok(new { groupId });
+        });
+
+    /// <summary>Declines a personal Secret Santa invitation; no account needed for an address that has none.</summary>
+    [AllowAnonymous]
+    [HttpPost("invitations/{code}/decline")]
+    public Task<IActionResult> Decline(string code, CancellationToken ct) =>
+        inviteCodeGuard.RunAsync(HttpContext, async () =>
+        {
+            var target = await invitationResolver.ResolveAsync(code, ct);
+            await answerDrawing.DeclineWithCodeAsync(User.Identity?.IsAuthenticated == true ? User.GetUserId() : null, target, ct);
+            return NoContent();
         });
 
     [HttpGet("groups/{groupId:guid}/members")]

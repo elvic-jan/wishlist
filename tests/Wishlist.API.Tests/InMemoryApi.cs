@@ -38,6 +38,7 @@ public class InMemoryApi : WebApplicationFactory<Program>
             services.AddSingleton<IUserRepository, InMemoryUsers>();
             services.AddSingleton<IGroupRepository, InMemoryGroups>();
             services.AddSingleton<IInvitationRepository, InMemoryInvitations>();
+            services.AddSingleton<IDrawingRepository, NoDrawings>();
             services.AddSingleton<IUnitOfWork, InMemoryUnitOfWork>();
             services.AddSingleton<ITokenService, InMemoryTokens>();
             services.AddSingleton<IPasskeyService, FakePasskeys>();
@@ -517,4 +518,30 @@ internal sealed class InMemoryAdminQueries(InMemoryStore store) : IAdminQueries
                 u.Id, u.DisplayName, u.Email, u.CreatedAt, u.EmailConfirmed, u.HasPassword, false, u.IsAdmin,
                 0, null, store.SignIns.Count(s => s.UserId == u.Id), null))
             .ToList());
+}
+
+/// <summary>
+/// No Secret Santa drawings in the in-memory API: unknown codes stay unknown and
+/// lists stay empty. Drawings themselves are tested against Postgres.
+/// </summary>
+public sealed class NoDrawings : IDrawingRepository
+{
+    public Task<DrawingParticipant?> GetParticipantByCodeAsync(string code, CancellationToken ct = default) =>
+        Task.FromResult<DrawingParticipant?>(null);
+    public Task<DrawingState?> GetAsync(Guid groupId, CancellationToken ct = default) => Task.FromResult<DrawingState?>(null);
+    public Task<IReadOnlyList<DrawingForUser>> GetForUserAsync(Guid userId, DateTime now, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<DrawingForUser>>([]);
+    public Task<IReadOnlyList<DrawnRecipient>> GetMyRecipientsAsync(Guid userId, DateOnly today, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<DrawnRecipient>>([]);
+    public Task<int> DeleteDueAsync(DateTime now, CancellationToken ct = default) => Task.FromResult(0);
+
+    public Task<Group> CreateAsync(string title, Guid organizerId, DateOnly endDate, string? budget, DateTime now, CancellationToken ct = default) => throw new NotSupportedException();
+    public Task AddParticipantsAsync(IReadOnlyCollection<DrawingParticipant> participants, CancellationToken ct = default) => throw new NotSupportedException();
+    public Task UpdateParticipantAsync(DrawingParticipant participant, CancellationToken ct = default) => throw new NotSupportedException();
+    public Task RemoveParticipantAsync(Guid participantId, CancellationToken ct = default) => throw new NotSupportedException();
+    public Task SetExclusionsAsync(Guid groupId, IReadOnlyCollection<DrawingExclusion> exclusions, CancellationToken ct = default) => throw new NotSupportedException();
+    public Task<bool> SaveDrawAsync(Guid groupId, IReadOnlyCollection<DrawingAssignment> assignments, DateTime now, CancellationToken ct = default) => throw new NotSupportedException();
+    public Task<DrawingAssignment?> GetAssignmentByGiverAsync(Guid giverParticipantId, CancellationToken ct = default) => throw new NotSupportedException();
+    public Task<DrawingAssignment?> GetAssignmentByReceiverAsync(Guid receiverParticipantId, CancellationToken ct = default) => throw new NotSupportedException();
+    public Task SetCancelledAsync(Guid groupId, DateTime? cancelledAt, CancellationToken ct = default) => throw new NotSupportedException();
 }

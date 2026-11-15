@@ -394,6 +394,9 @@ Staging has to be up before the change that introduces it is merged: from then o
 - **Reservation job** (`caj-wishlist-reservations`): runs on the 1st of each month at
   07:00 UTC with the app's image and settings (`--job reservations`). It emails reminders
   for reservations ending next month, then ends the expired ones and emails their reservers.
+  Then it deletes Secret Santa drawings that ended or were cancelled more than a month ago
+  ("Drawing cleanup: … drawings deleted."); if that fails, the reservation work stays done
+  and the run exits with an error.
   The deploy workflow keeps its image in step with the app. Run it by hand with
   `az containerapp job start -g $RG -n caj-wishlist-reservations`; see past runs with
   `az containerapp job execution list -g $RG -n caj-wishlist-reservations -o table`. Its

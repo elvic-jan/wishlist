@@ -11,6 +11,8 @@ public class GenerateGroupInvitationUseCase(IGroupRepository groups, IInvitation
     {
         if (!await groups.IsMemberAsync(groupId, userId, ct))
             throw new ForbiddenException("You must be a member of this circle to generate an invitation.");
+        if ((await groups.GetByIdAsync(groupId, ct))?.Kind == Domain.Enums.GroupKind.Drawing)
+            throw new DomainException("A Secret Santa drawing has no invitation link. Its organizer adds the people.");
 
         var invitation = await invitations.CreateAsync(groupId, userId, ct);
         var url = $"{appUrls.PublicBaseUrl.TrimEnd('/')}/join/{invitation.InviteCode}";

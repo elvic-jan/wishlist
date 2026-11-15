@@ -6,7 +6,7 @@ using Wishlist.Infrastructure.Persistence;
 
 namespace Wishlist.Infrastructure.Repositories;
 
-public class GroupRepository(WishlistDbContext db) : IGroupRepository
+public class GroupRepository(WishlistDbContext db, TimeProvider time) : IGroupRepository
 {
     public async Task<Group?> GetByIdAsync(Guid groupId, CancellationToken ct = default)
         => await db.Groups.AsNoTracking().FirstOrDefaultAsync(g => g.Id == groupId, ct);
@@ -75,27 +75,30 @@ public class GroupRepository(WishlistDbContext db) : IGroupRepository
     }
 
     public async Task<bool> SharesGroupAsync(Guid userId1, Guid userId2, CancellationToken ct = default)
-        => await db.GroupMembers
+        => await Connecting()
             .Where(m => m.UserId == userId1)
-            .Join(db.GroupMembers.Where(m => m.UserId == userId2),
+            .Join(Connecting().Where(m => m.UserId == userId2),
                 m1 => m1.GroupId, m2 => m2.GroupId, (m1, m2) => m1.GroupId)
             .AnyAsync(ct);
 
     public async Task<IReadOnlyList<Group>> GetUserGroupsAsync(Guid userId, CancellationToken ct = default)
         => await db.GroupMembers
             .Where(m => m.UserId == userId)
-            .Join(db.Groups, m => m.GroupId, g => g.Id, (m, g) => g)
+            .Join(db.Groups.Where(g => g.Kind == GroupKind.Circle), m => m.GroupId, g => g.Id, (m, g) => g)
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<(Guid UserId, string DisplayName, Guid GroupId, string GroupName)>> GetCircleMatesAsync(Guid userId, CancellationToken ct = default)
     {
-        var rows = await db.GroupMembers
+        var rows = await Connecting()
             .Where(mine => mine.UserId == userId)
-            .Join(db.GroupMembers, mine => mine.GroupId, other => other.GroupId, (mine, other) => other)
+            .Join(Connecting(), mine => mine.GroupId, other => other.GroupId, (mine, other) => other)
             .Where(other => other.UserId != userId)
             .Join(db.Users, m => m.UserId, u => u.Id, (m, u) => new { m.GroupId, u.Id, u.DisplayName })
             .Join(db.Groups, r => r.GroupId, g => g.Id, (r, g) => new { r.Id, r.DisplayName, GroupId = g.Id, g.Name })
             .ToListAsync(ct);
         return rows.Select(r => (r.Id, r.DisplayName, r.GroupId, r.Name)).ToList();
     }
+
+    private IQueryable<GroupMember> Connecting() =>
+        db.ConnectingMemberships(DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime));
 }

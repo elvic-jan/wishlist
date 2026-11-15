@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,7 +20,7 @@ import { signUpWithPasskey } from '@/api/passkeys'
 import { useAuth } from '@/context/AuthContext'
 import { Trans, useT } from '@/lib/i18n'
 import { inviteErrorMessage } from '@/lib/inviteErrors'
-import { useInvitationCheck } from '@/lib/useInvitationCheck'
+import { useInvitationCheck, type ValidInvitation } from '@/lib/useInvitationCheck'
 import { isPasskeyCancelled, passkeyErrorMessage, passkeysSupported } from '@/lib/webauthn'
 import { MAX_DISPLAY_NAME, MAX_EMAIL, MAX_PASSWORD } from '@/lib/inputLimits'
 
@@ -37,7 +37,9 @@ function InvitedRegistration({ inviteCode }: { inviteCode: string }) {
 
   if (invitation.state === 'checking') return <WakingUp fullScreen={false} />
   if (invitation.state === 'invalid') return <InvalidInvitation message={invitation.message} />
-  return <RegisterForm inviteCode={inviteCode} />
+  // A drawing invitation for an existing account is answered by signing in.
+  if (invitation.signInRequired) return <Navigate to={`/join/${inviteCode}`} replace />
+  return <RegisterForm inviteCode={inviteCode} invitation={invitation} />
 }
 
 function InvitationOnly() {
@@ -59,19 +61,22 @@ function InvitationOnly() {
   )
 }
 
-function RegisterForm({ inviteCode }: { inviteCode: string }) {
+function RegisterForm({ inviteCode, invitation }: { inviteCode: string; invitation: ValidInvitation }) {
   const t = useT()
   const { register, startSession } = useAuth()
   const navigate = useNavigate()
   const canUsePasskeys = passkeysSupported()
   const [usePassword, setUsePassword] = useState(!canUsePasskeys)
-  const [email, setEmail] = useState('')
-  const [displayName, setDisplayName] = useState('')
+  const isDrawing = invitation.kind === 'drawing'
+  // A drawing invitation fills in what the organizer typed.
+  const [email, setEmail] = useState(invitation.email ?? '')
+  const [displayName, setDisplayName] = useState(invitation.name ?? '')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  const goToCircle = (joinedGroupId: string) => navigate(`/circles/${joinedGroupId}`)
+  const goToCircle = (joinedGroupId: string) =>
+    navigate(isDrawing ? `/drawings/${joinedGroupId}` : `/circles/${joinedGroupId}`)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -101,7 +106,7 @@ function RegisterForm({ inviteCode }: { inviteCode: string }) {
       <CardHeader>
         <CardTitle>{t('register.title')}</CardTitle>
         <CardDescription>
-          {t('register.description')}
+          {isDrawing ? t('register.drawingDescription') : t('register.description')}
         </CardDescription>
       </CardHeader>
       <CardContent>
