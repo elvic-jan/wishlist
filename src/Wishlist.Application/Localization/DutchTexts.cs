@@ -167,6 +167,65 @@ public static class DutchTexts
             "{0} nodigt je uit voor de kring **{1}** op Kadoozle.",
         ["Open Kadoozle to join or decline"] = "Open Kadoozle om lid te worden of te weigeren",
 
+        // ── Name drawings (drawing = lootjestrekking) ────────────────────────
+        ["Choose an end date."] = "Kies een einddatum.",
+        ["The end date can't be in the past."] = "De einddatum kan niet in het verleden liggen.",
+        ["Budget"] = "Het budget",
+        ["Participant not found."] = "Deelnemer niet gevonden.",
+        ["Drawing not found."] = "Trekking niet gevonden.",
+        ["Only the organizer can do this."] = "Alleen de organisator kan dit doen.",
+        ["This drawing is cancelled."] = "Deze trekking is geannuleerd.",
+        ["The names have already been drawn."] = "De namen zijn al getrokken.",
+        ["An exclusion needs two different people from this drawing."] =
+            "Een uitsluiting heeft twee verschillende mensen uit deze trekking nodig.",
+        ["At least {0} people need to take part to draw names."] =
+            "Er moeten minstens {0} mensen meedoen om namen te trekken.",
+        ["Some people haven't answered yet. Confirm to include them in the draw."] =
+            "Sommige mensen hebben nog niet geantwoord. Bevestig om hen mee te laten trekken.",
+        ["No draw is possible with these exclusions. Remove some exclusions and try again."] =
+            "Met deze uitsluitingen kunnen de namen niet getrokken worden. Verwijder enkele uitsluitingen en probeer opnieuw.",
+        ["Enter a name and a valid email address for everyone you invite."] =
+            "Vul een naam en een geldig e-mailadres in voor iedereen die je uitnodigt.",
+        ["A drawing can have at most {0} people."] = "Een trekking kan hoogstens {0} mensen hebben.",
+        ["You can only join for someone whose wishlist you are a buddy for."] =
+            "Je kan alleen meedoen voor iemand van wie je buddy bent voor de verlanglijst.",
+        ["You're already taking part in this drawing."] = "Je doet al mee aan deze trekking.",
+        ["This invitation belongs to an existing account. Sign in to answer it."] =
+            "Deze uitnodiging hoort bij een bestaand account. Meld je aan om te antwoorden.",
+        ["A name drawing has no invitation link. Its organizer adds the people."] =
+            "Een trekking heeft geen uitnodigingslink. De organisator voegt de mensen toe.",
+        ["Leave a name drawing from its own page."] = "Verlaat een trekking via haar eigen pagina.",
+
+        ["{0} invited you to draw names for **{1}** on Kadoozle."] =
+            "{0} nodigt je uit om namen te trekken voor **{1}** op Kadoozle.",
+        ["Once the names are drawn, you'll get an email telling you who you drew. The drawing ends on {0}."] =
+            "Zodra de namen getrokken zijn, krijg je een e-mail met wie jij getrokken hebt. De trekking eindigt op {0}.",
+        ["Join or decline"] = "Meedoen of weigeren",
+        ["{0} invited you to draw names for {1}"] = "{0} nodigt je uit om namen te trekken voor {1}",
+        ["The names have been drawn for **{0}**. You drew **{1}**! Keep it a secret."] =
+            "De namen voor **{0}** zijn getrokken. Jij hebt **{1}** getrokken! Hou het geheim.",
+        ["Budget: **{0}**"] = "Budget: **{0}**",
+        ["The drawing ends on {0}."] = "De trekking eindigt op {0}.",
+        ["Join to see {0}'s wishlist"] = "Doe mee om de verlanglijst van {0} te zien",
+        ["{0} hasn't joined yet. You'll see their wishlist as soon as they have."] =
+            "{0} doet nog niet mee. Je ziet de verlanglijst zodra dat wel zo is.",
+        ["Open the drawing"] = "Open de trekking",
+        ["You drew {0}"] = "Jij hebt {0} getrokken",
+        ["{0} cancelled the name drawing **{1}**. You don't need to do anything."] =
+            "{0} heeft de trekking **{1}** geannuleerd. Je hoeft niets te doen.",
+        ["The name drawing {0} is cancelled"] = "De trekking {0} is geannuleerd",
+        ["{0} undid the cancellation of the name drawing **{1}**. Everything is as it was."] =
+            "{0} heeft de annulering van de trekking **{1}** ongedaan gemaakt. Alles is zoals het was.",
+        ["The name drawing {0} is back on"] = "De trekking {0} gaat toch door",
+        ["{0} is no longer taking part in the name drawing **{1}**, so you don't need to buy them a gift."] =
+            "{0} doet niet meer mee aan de trekking **{1}**, dus je hoeft er geen cadeau voor te kopen.",
+        ["No gift needed for {0}"] = "Geen cadeau nodig voor {0}",
+        ["{0} is no longer taking part in the name drawing **{1}**. The names had already been drawn."] =
+            "{0} doet niet meer mee aan de trekking **{1}**. De namen waren al getrokken.",
+        ["Nobody has drawn **{0}** anymore. You may want to sort out a gift for them yourself."] =
+            "Niemand heeft **{0}** meer getrokken. Misschien regel je best zelf een cadeau voor hen.",
+        ["{0} left the name drawing {1}"] = "{0} doet niet meer mee aan de trekking {1}",
+
         // ── Lasting-toast messages ──────────────────────────────────────────
         ["Bring your wishes from the old site"] = "Breng je cadeaus mee van de oude site",
         ["Had a wishlist on verlanglijstje? Import your wishes into Kadoozle in a few taps, so you don't have to type them again."] =

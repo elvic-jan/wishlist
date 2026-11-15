@@ -201,7 +201,7 @@ public class PasskeyPostgresEndToEndTests
 }
 
 /// <summary>The real API (Identity, EF, PasskeyHandler) on a throwaway Postgres database; emails are captured.</summary>
-internal sealed class PostgresApi(string connectionString) : WebApplicationFactory<Program>
+internal sealed class PostgresApi(string connectionString, TimeProvider? time = null) : WebApplicationFactory<Program>
 {
     public ConcurrentQueue<EmailMessage> Emails { get; } = new();
 
@@ -215,7 +215,10 @@ internal sealed class PostgresApi(string connectionString) : WebApplicationFacto
         builder.UseSetting("Passkeys:AdditionalOrigins:0", "https://kadoozle.test");
 
         builder.ConfigureTestServices(services =>
-            services.AddSingleton<IEmailSender>(new CapturingSender(Emails)));
+        {
+            services.AddSingleton<IEmailSender>(new CapturingSender(Emails));
+            if (time is not null) services.AddSingleton(time);
+        });
     }
 
     public async Task ResetDatabaseAsync()

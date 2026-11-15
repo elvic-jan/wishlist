@@ -67,7 +67,8 @@ if (!builder.Environment.IsDevelopment())
 var app = builder.Build();
 
 // Job mode: the same image runs a job and exits; no web server starts.
-// - "--job reservations": the monthly scheduled reservation run.
+// - "--job reservations": the monthly scheduled run: reservations, then the
+//   cleanup of Secret Santa drawings that ended or were cancelled a month ago.
 // - "--job legacy-load --users <xlsx> --items <xlsx>": loads the old wishlist
 //   site's export once (see infra/README.md).
 // - "--job owner-access --email <email> [--name <name>]": creates the account if
@@ -82,6 +83,17 @@ if (job is not null)
     {
         case "reservations":
             await scope.ServiceProvider.GetRequiredService<ProcessReservationsUseCase>().ExecuteAsync();
+            try
+            {
+                var deleted = await scope.ServiceProvider.GetRequiredService<Wishlist.Application.UseCases.Drawings.CleanUpDrawingsUseCase>().ExecuteAsync();
+                app.Logger.LogInformation("Drawing cleanup: {Deleted} drawings deleted.", deleted);
+            }
+            catch (Exception ex)
+            {
+                // The reservation work above stays done.
+                app.Logger.LogError(ex, "Drawing cleanup failed.");
+                Environment.ExitCode = 1;
+            }
             break;
         case "legacy-load":
             var usersPath = app.Configuration["users"] ?? throw new InvalidOperationException("Pass --users <path to vl_users.xlsx>.");

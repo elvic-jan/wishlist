@@ -4,6 +4,7 @@ using Wishlist.Application.Localization;
 using Wishlist.Application.UseCases.Admin;
 using Wishlist.Application.UseCases.Auth;
 using Wishlist.Application.UseCases.Buddies;
+using Wishlist.Application.UseCases.Drawings;
 using Wishlist.Application.UseCases.GiftClaims;
 using Wishlist.Application.Messages;
 using Wishlist.Application.UseCases.Groups;
@@ -21,6 +22,7 @@ public static class DependencyInjection
         services.TryAddScoped<ILanguageContext, DefaultLanguageContext>();
 
         services.AddScoped<RegistrationGate>();
+        services.AddScoped<NewAccountInvitation>();
         services.AddScoped<AuthSessionFactory>();
         services.AddScoped<AccountEmails>();
         services.AddScoped<PasskeySignInUseCase>();
@@ -53,6 +55,19 @@ public static class DependencyInjection
         services.AddScoped<GetMyCircleInvitationsUseCase>();
         services.AddScoped<AnswerCircleInvitationUseCase>();
         services.AddScoped<CircleInvitationEmails>();
+
+        services.AddScoped<DrawingAccess>();
+        services.AddScoped<DrawingEmails>();
+        services.AddScoped<DrawingParticipantPicker>();
+        services.AddScoped<CreateDrawingUseCase>();
+        services.AddScoped<ManageDrawingParticipantsUseCase>();
+        services.AddScoped<DrawNamesUseCase>();
+        services.AddScoped<CancelDrawingUseCase>();
+        services.AddScoped<CleanUpDrawingsUseCase>();
+        services.AddScoped<AnswerDrawingUseCase>();
+        services.AddScoped<GetDrawingUseCase>();
+        services.AddScoped<GetMyDrawingInvitationsUseCase>();
+        services.AddScoped<GetMyRecipientsUseCase>();
 
         services.AddScoped<AddWishlistItemUseCase>();
         services.AddScoped<EditWishlistItemUseCase>();

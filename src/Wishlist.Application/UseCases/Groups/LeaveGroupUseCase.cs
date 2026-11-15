@@ -10,6 +10,8 @@ public class LeaveGroupUseCase(IGroupRepository groups)
     {
         var role = await groups.GetMemberRoleAsync(groupId, userId, ct)
             ?? throw new ForbiddenException("You are not a member of this circle.");
+        if ((await groups.GetByIdAsync(groupId, ct))?.Kind == GroupKind.Drawing)
+            throw new DomainException("Leave a name drawing from its own page.");
 
         if (role == GroupMemberRole.Owner)
         {

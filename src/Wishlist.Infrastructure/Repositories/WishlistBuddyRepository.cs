@@ -5,7 +5,7 @@ using Wishlist.Infrastructure.Persistence;
 
 namespace Wishlist.Infrastructure.Repositories;
 
-public class WishlistBuddyRepository(WishlistDbContext db) : IWishlistBuddyRepository
+public class WishlistBuddyRepository(WishlistDbContext db, TimeProvider time) : IWishlistBuddyRepository
 {
     public async Task<bool> AddAsync(Guid ownerId, Guid buddyId, DateTime now, CancellationToken ct = default)
     {
@@ -42,9 +42,10 @@ public class WishlistBuddyRepository(WishlistDbContext db) : IWishlistBuddyRepos
 
     public async Task<IReadOnlyList<(Guid UserId, string DisplayName)>> GetCandidatesAsync(Guid ownerId, CancellationToken ct = default)
     {
-        var myGroups = db.GroupMembers.Where(m => m.UserId == ownerId).Select(m => m.GroupId);
+        var memberships = Connecting();
+        var myGroups = memberships.Where(m => m.UserId == ownerId).Select(m => m.GroupId);
         var buddies = db.WishlistBuddies.Where(b => b.OwnerId == ownerId).Select(b => b.BuddyId);
-        var ids = db.GroupMembers
+        var ids = memberships
             .Where(m => myGroups.Contains(m.GroupId) && m.UserId != ownerId && !buddies.Contains(m.UserId))
             .Select(m => m.UserId)
             .Distinct();
@@ -52,10 +53,16 @@ public class WishlistBuddyRepository(WishlistDbContext db) : IWishlistBuddyRepos
     }
 
     /// <summary>Buddy rows where owner and buddy share at least one circle.</summary>
-    private IQueryable<WishlistBuddy> ActiveBuddies() =>
-        db.WishlistBuddies.Where(b => db.GroupMembers.Any(m1 =>
+    private IQueryable<WishlistBuddy> ActiveBuddies()
+    {
+        var memberships = Connecting();
+        return db.WishlistBuddies.Where(b => memberships.Any(m1 =>
             m1.UserId == b.OwnerId &&
-            db.GroupMembers.Any(m2 => m2.GroupId == m1.GroupId && m2.UserId == b.BuddyId)));
+            memberships.Any(m2 => m2.GroupId == m1.GroupId && m2.UserId == b.BuddyId)));
+    }
+
+    private IQueryable<GroupMember> Connecting() =>
+        db.ConnectingMemberships(DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime));
 
     private async Task<IReadOnlyList<(Guid UserId, string DisplayName)>> ToSummaries(IQueryable<Guid> userIds, CancellationToken ct)
     {

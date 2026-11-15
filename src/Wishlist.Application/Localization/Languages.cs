@@ -62,6 +62,10 @@ public static class Languages
     /// </summary>
     public static string ForEmail(User recipient, User? sender, string fallback) =>
         Parse(recipient.Language) ?? Parse(sender?.Language) ?? Parse(fallback) ?? Default;
+
+    /// <summary>The same, for a recipient who may have no account (an address invited to a drawing).</summary>
+    public static string ForEmail(string? recipientLanguage, User? sender, string fallback) =>
+        Parse(recipientLanguage) ?? Parse(sender?.Language) ?? Parse(fallback) ?? Default;
 }
 
 /// <summary>The language of what is being handled now: the request's, or English outside a request (jobs).</summary>

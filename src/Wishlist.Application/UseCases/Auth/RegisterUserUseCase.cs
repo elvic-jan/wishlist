@@ -9,9 +9,8 @@ namespace Wishlist.Application.UseCases.Auth;
 
 public class RegisterUserUseCase(
     IUserRepository users,
-    IGroupRepository groups,
-    IInvitationRepository invitations,
     RegistrationGate gate,
+    NewAccountInvitation newAccountInvitation,
     IUnitOfWork unitOfWork,
     AuthSessionFactory sessions,
     AccountEmails emails,
@@ -31,8 +30,7 @@ public class RegisterUserUseCase(
         await unitOfWork.ExecuteInTransactionAsync(async innerCt =>
         {
             user = await users.CreateAsync(request.Email, request.DisplayName, request.Password, language.Language, innerCt);
-            await groups.AddMemberAsync(invitation.GroupId, user.Id, GroupMemberRole.Member, innerCt);
-            await invitations.MarkUsedAsync(invitation.Id, innerCt);
+            await newAccountInvitation.RedeemAsync(invitation, user.Id, innerCt);
         }, ct);
 
         await emails.SendEmailConfirmationAsync(user, ct);

@@ -28,6 +28,7 @@ const ImportPage = lazyPage(() => import('@/pages/ImportPage'), 'ImportPage')
 const WhatsNewPage = lazyPage(() => import('@/pages/WhatsNewPage'), 'WhatsNewPage')
 const LicensesPage = lazyPage(() => import('@/pages/LicensesPage'), 'LicensesPage')
 const AdminPage = lazyPage(() => import('@/pages/AdminPage'), 'AdminPage')
+const DrawingPage = lazyPage(() => import('@/pages/DrawingPage'), 'DrawingPage')
 
 /** For pages anyone may open: the app shell when signed in, the sign-in layout otherwise. */
 function AnyoneLayout() {
@@ -73,6 +74,7 @@ export default function App() {
                 <Route path="/" element={<Navigate to="/wishlists" replace />} />
                 <Route path="/circles" element={<HomePage />} />
                 <Route path="/circles/:groupId" element={<GroupDetailPage />} />
+                <Route path="/drawings/:drawingId" element={<DrawingPage />} />
                 {/* Circles used to be called groups; keep old bookmarks working. */}
                 <Route path="/groups/:groupId" element={<LegacyGroupRedirect />} />
                 <Route path="/settings/security" element={<SecurityPage />} />
