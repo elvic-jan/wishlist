@@ -68,3 +68,10 @@
 - [x] 10.1 Agree the release note text (type `feature`, English + `nl:`) with the user and add `release-notes/name-drawings.md`
 - [ ] 10.2 Check on staging: create, invite by email, register via link, buddy join, draw with unanswered people, recipient email/card, Wishlists order, cancel/undo, cleanup job run
 - [x] 10.3 PR with "Closes #101"
+
+## 11. Staging feedback
+
+- [x] 11.1 Circles list: all drawings above the permanent circles (unanswered ones first)
+- [x] 11.2 Circle page: a badge with the drawing's title on each member you drew
+- [x] 11.3 Release note: the second line of `release-notes/name-drawings.md` extended, agreed with the user
+- [ ] 11.4 Check on staging, then archive the change

@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Drawings in the circles list
-The circles list SHALL include the Secret Santa drawings the user organizes or takes part in, marked as drawings. Drawings the user hasn't answered SHALL appear at the top, and opening one SHALL offer Join or Decline. Drawings the user declined SHALL NOT appear, except to their organizer. Ended drawings in their final month, and cancelled drawings (shown to the organizer only), SHALL appear in a subdued style. Drawings that are hidden (cancelled for other users, or more than a month past their end date) SHALL NOT appear.
+The circles list SHALL include the Secret Santa drawings the user organizes or takes part in, marked as drawings. Drawings SHALL appear above the permanent circles, with the ones the user hasn't answered first, and opening an unanswered one SHALL offer Join or Decline. Drawings the user declined SHALL NOT appear, except to their organizer. Ended drawings in their final month, and cancelled drawings (shown to the organizer only), SHALL appear in a subdued style. Drawings that are hidden (cancelled for other users, or more than a month past their end date) SHALL NOT appear.
 
 #### Scenario: Unanswered drawing on top
 - **WHEN** a user with the circles Family and Friends has an unanswered invitation to "Christmas 2026"

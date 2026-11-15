@@ -23,7 +23,10 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { BackButton } from '@/components/BackButton'
 import { InviteMenu } from '@/components/InviteMenu'
+import { badgeVariants } from '@/components/ui/badge'
 import client from '@/api/client'
+import type { DrawingRecipient } from '@/api/drawings'
+import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import { apiErrorMessage } from '@/api/errors'
 import { useT, UserText } from '@/lib/i18n'
@@ -40,16 +43,32 @@ interface Circle {
   kind?: string
 }
 
-/** A full-width row that opens something; shows just a label. */
-function RowLink({ to, children }: { to: string; children: React.ReactNode }) {
+/** A full-width row that opens something; a label, optionally followed by badges. */
+function RowLink({ to, children, badges }: { to: string; children: React.ReactNode; badges?: React.ReactNode }) {
   return (
     <Link
       to={to}
       className="flex w-full items-center justify-between gap-3 rounded-md border px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <span className="truncate">{children}</span>
+      <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="truncate">{children}</span>
+        {badges}
+      </span>
       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
     </Link>
+  )
+}
+
+/** The title of a drawing in which you drew this person. */
+function DrawingBadge({ title }: { title: string }) {
+  return (
+    <span
+      title={title}
+      translate="no"
+      className={cn(badgeVariants({ variant: 'secondary' }), 'max-w-[9rem] font-normal hover:bg-secondary sm:max-w-[12rem]')}
+    >
+      <span className="truncate">{title}</span>
+    </span>
   )
 }
 
@@ -63,6 +82,7 @@ export function GroupDetailPage() {
   const [inviteUrl, setInviteUrl] = useState('')
   const [error, setError] = useState('')
   const [confirmLeave, setConfirmLeave] = useState(false)
+  const [drawnIn, setDrawnIn] = useState<DrawingRecipient[]>([])
 
   useEffect(() => {
     let cancelled = false
@@ -83,6 +103,18 @@ export function GroupDetailPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- t is the same function in every language
   }, [groupId])
+
+  // The people you drew in your drawings get a badge; without this the page still works.
+  useEffect(() => {
+    let cancelled = false
+    client
+      .get<DrawingRecipient[]>('/drawings/recipients/me')
+      .then(r => !cancelled && setDrawnIn(r.data))
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const circleName = circles?.find(c => c.id === groupId)?.name
   const otherCircles = circles?.filter(c => c.id !== groupId) ?? []
@@ -142,7 +174,12 @@ export function GroupDetailPage() {
                       <span className="font-normal text-muted-foreground">{t('circle.you')}</span>
                     </RowLink>
                   ) : (
-                    <RowLink to={`/wishlist/${m.userId}`}>
+                    <RowLink
+                      to={`/wishlist/${m.userId}`}
+                      badges={drawnIn
+                        .filter(r => r.userId === m.userId)
+                        .map(r => <DrawingBadge key={r.drawingId} title={r.drawingTitle} />)}
+                    >
                       <UserText>{m.displayName}</UserText>
                     </RowLink>
                   )}

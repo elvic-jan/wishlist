@@ -4,9 +4,9 @@ using Wishlist.Application.Interfaces;
 namespace Wishlist.Application.UseCases.Groups;
 
 /// <summary>
-/// The user's circles: unanswered Secret Santa drawings first, then the
-/// permanent circles, then the other drawings (including ended ones in their
-/// last month, and cancelled ones for their organizer).
+/// The user's circles: name drawings on top (unanswered ones first, then the
+/// others, including ended ones in their last month and cancelled ones for
+/// their organizer), then the permanent circles.
 /// </summary>
 public class GetUserGroupsUseCase(IGroupRepository groups, IDrawingRepository drawings, TimeProvider time)
 {
@@ -29,6 +29,6 @@ public class GetUserGroupsUseCase(IGroupRepository groups, IDrawingRepository dr
             .ToList();
 
         static bool Unanswered(GroupDto g) => g.Drawing!.MyStatus == DrawingStatuses.Invited && !g.Drawing.Cancelled;
-        return [.. drawingDtos.Where(Unanswered), .. circles, .. drawingDtos.Where(g => !Unanswered(g))];
+        return [.. drawingDtos.Where(Unanswered), .. drawingDtos.Where(g => !Unanswered(g)), .. circles];
     }
 }

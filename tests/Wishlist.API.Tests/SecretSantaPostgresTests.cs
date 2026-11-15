@@ -89,6 +89,11 @@ public class SecretSantaPostgresTests
         await answer.JoinAsync(jan.Id, id, Pid(view, "Mia"));
         await Assert.ThrowsAsync<ForbiddenException>(() => answer.JoinAsync(anna.Id, id, Pid(view, "Sofie")));
 
+        // Once answered, the drawing still sits above her permanent circles.
+        var joinedGroups = await s.GetRequiredService<GetUserGroupsUseCase>().ExecuteAsync(anna.Id);
+        Assert.Equal(id, joinedGroups[0].Id);
+        Assert.Contains(joinedGroups, g => g.Kind == "circle");
+
         // Names only until both joined: Anna can't open Piet's list.
         var annaView = await get.ExecuteAsync(anna.Id, id);
         Assert.Null(annaView.Participants.Single(p => p.Name == "Pieter").UserId);

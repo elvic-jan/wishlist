@@ -240,7 +240,7 @@ Every text this feature adds SHALL be available in English and Dutch: the create
 
 #### Scenario: Drawing page in Dutch
 - **WHEN** a person whose language is Dutch opens a drawing
-- **THEN** all app texts on it are Dutch, such as the statuses "Doet mee", "Uitgenodigd" and "Afgemeld" and the button "Lootjes trekken", and the end date reads like "24 december 2026"
+- **THEN** all app texts on it are Dutch, such as the statuses "Doet mee", "Uitgenodigd" and "Afgemeld" and the button "Namen trekken", and the end date reads like "24 december 2026"
 
 #### Scenario: Server error in Dutch
 - **WHEN** a Dutch-speaking organizer tries to draw names with exclusions that make a draw impossible
@@ -253,3 +253,14 @@ Every text this feature adds SHALL be available in English and Dutch: the create
 #### Scenario: Missing Dutch text caught
 - **WHEN** a Secret Santa text has no Dutch translation
 - **THEN** the build or the tests fail
+
+### Requirement: Drawn people marked in circles
+In the member list of a permanent circle, each person the user drew in an active drawing SHALL carry a badge with the drawing's title, one badge per drawing. Other members SHALL NOT get such a badge, and the badge SHALL NOT reveal who drew whom to anyone else.
+
+#### Scenario: Recipient in a shared circle
+- **WHEN** Anna drew Peter in "Christmas 2026" and opens their circle Family
+- **THEN** Peter's row in Family shows a "Christmas 2026" badge, and nobody else's row does
+
+#### Scenario: Others see no badge
+- **WHEN** Piet, who did not draw Peter, opens Family
+- **THEN** Peter's row shows no drawing badge
