@@ -116,6 +116,8 @@ export function DrawingPeoplePicker({
 
   return (
     <div className="space-y-5">
+      {/* Someone in no circle (yet) only invites by email. */}
+      {circles?.length !== 0 && (
       <section className="space-y-2">
         <h3 className="text-sm font-medium">{t('santa.fromCircles')}</h3>
         {!circles ? (
@@ -156,6 +158,7 @@ export function DrawingPeoplePicker({
           })
         )}
       </section>
+      )}
 
       <section className="space-y-2">
         <div>

@@ -79,6 +79,55 @@ export function HomePage() {
         </p>
       </div>
 
+      {/* Both ways to start something, side by side above the list. */}
+      {showCreate ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t('circles.new')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={createGroup} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="new-group-name">{t('circles.name')}</Label>
+                <Input
+                  id="new-group-name"
+                  value={newGroupName}
+                  onChange={e => setNewGroupName(e.target.value)}
+                  maxLength={MAX_CIRCLE_NAME}
+                  placeholder={t('circles.namePlaceholder')}
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setShowCreate(false)
+                    setNewGroupName('')
+                  }}
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button type="submit">{t('circles.create')}</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => setShowCreate(true)} variant="outline">
+            <Plus className="h-4 w-4" />
+            {t('circles.new')}
+          </Button>
+          <Button onClick={() => setShowCreateDrawing(true)} variant="outline">
+            <Gift className="h-4 w-4" />
+            {t('santa.new')}
+          </Button>
+        </div>
+      )}
+
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -108,12 +157,6 @@ export function HomePage() {
                 {t('circles.empty.text')}
               </p>
             </div>
-            {!showCreate && (
-              <Button onClick={() => setShowCreate(true)} className="mt-2">
-                <Plus className="h-4 w-4" />
-                {t('circles.new')}
-              </Button>
-            )}
           </CardContent>
         </Card>
       ) : (
@@ -158,58 +201,6 @@ export function HomePage() {
             )
           })}
         </ul>
-      )}
-
-      {showCreate ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t('circles.new')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={createGroup} className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="new-group-name">{t('circles.name')}</Label>
-                <Input
-                  id="new-group-name"
-                  value={newGroupName}
-                  onChange={e => setNewGroupName(e.target.value)}
-                  maxLength={MAX_CIRCLE_NAME}
-                  placeholder={t('circles.namePlaceholder')}
-                  required
-                  autoFocus
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => {
-                    setShowCreate(false)
-                    setNewGroupName('')
-                  }}
-                >
-                  {t('common.cancel')}
-                </Button>
-                <Button type="submit">{t('circles.create')}</Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      ) : (
-        groups && (
-          <div className="flex flex-wrap gap-2">
-            {groups.length > 0 && (
-              <Button onClick={() => setShowCreate(true)} variant="outline">
-                <Plus className="h-4 w-4" />
-                {t('circles.new')}
-              </Button>
-            )}
-            <Button onClick={() => setShowCreateDrawing(true)} variant="outline">
-              <Gift className="h-4 w-4" />
-              {t('santa.new')}
-            </Button>
-          </div>
-        )
       )}
 
       <CreateDrawingDialog open={showCreateDrawing} onOpenChange={setShowCreateDrawing} />

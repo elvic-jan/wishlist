@@ -41,7 +41,7 @@ public class InviteFromCirclesUseCase(
         if (!await groups.IsMemberAsync(groupId, userId, ct))
             throw new ForbiddenException("You are not a member of this circle.");
         if ((await groups.GetByIdAsync(groupId, ct))?.Kind == GroupKind.Drawing)
-            throw new DomainException("A Secret Santa drawing has no invitation link. Its organizer adds the people.");
+            throw new DomainException("A name drawing has no invitation link. Its organizer adds the people.");
 
         var allowed = await invitations.GetCircleMatesAsync(userId, ids.Where(id => id != userId).ToList(), ct);
         if (allowed.Count == 0)

@@ -54,14 +54,14 @@
 - [x] 8.4 Wishlists page: drawn people on top under "My wishlist" with the drawing title badge, not-joined state, no duplicates
 - [x] 8.5 Join and register pages accept drawing codes (drawing title and organizer shown, prefilled name/email)
 - [x] 8.6 English and Dutch texts for all new UI in `lib/i18n/en.ts` and `nl.ts`; dates formatted for the active language; `translate="no"` on drawing title, budget, names and emails; i18n check passes
-- [ ] 8.7 Dutch wording review: list every new Dutch text (UI, server messages, emails) for the user to approve, and apply their wording
+- [x] 8.7 Wording review: every new English and Dutch text reviewed; "Secret Santa" renamed to "Drawing names / Namen trekken" (event: "drawing" / "trekking")
 
 ## 9. Tests
 
 - [x] 9.1 Scenario tests: `SecretSantaTests` (draw algorithm, visibility dates) and `SecretSantaPostgresTests` (full flow on Postgres; the in-memory API gets a `NoDrawings` stand-in)
 - [x] 9.2 Postgres tests for access filtering, guarded draw, cleanup cascade and migration
 - [x] 9.3 Test that the organizer's responses are identical for a typed email with and without an account
-- [ ] 9.4 Web tests: the web app has no test runner; checked in the browser instead (create dialog, draw confirmation, Wishlists order)
+- [x] 9.4 Web tests: the web app has no test runner; checked in the browser instead (create dialog, invite link + sign-up, draw confirmation, recipient card, Wishlists order, decline from link, cancel/undo)
 
 ## 10. Release
 

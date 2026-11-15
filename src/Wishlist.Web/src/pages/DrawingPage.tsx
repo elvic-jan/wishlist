@@ -183,7 +183,8 @@ export function DrawingPage() {
         </Card>
       )}
 
-      {drawing.myRecipient && <RecipientCard drawing={drawing} />}
+      {/* A cancelled drawing connects nobody, so its recipient card would only mislead. */}
+      {drawing.myRecipient && active && <RecipientCard drawing={drawing} />}
       {me && !drawing.drawn && active && drawing.myStatus !== 'invited' && (
         <p className="text-sm text-muted-foreground">{t('santa.notDrawn')}</p>
       )}
@@ -204,6 +205,7 @@ export function DrawingPage() {
               <ParticipantRow
                 key={p.id}
                 participant={p}
+                drawn={drawing.drawn}
                 canRemove={editable}
                 busy={busy}
                 onRemove={() => act(() => client.delete(`${base}/participants/${p.id}`))}
@@ -362,12 +364,15 @@ function RecipientCard({ drawing }: { drawing: Drawing }) {
 
 function ParticipantRow({
   participant: p,
+  drawn,
   canRemove,
   busy,
   onRemove,
   onJoinForThem,
 }: {
   participant: DrawingParticipant
+  /** The names have been drawn. */
+  drawn: boolean
   canRemove: boolean
   busy: boolean
   onRemove: () => void
@@ -399,12 +404,20 @@ function ParticipantRow({
             {t('santa.joinForThem', { name: p.name })}
           </Button>
         )}
-        <Badge
-          variant={p.status === 'joined' ? 'default' : 'secondary'}
-          className={cn('font-normal', p.status === 'declined' && 'line-through opacity-70')}
-        >
-          {t(statusKey[p.status])}
-        </Badge>
+        {drawn && p.status === 'invited' ? (
+          // Drawn while still unanswered: in the draw, but hasn't said yes yet.
+          <>
+            <Badge className="font-normal">{t('santa.status.included')}</Badge>
+            <Badge variant="outline" className="font-normal">{t('santa.status.unanswered')}</Badge>
+          </>
+        ) : (
+          <Badge
+            variant={p.status === 'joined' ? 'default' : 'secondary'}
+            className={cn('font-normal', p.status === 'declined' && 'line-through opacity-70')}
+          >
+            {t(statusKey[p.status])}
+          </Badge>
+        )}
         {canRemove && (
           <Button size="icon" variant="ghost" disabled={busy} aria-label={t('santa.remove', { name: p.name })} onClick={onRemove}>
             <X className="h-4 w-4" />

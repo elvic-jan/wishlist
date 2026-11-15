@@ -58,7 +58,7 @@ public class SecretSantaPostgresTests
                 [anna.Id],
                 [new DrawingEmailInvite("Pieter", "PIET@example.test"), new DrawingEmailInvite("Newbie", "new@example.test")])));
         Assert.Equal(5, api.Emails.Count);
-        Assert.Contains(api.Emails, m => m.To == "piet@example.test" && m.Subject.Contains("lootjestrekking"));
+        Assert.Contains(api.Emails, m => m.To == "piet@example.test" && m.Subject.Contains("namen te trekken"));
         Assert.Contains(api.Emails, m => m.To == "new@example.test" && m.PlainTextBody.Contains("/join/"));
 
         // Adding the same people again adds nobody.
@@ -103,7 +103,7 @@ public class SecretSantaPostgresTests
         api.Emails.Clear();
         await draw.ExecuteAsync(jan.Id, id, new DrawNamesRequest(true));
         await Assert.ThrowsAsync<ConflictException>(() => draw.ExecuteAsync(jan.Id, id, new DrawNamesRequest(true)));
-        Assert.Equal(6, api.Emails.Count(m => m.PlainTextBody.Contains("Secret Santa")));
+        Assert.Equal(6, api.Emails.Count); // one "you drew" email each
         await Assert.ThrowsAsync<ConflictException>(() => manage.RemoveAsync(jan.Id, id, Pid(view, "Newbie")));
 
         // Everyone sees only their own recipient; Jan didn't draw Sofie.
@@ -130,13 +130,13 @@ public class SecretSantaPostgresTests
         Assert.Contains(annaView.Participants, p => p.Name == "Nina");
         Assert.True(await groups.SharesGroupAsync(anna.Id, piet.Id));
 
-        // Sofie leaves after the draw: the organizer learns who has no Secret Santa now; her giver needn't buy.
+        // Sofie leaves after the draw: the organizer learns whom nobody has drawn now; her giver needn't buy.
         api.Emails.Clear();
         await answer.JoinAsync(sofie.Id, id, Pid(view, "Sofie"));
         await answer.DeclineAsync(sofie.Id, id);
         var toOrganizer = Assert.Single(api.Emails, m => m.To == jan.Email && m.Subject.Contains("Sofie"));
-        Assert.Contains("no longer has a Secret Santa", toOrganizer.PlainTextBody);
-        // Jan is excluded from Sofie, so the other email is for her Secret Santa (possibly in Dutch).
+        Assert.Contains("Nobody has drawn", toOrganizer.PlainTextBody);
+        // Jan is excluded from Sofie, so the other email is for whoever drew her (possibly in Dutch).
         Assert.Single(api.Emails, m => m.To != jan.Email && m.Subject.Contains("Sofie"));
         await Assert.ThrowsAsync<NotFoundException>(() => get.ExecuteAsync(sofie.Id, id));
 
