@@ -65,6 +65,6 @@
 
 ## 10. Release
 
-- [ ] 10.1 Agree the release note text (type `feature`, English + `nl:`) with the user and add `release-notes/secret-santa.md`
+- [x] 10.1 Agree the release note text (type `feature`, English + `nl:`) with the user and add `release-notes/name-drawings.md`
 - [ ] 10.2 Check on staging: create, invite by email, register via link, buddy join, draw with unanswered people, recipient email/card, Wishlists order, cancel/undo, cleanup job run
-- [ ] 10.3 PR with "Closes #101"
+- [x] 10.3 PR with "Closes #101"
